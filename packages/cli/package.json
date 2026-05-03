@@ -1,0 +1,19 @@
+{
+  "name": "ctxharness",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Detect AI documentation drift — L1/L2/L3 context engineering testing",
+  "bin": {
+    "ctxharness": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@ctxharness/core": "workspace:*",
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "typescript": "*"
+  }
+}
