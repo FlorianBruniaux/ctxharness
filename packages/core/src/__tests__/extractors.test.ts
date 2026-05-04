@@ -72,3 +72,15 @@ describe('countMatches extractor', () => {
     ).toBe('0')
   })
 })
+
+describe('constant extractor', () => {
+  it('returns the provided string value', () => {
+    expect(runExtractor('constant', FIXTURES, { value: 'check' })).toBe('check')
+  })
+  it('returns empty string when value is empty string', () => {
+    expect(runExtractor('constant', FIXTURES, { value: '' })).toBe('')
+  })
+  it('throws if value arg is missing', () => {
+    expect(() => runExtractor('constant', FIXTURES, {})).toThrow()
+  })
+})

@@ -5,6 +5,7 @@ import { runScanner, normalizeMatch } from '../scanners/index.js'
 const FIXTURES = join(import.meta.dirname, 'fixtures')
 const CLAUDE_MD = join(FIXTURES, 'CLAUDE.md')
 const AGENTS_MD = join(FIXTURES, 'AGENTS.md')
+const VAGUE_DOC = join(FIXTURES, 'vague-doc.md')
 
 describe('normalizeMatch', () => {
   it('passes when doc mentions major only', () => {
@@ -98,6 +99,48 @@ describe('jsonField scanner', () => {
       field: 'framework',
     })
     expect(results.length).toBeGreaterThan(0)
+    expect(results[0]?.status).toBe('pass')
+  })
+})
+
+describe('vaguenessPattern scanner', () => {
+  it('flags vague phrases in vague-doc.md', () => {
+    const results = runScanner('vaguenessPattern', VAGUE_DOC, '', {})
+    expect(results.every((r) => r.status === 'fail')).toBe(true)
+    expect(results.length).toBeGreaterThan(0)
+  })
+
+  it('passes on clean CLAUDE.md with no vague language', () => {
+    const results = runScanner('vaguenessPattern', CLAUDE_MD, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('accepts extra custom patterns via scannerArgs', () => {
+    const results = runScanner('vaguenessPattern', CLAUDE_MD, '', {
+      patterns: ['Using Prisma'],
+    })
+    expect(results.some((r) => r.status === 'fail')).toBe(true)
+  })
+})
+
+describe('negativeConstraintDensity scanner', () => {
+  it('fails on vague-doc.md with default minRatio 1.0 (too many negatives)', () => {
+    const results = runScanner('negativeConstraintDensity', VAGUE_DOC, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('passes on CLAUDE.md (zero negatives → infinite ratio)', () => {
+    const results = runScanner('negativeConstraintDensity', CLAUDE_MD, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('respects custom minRatio', () => {
+    // vague-doc has: positives=~1 (use), negatives=3 (never, do not, avoid) → ratio ~0.33
+    // with minRatio=0.1 it should pass
+    const results = runScanner('negativeConstraintDensity', VAGUE_DOC, '', { minRatio: 0.1 })
     expect(results[0]?.status).toBe('pass')
   })
 })

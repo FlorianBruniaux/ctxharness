@@ -10,6 +10,7 @@ const ExtractorNameSchema = z.enum([
   'fileExists',
   'regexScan',
   'countMatches',
+  'constant',
 ])
 
 // Scanner schemas
@@ -20,6 +21,8 @@ const ScannerNameSchema = z.enum([
   'jsonField',
   'literalInMd',
   'pathReference',
+  'vaguenessPattern',
+  'negativeConstraintDensity',
 ])
 
 // One assertion

@@ -365,6 +365,118 @@ function pathReference(filePath: string, _expected: string, args: Record<string,
   ]
 }
 
+// ─── 7. vaguenessPattern ─────────────────────────────────────────────────────
+
+/**
+ * Detects vague language that reduces instruction quality for AI agents.
+ * Flags phrases like "be careful", "as needed", "use your judgment", etc.
+ * Args: { patterns?: string[] }  — optional extra regex patterns to detect
+ *
+ * Returns one fail result per vague phrase found, or a single pass result
+ * if the file contains none. The `expected` param is ignored.
+ */
+const DEFAULT_VAGUE_PATTERNS: RegExp[] = [
+  /\bbe careful\b/i,
+  /\bas needed\b/i,
+  /\bwhen necessary\b/i,
+  /\buse your judgment\b/i,
+  /\bappropriately\b/i,
+  /\byou should know\b/i,
+  /\bbe smart\b/i,
+  /\bas appropriate\b/i,
+  /\buse common sense\b/i,
+  /\bif applicable\b/i,
+]
+
+function vaguenessPattern(
+  filePath: string,
+  _expected: string,
+  args: Record<string, unknown>,
+): ScanResult[] {
+  const extraPatterns = (args['patterns'] as string[] | undefined) ?? []
+  const allPatterns = [
+    ...DEFAULT_VAGUE_PATTERNS,
+    ...extraPatterns.map((p) => new RegExp(p, 'i')),
+  ]
+
+  const lines = readLines(filePath)
+  const results: ScanResult[] = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line === undefined) continue
+
+    for (const pattern of allPatterns) {
+      const match = line.match(pattern)
+      if (match !== null) {
+        results.push({
+          file: filePath,
+          line: i + 1,
+          actual: match[0] ?? '',
+          expected: '(no vague language)',
+          status: 'fail',
+        })
+        break // one result per line max
+      }
+    }
+  }
+
+  if (results.length === 0) {
+    results.push({
+      file: filePath,
+      line: 0,
+      actual: '(none)',
+      expected: '(no vague language)',
+      status: 'pass',
+    })
+  }
+
+  return results
+}
+
+// ─── 8. negativeConstraintDensity ────────────────────────────────────────────
+
+/**
+ * Checks that the positive:negative instruction ratio meets a minimum threshold.
+ * A healthy instruction file has at least 2 positives per negative.
+ * Args: { minRatio?: number }  — minimum positive:negative ratio (default 1.0)
+ *
+ * Positive keywords: always, prefer, use, should, must, recommended, do this
+ * Negative keywords: never, do not, don't, avoid, prohibited, forbidden, not allowed
+ *
+ * Returns one result. The `expected` param is ignored; threshold comes from args.
+ */
+const POSITIVE_RE = /\b(always|prefer|use|should|must|recommended|do this)\b/gi
+const NEGATIVE_RE = /\b(never|do not|don't|dont|avoid|prohibited|forbidden|not allowed)\b/gi
+
+function negativeConstraintDensity(
+  filePath: string,
+  _expected: string,
+  args: Record<string, unknown>,
+): ScanResult[] {
+  const minRatio = typeof args['minRatio'] === 'number' ? args['minRatio'] : 1.0
+
+  const content = readFileSync(filePath, 'utf-8')
+  const positiveCount = (content.match(POSITIVE_RE) ?? []).length
+  const negativeCount = (content.match(NEGATIVE_RE) ?? []).length
+
+  const ratio = negativeCount === 0 ? Infinity : positiveCount / negativeCount
+  const ratioLabel =
+    negativeCount === 0
+      ? `∞ (${positiveCount}p / 0n)`
+      : `${ratio.toFixed(1)} (${positiveCount}p / ${negativeCount}n)`
+
+  return [
+    {
+      file: filePath,
+      line: 0,
+      actual: ratioLabel,
+      expected: `≥${minRatio} positive/negative ratio`,
+      status: ratio >= minRatio ? 'pass' : 'fail',
+    },
+  ]
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 const SCANNERS: Record<ScannerName, ScannerFn> = {
@@ -374,6 +486,8 @@ const SCANNERS: Record<ScannerName, ScannerFn> = {
   jsonField,
   literalInMd,
   pathReference,
+  vaguenessPattern,
+  negativeConstraintDensity,
 }
 
 export function runScanner(

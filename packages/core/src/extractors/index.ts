@@ -182,6 +182,20 @@ function countMatches(root: string, args: ExtractorArgs): ExtractorResult {
   return matches === null ? '0' : String(matches.length)
 }
 
+/**
+ * constant — returns a fixed string value
+ * Args: { value: string }
+ * Useful as a placeholder extractor for quality scanners that define their
+ * own expected threshold via scannerArgs rather than comparing against code.
+ */
+function constant(_root: string, args: ExtractorArgs): ExtractorResult {
+  const value = args['value']
+  if (typeof value !== 'string') {
+    throw new Error('constant extractor requires args.value (string)')
+  }
+  return value
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 const EXTRACTORS: Record<ExtractorName, ExtractorFn> = {
@@ -191,6 +205,7 @@ const EXTRACTORS: Record<ExtractorName, ExtractorFn> = {
   fileExists,
   regexScan,
   countMatches,
+  constant,
 }
 
 export function runExtractor(name: ExtractorName, root: string, args: ExtractorArgs): string {

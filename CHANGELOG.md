@@ -6,6 +6,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- `constant` extractor — returns a fixed value; placeholder for quality scanners that define their threshold via `scannerArgs`
+- `vaguenessPattern` scanner — detects vague AI instruction language ("be careful", "as needed", "use your judgment", etc.), extensible via `scannerArgs.patterns`
+- `negativeConstraintDensity` scanner — checks positive:negative instruction ratio meets a minimum threshold (`scannerArgs.minRatio`, default 1.0)
+- 9 new vitest tests (40 total)
+
+---
+
 ## [0.1.0] — 2026-05-01
 
 ### Added
