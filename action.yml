@@ -1,0 +1,59 @@
+name: ctxharness
+description: Detect AI documentation drift — checks that CLAUDE.md, AGENTS.md, and other AI docs stay in sync with your codebase
+author: Florian Bruniaux
+
+inputs:
+  config:
+    description: Path to .ctxharness.yml config file
+    required: false
+    default: '.ctxharness.yml'
+  root:
+    description: Project root directory (defaults to repo root)
+    required: false
+    default: '.'
+  format:
+    description: Output format — text, json, or gha
+    required: false
+    default: 'gha'
+  fail-on-drift:
+    description: Exit with code 1 when drift is detected
+    required: false
+    default: 'true'
+
+outputs:
+  drift-detected:
+    description: 'true if any assertion failed or errored, false otherwise'
+    value: ${{ steps.run.outputs.drift-detected }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install ctxharness
+      shell: bash
+      run: npm install -g ctxharness@latest
+
+    - name: Run ctxharness
+      id: run
+      shell: bash
+      run: |
+        set +e
+        ctxharness run \
+          --config "${{ inputs.config }}" \
+          --root "${{ inputs.root }}" \
+          --format "${{ inputs.format }}"
+        EXIT_CODE=$?
+        set -e
+
+        if [ $EXIT_CODE -eq 0 ]; then
+          echo "drift-detected=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "drift-detected=true" >> "$GITHUB_OUTPUT"
+        fi
+
+        if [ "${{ inputs.fail-on-drift }}" = "true" ] && [ $EXIT_CODE -ne 0 ]; then
+          exit 1
+        fi
+
+branding:
+  icon: check-circle
+  color: orange

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# ctxharness — post-merge hook
+# Checks AI doc drift after git pull / merge.
+# Install: cp templates/husky/post-merge .husky/post-merge && chmod +x .husky/post-merge
+
+if command -v ctxharness &>/dev/null; then
+  ctxharness check || {
+    echo ""
+    echo "⚠  AI doc drift detected. Run: ctxharness run"
+    echo ""
+  }
+fi

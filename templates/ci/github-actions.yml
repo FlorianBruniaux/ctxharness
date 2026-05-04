@@ -1,0 +1,48 @@
+# ctxharness CI template — copy to .github/workflows/ctxharness.yml
+# Checks AI documentation drift on every push and pull request.
+#
+# Trigger conditions — adjust to your project:
+# - Push to any branch (catches drift before merge)
+# - PR to main (required check before merge)
+# - Schedule: weekly drift scan even without code changes
+
+name: AI Documentation Drift Check
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9am UTC
+
+concurrency:
+  group: ctxharness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift-check:
+    name: Check AI doc drift
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run ctxharness
+        uses: FlorianBruniaux/ctxharness@v0.1
+        with:
+          config: .ctxharness.yml
+          format: gha
+          fail-on-drift: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
+        # Note: fail-on-drift=true on PRs (blocking), false on push (informational)
+        # Flip both to 'true' once you've resolved initial drift.
+
+      # Alternative: run without the action (if you prefer direct npm install):
+      # - name: Install ctxharness
+      #   run: npm install -g ctxharness@latest
+      # - name: Check drift
+      #   run: ctxharness run --format gha
+      #   continue-on-error: true  # Remove once drift is resolved

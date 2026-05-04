@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# ctxharness — post-checkout hook
+# Checks AI doc drift after branch switch.
+# Install: cp templates/husky/post-checkout .husky/post-checkout && chmod +x .husky/post-checkout
+
+# $3 is 1 for branch checkout, 0 for file checkout — only run on branch switch
+if [ "$3" = "1" ] && command -v ctxharness &>/dev/null; then
+  ctxharness check || {
+    echo ""
+    echo "⚠  AI doc drift detected. Run: ctxharness run"
+    echo ""
+  }
+fi
