@@ -743,9 +743,80 @@ function backtickEntityPresence(
   ]
 }
 
+// ─── 13. skillValidity ───────────────────────────────────────────────────────
+
+/**
+ * Validates that a Claude Code skill file has YAML frontmatter with `name:` (required)
+ * and `description:` (required by default, opt-out via requireDescription: false).
+ *
+ * A skill file without proper frontmatter loads but won't be selectable by name in the UI.
+ * Designed to run over `.claude/skills/**\/prompt.md`.
+ *
+ * Args: { requireDescription?: boolean }  — default true
+ */
+function skillValidity(
+  filePath: string,
+  _expected: string,
+  args: Record<string, unknown>,
+): ScanResult[] {
+  const requireDescription = args['requireDescription'] !== false
+  const content = readFileSync(filePath, 'utf-8')
+  const fmMatch = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content)
+
+  if (fmMatch === null) {
+    return [
+      {
+        file: filePath,
+        line: 0,
+        actual: 'no frontmatter',
+        expected: 'YAML frontmatter with name: field',
+        status: 'fail',
+      },
+    ]
+  }
+
+  const fm = fmMatch[1] ?? ''
+  const hasName = /^name:/m.test(fm)
+  const hasDescription = /^description:/m.test(fm)
+
+  if (!hasName) {
+    return [
+      {
+        file: filePath,
+        line: 0,
+        actual: 'frontmatter missing name:',
+        expected: 'name: field required',
+        status: 'fail',
+      },
+    ]
+  }
+
+  if (requireDescription && !hasDescription) {
+    return [
+      {
+        file: filePath,
+        line: 0,
+        actual: 'frontmatter missing description:',
+        expected: 'description: field required',
+        status: 'fail',
+      },
+    ]
+  }
+
+  return [
+    {
+      file: filePath,
+      line: 0,
+      actual: requireDescription ? 'has name: and description:' : 'has name:',
+      expected: 'valid skill frontmatter',
+      status: 'pass',
+    },
+  ]
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
-const SCANNERS: Record<ScannerName, ScannerFn> = {
+const SCANNERS: Record<string, ScannerFn> = {
   inlineRegex,
   codeBlockRegex,
   yamlField,
@@ -758,14 +829,23 @@ const SCANNERS: Record<ScannerName, ScannerFn> = {
   ruleGlobValidity,
   hookValidity,
   backtickEntityPresence,
+  skillValidity,
+}
+
+/**
+ * Register a custom scanner at runtime (plugin API).
+ */
+export function registerScanner(name: string, fn: ScannerFn): void {
+  SCANNERS[name] = fn
 }
 
 export function runScanner(
-  name: ScannerName,
+  name: ScannerName | string,
   filePath: string,
   expected: string,
   args: Record<string, unknown>,
 ): ScanResult[] {
   const fn = SCANNERS[name]
+  if (fn === undefined) throw new Error(`Unknown scanner: "${name}"`)
   return fn(filePath, expected, args)
 }

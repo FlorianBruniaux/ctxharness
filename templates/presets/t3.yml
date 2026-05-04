@@ -1,0 +1,115 @@
+# ctxharness preset — T3 Stack
+# create-t3-app: Next.js + tRPC + Prisma + NextAuth + TypeScript
+# Usage: copy to .ctxharness.yml and adjust paths as needed
+version: 1
+
+files:
+  include:
+    - 'CLAUDE.md'
+    - 'AGENTS.md'
+    - '.cursorrules'
+    - 'doc/**/*.md'
+    - 'docs/**/*.md'
+  exclude:
+    - 'node_modules/**'
+
+assertions:
+  # L1 — Fact drift: core versions
+  - id: node-version
+    label: Node.js version
+    extractor: nvmrc
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Node(?:\.js)?\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: next-version
+    label: Next.js version
+    extractor: packageJson
+    extractorArgs:
+      package: next
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Next\.js\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: trpc-version
+    label: tRPC version
+    extractor: packageJson
+    extractorArgs:
+      package: '@trpc/server'
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'tRPC\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: prisma-version
+    label: Prisma version
+    extractor: packageJson
+    extractorArgs:
+      package: '@prisma/client'
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Prisma\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: typescript-version
+    label: TypeScript version
+    extractor: packageJson
+    extractorArgs:
+      package: typescript
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'TypeScript\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  # L1 — Fact drift: schema counts
+  - id: prisma-model-count
+    label: Prisma model count
+    extractor: prismaModel
+    extractorArgs:
+      path: 'prisma/schema.prisma'
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: '(\d+)\s+(?:Prisma\s+)?models?'
+
+  - id: trpc-router-count
+    label: tRPC router count
+    extractor: trpcRouter
+    extractorArgs:
+      path: 'src/server/api/root.ts'
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: '(\d+)\s+tRPC\s+routers?'
+
+  # L2 — Instruction quality
+  - id: no-vague-language
+    label: No vague language
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: vaguenessPattern
+
+  - id: instruction-balance
+    label: Positive/negative ratio
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: negativeConstraintDensity
+    scannerArgs:
+      minRatio: 2.0
+
+  - id: claude-md-budget
+    label: CLAUDE.md token budget
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: contextBudget
+    scannerArgs:
+      maxTokens: 5000
+      followImports: true
+
+  # L3 — Context assembly
+  - id: rules-validity
+    label: Rules file validity
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: ruleGlobValidity
+    scannerArgs:
+      requirePaths: false

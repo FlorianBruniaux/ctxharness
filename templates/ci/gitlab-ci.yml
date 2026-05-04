@@ -1,0 +1,19 @@
+# ctxharness — AI documentation drift detection for GitLab CI
+# Usage: include this file in your .gitlab-ci.yml
+# include:
+#   - project: 'your-org/ctxharness-templates'
+#     file: 'templates/ci/gitlab-ci.yml'
+
+ai-doc-drift:
+  image: node:22-alpine
+  stage: test
+  script:
+    - npx ctxharness@latest run --format gha
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  allow_failure: false
+  artifacts:
+    reports:
+      junit: ctxharness-results.xml
+    when: always

@@ -1,0 +1,11 @@
+// Fixture tsconfig with path aliases (JSONC — has comments)
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "paths": {
+      "~/*": ["./src/*"],
+      "@server/*": ["./src/server/*"],
+      "@ui/*": ["./src/components/ui/*"]
+    }
+  }
+}

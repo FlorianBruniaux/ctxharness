@@ -143,3 +143,31 @@ describe('gitStaleness extractor', () => {
     ).toThrow()
   })
 })
+
+describe('packageEngines extractor', () => {
+  it('returns node version from engines field (strips >= operator)', () => {
+    expect(runExtractor('packageEngines', FIXTURES, {})).toBe('22.14.0')
+  })
+  it('uses "node" as default field', () => {
+    expect(runExtractor('packageEngines', FIXTURES, { field: 'node' })).toBe('22.14.0')
+  })
+  it('throws if engines field not present in package.json', () => {
+    expect(() =>
+      runExtractor('packageEngines', '/tmp/no-such-dir-ctxharness-test', {})
+    ).toThrow()
+  })
+})
+
+describe('tsconfigPaths extractor', () => {
+  it('counts path aliases in tsconfig.json', () => {
+    expect(runExtractor('tsconfigPaths', FIXTURES, {})).toBe('3')
+  })
+  it('accepts custom tsconfig path via args', () => {
+    expect(runExtractor('tsconfigPaths', FIXTURES, { path: 'tsconfig.json' })).toBe('3')
+  })
+  it('throws if tsconfig not found', () => {
+    expect(() =>
+      runExtractor('tsconfigPaths', FIXTURES, { path: 'nonexistent-tsconfig.json' })
+    ).toThrow()
+  })
+})

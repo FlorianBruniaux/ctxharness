@@ -1,0 +1,101 @@
+# ctxharness preset — Next.js App Router
+# Usage: copy to .ctxharness.yml and adjust paths as needed
+version: 1
+
+files:
+  include:
+    - 'CLAUDE.md'
+    - 'AGENTS.md'
+    - '.cursorrules'
+    - 'doc/**/*.md'
+    - 'docs/**/*.md'
+  exclude:
+    - 'node_modules/**'
+
+assertions:
+  # L1 — Fact drift: core versions
+  - id: node-version
+    label: Node.js version
+    extractor: nvmrc
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Node(?:\.js)?\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: next-version
+    label: Next.js version
+    extractor: packageJson
+    extractorArgs:
+      package: next
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Next\.js\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: react-version
+    label: React version
+    extractor: packageJson
+    extractorArgs:
+      package: react
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'React\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: typescript-version
+    label: TypeScript version
+    extractor: packageJson
+    extractorArgs:
+      package: typescript
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'TypeScript\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: node-engines
+    label: Node.js engines field
+    extractor: packageEngines
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Node(?:\.js)?\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  # L2 — Instruction quality
+  - id: no-vague-language
+    label: No vague language
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: vaguenessPattern
+
+  - id: instruction-balance
+    label: Positive/negative ratio
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: negativeConstraintDensity
+    scannerArgs:
+      minRatio: 2.0
+
+  - id: claude-md-budget
+    label: CLAUDE.md token budget
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: contextBudget
+    scannerArgs:
+      maxTokens: 5000
+      followImports: true
+
+  # L2 — Rules structure
+  - id: rules-validity
+    label: Rules file validity
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: ruleGlobValidity
+    scannerArgs:
+      requirePaths: false
+
+  # L3 — Context assembly
+  - id: hooks-validity
+    label: Hook entries valid
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: hookValidity

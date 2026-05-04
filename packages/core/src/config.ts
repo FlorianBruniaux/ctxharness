@@ -15,6 +15,8 @@ const ExtractorNameSchema = z.enum([
   'prismaEnum',
   'trpcRouter',
   'gitStaleness',
+  'packageEngines',
+  'tsconfigPaths',
 ])
 
 // Scanner schemas
@@ -31,6 +33,7 @@ const ScannerNameSchema = z.enum([
   'ruleGlobValidity',
   'hookValidity',
   'backtickEntityPresence',
+  'skillValidity',
 ])
 
 // One assertion

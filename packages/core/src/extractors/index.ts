@@ -3,6 +3,15 @@ import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import type { ExtractorName } from '../config.js'
 
+// ─── JSONC parser ────────────────────────────────────────────────────────────
+// TypeScript configs often use // comments. Strip them before JSON.parse.
+function parseJsonc(text: string): unknown {
+  const stripped = text
+    .replace(/\/\/[^\n]*/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+  return JSON.parse(stripped)
+}
+
 export type ExtractorResult = string // ground truth value
 
 export type ExtractorArgs = Record<string, unknown>
@@ -318,9 +327,67 @@ function gitStaleness(root: string, args: ExtractorArgs): ExtractorResult {
   return count.length > 0 ? count : '0'
 }
 
+/**
+ * packageEngines — reads a field from the engines map in package.json
+ * Args: { field?: string }  — which engine key to read (default: "node")
+ * Returns: version string with leading operators stripped (e.g. ">=22.14.0" → "22.14.0")
+ */
+function packageEngines(root: string, args: ExtractorArgs): ExtractorResult {
+  const field = typeof args['field'] === 'string' ? args['field'] : 'node'
+
+  const pkgPath = resolve(root, 'package.json')
+  const pkg = readJson(pkgPath)
+
+  const engines = pkg['engines']
+  if (typeof engines !== 'object' || engines === null || Array.isArray(engines)) {
+    throw new Error('package.json does not have an "engines" field')
+  }
+
+  const rawValue = (engines as Record<string, unknown>)[field]
+  if (typeof rawValue !== 'string') {
+    throw new Error(`engines.${field} not found or not a string in package.json`)
+  }
+
+  return stripVersionPrefix(rawValue)
+}
+
+/**
+ * tsconfigPaths — counts path aliases defined in tsconfig.json compilerOptions.paths
+ * Args: { path?: string }  — relative path to tsconfig (default: "tsconfig.json")
+ * Returns: count as string (e.g. "5")
+ */
+function tsconfigPaths(root: string, args: ExtractorArgs): ExtractorResult {
+  const tsconfigFile = typeof args['path'] === 'string' ? args['path'] : 'tsconfig.json'
+  const fullPath = resolve(root, tsconfigFile)
+
+  if (!existsSync(fullPath)) {
+    throw new Error(`tsconfig not found: ${fullPath}`)
+  }
+
+  const raw = readFileSync(fullPath, 'utf-8')
+  let parsed: unknown
+  try {
+    parsed = parseJsonc(raw)
+  } catch {
+    throw new Error(`Failed to parse ${fullPath} as JSONC`)
+  }
+
+  if (typeof parsed !== 'object' || parsed === null) {
+    return '0'
+  }
+
+  const compilerOptions = (parsed as Record<string, unknown>)['compilerOptions']
+  if (typeof compilerOptions !== 'object' || compilerOptions === null) return '0'
+
+  const paths = (compilerOptions as Record<string, unknown>)['paths']
+  if (typeof paths !== 'object' || paths === null) return '0'
+
+  return String(Object.keys(paths).length)
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
-const EXTRACTORS: Record<ExtractorName, ExtractorFn> = {
+const EXTRACTORS: Record<string, ExtractorFn> = {
   packageJson,
   packageManager,
   nvmrc,
@@ -332,9 +399,20 @@ const EXTRACTORS: Record<ExtractorName, ExtractorFn> = {
   prismaEnum,
   trpcRouter,
   gitStaleness,
+  packageEngines,
+  tsconfigPaths,
 }
 
-export function runExtractor(name: ExtractorName, root: string, args: ExtractorArgs): string {
+/**
+ * Register a custom extractor at runtime (plugin API).
+ * The name does not need to be in the built-in enum — it is validated at runtime.
+ */
+export function registerExtractor(name: string, fn: ExtractorFn): void {
+  EXTRACTORS[name] = fn
+}
+
+export function runExtractor(name: ExtractorName | string, root: string, args: ExtractorArgs): string {
   const fn = EXTRACTORS[name]
+  if (fn === undefined) throw new Error(`Unknown extractor: "${name}"`)
   return fn(root, args)
 }

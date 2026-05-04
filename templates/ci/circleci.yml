@@ -1,0 +1,28 @@
+# ctxharness — AI documentation drift detection for CircleCI
+# Usage: reference this from your .circleci/config.yml
+
+version: 2.1
+
+orbs:
+  node: circleci/node@5
+
+jobs:
+  ai-doc-drift:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install:
+          node-version: '22'
+      - run:
+          name: Check AI documentation drift
+          command: npx ctxharness@latest run
+
+workflows:
+  ctxharness:
+    jobs:
+      - ai-doc-drift:
+          filters:
+            branches:
+              only:
+                - main
+                - /pull\/.*/

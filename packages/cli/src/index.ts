@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
 import { resolve, join } from 'node:path'
-import { writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { relative } from 'node:path'
 import { loadConfig, run, report } from '@ctxharness/core'
 import type { OutputFormat, AssertionResult } from '@ctxharness/core'
 
@@ -174,6 +175,271 @@ program
         chalk.dim(`  pass ${result.totalPass}  ·  fail ${result.totalFail}  ·  skip ${result.totalSkip}  ·  error ${result.totalError}`),
       )
       console.log('')
+
+      process.exit(result.totalFail > 0 || result.totalError > 0 ? 1 : 0)
+    } catch (e) {
+      process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
+      process.exit(1)
+    }
+  })
+
+// ─── fix command ──────────────────────────────────────────────────────────────
+
+/**
+ * Collects fixable fail results: must have a line number and a non-empty actual value.
+ * Groups them by file, sorted by line descending so multi-fix on one file doesn't shift offsets.
+ */
+type Fix = { file: string; line: number; actual: string; expected: string; assertionId: string }
+
+function collectFixes(assertions: AssertionResult[]): Fix[] {
+  const fixes: Fix[] = []
+  for (const assertion of assertions) {
+    if (assertion.status !== 'fail' || assertion.expected === null) continue
+    for (const r of assertion.results) {
+      if (r.status !== 'fail' || r.line === 0 || r.actual === '') continue
+      fixes.push({
+        file: r.file,
+        line: r.line,
+        actual: r.actual,
+        expected: r.expected,
+        assertionId: assertion.id,
+      })
+    }
+  }
+  // Sort descending by line so multi-line fixes on the same file don't shift offsets
+  return fixes.sort((a, b) => b.line - a.line || a.file.localeCompare(b.file))
+}
+
+function applyFix(fix: Fix): boolean {
+  const lines = readFileSync(fix.file, 'utf-8').split('\n')
+  const lineIdx = fix.line - 1
+  const original = lines[lineIdx]
+  if (original === undefined || !original.includes(fix.actual)) return false
+  lines[lineIdx] = original.replace(fix.actual, fix.expected)
+  writeFileSync(fix.file, lines.join('\n'), 'utf-8')
+  return true
+}
+
+program
+  .command('fix')
+  .description('Auto-fix version drift in AI doc files (dry-run by default)')
+  .option('-c, --config <path>', 'Path to config file', '.ctxharness.yml')
+  .option('-r, --root <dir>', 'Project root directory', '')
+  .option('--apply', 'Write changes to files (default: dry-run, shows what would change)')
+  .action(async (opts: { config: string; root: string; apply?: boolean }) => {
+    try {
+      const cwd = process.cwd()
+      const configPath = resolve(cwd, opts.config)
+      const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
+
+      if (!existsSync(configPath)) {
+        process.stderr.write(`Error: config file not found: ${configPath}\n`)
+        process.exit(1)
+      }
+
+      const { default: chalk } = await import('chalk')
+
+      const config = loadConfig(configPath)
+      const result = await run(config, root)
+      const fixes = collectFixes(result.assertions)
+
+      if (fixes.length === 0) {
+        console.log(chalk.green('\n✓ Nothing to fix — all assertions pass\n'))
+        process.exit(0)
+      }
+
+      if (opts.apply !== true) {
+        console.log(chalk.bold(`\nFixable drift — ${fixes.length} change${fixes.length !== 1 ? 's' : ''}\n`))
+        for (const fix of [...fixes].sort((a, b) => a.line - b.line)) {
+          const relFile = relative(cwd, fix.file)
+          console.log(
+            `  ${chalk.dim(`${relFile}:${fix.line}`)}  ${chalk.dim(fix.assertionId)}  ` +
+            `${chalk.red(fix.actual)} → ${chalk.green(fix.expected)}`,
+          )
+        }
+        console.log(chalk.dim(`\nRun ctxharness fix --apply to write changes.\n`))
+        process.exit(0)
+      }
+
+      // Apply mode
+      let applied = 0
+      let failed = 0
+      console.log(chalk.bold(`\nApplying ${fixes.length} fix${fixes.length !== 1 ? 'es' : ''}...\n`))
+
+      for (const fix of [...fixes].sort((a, b) => a.line - b.line)) {
+        const relFile = relative(cwd, fix.file)
+        if (applyFix(fix)) {
+          applied++
+          console.log(
+            `  ${chalk.green('✓')} ${chalk.dim(`${relFile}:${fix.line}`)}  ` +
+            `${chalk.red(fix.actual)} → ${chalk.green(fix.expected)}`,
+          )
+        } else {
+          failed++
+          console.log(
+            `  ${chalk.yellow('⚠')} ${chalk.dim(`${relFile}:${fix.line}`)}  ` +
+            chalk.dim(`could not apply (pattern not found on line)`),
+          )
+        }
+      }
+
+      console.log('')
+      if (failed > 0) {
+        console.log(chalk.yellow(`Applied ${applied}, skipped ${failed} (review manually)`))
+      } else {
+        console.log(chalk.green(`✓ Applied ${applied} fix${applied !== 1 ? 'es' : ''}`))
+      }
+      console.log('')
+      process.exit(failed > 0 ? 1 : 0)
+    } catch (e) {
+      process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
+      process.exit(1)
+    }
+  })
+
+// ─── doctor command ───────────────────────────────────────────────────────────
+
+const L1_SCANNERS = new Set([
+  'inlineRegex', 'codeBlockRegex', 'yamlField', 'jsonField',
+  'literalInMd', 'pathReference', 'backtickEntityPresence',
+])
+const L2_SCANNERS = new Set([
+  'vaguenessPattern', 'negativeConstraintDensity', 'contextBudget', 'skillValidity',
+])
+const L3_SCANNERS = new Set(['ruleGlobValidity', 'hookValidity'])
+
+function getLayer(scanner: string): string {
+  if (L1_SCANNERS.has(scanner)) return 'L1'
+  if (L2_SCANNERS.has(scanner)) return 'L2'
+  if (L3_SCANNERS.has(scanner)) return 'L3'
+  return '??'
+}
+
+program
+  .command('doctor')
+  .description('Comprehensive health check of AI context assembly')
+  .option('-c, --config <path>', 'Path to config file', '.ctxharness.yml')
+  .option('-r, --root <dir>', 'Project root directory', '')
+  .action(async (opts: { config: string; root: string }) => {
+    try {
+      const cwd = process.cwd()
+      const configPath = resolve(cwd, opts.config)
+      const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
+
+      if (!existsSync(configPath)) {
+        process.stderr.write(`Error: config file not found: ${configPath}\n`)
+        process.exit(1)
+      }
+
+      const { default: chalk } = await import('chalk')
+
+      const config = loadConfig(configPath)
+      const result = await run(config, root)
+      const { score, grade } = computeScore(result.assertions)
+
+      // Build assertion → scanner map from config
+      const assertionScanner = new Map(config.assertions.map((a) => [a.id, a.scanner]))
+
+      // Categorize by layer
+      const byLayer: Record<string, AssertionResult[]> = { L1: [], L2: [], L3: [], '??': [] }
+      for (const assertion of result.assertions) {
+        const scanner = assertionScanner.get(assertion.id) ?? ''
+        const layer = getLayer(scanner)
+        byLayer[layer]!.push(assertion)
+      }
+
+      const totalFiles = new Set(
+        result.assertions.flatMap((a) => a.results.map((r) => r.file)),
+      ).size
+
+      // Header
+      console.log(chalk.bold('\nContext Assembly Report\n'))
+
+      // Status lines
+      const cfgOk = chalk.green('✓ valid')
+      console.log(`Config       ${cfgOk} (${relative(cwd, configPath)})`)
+      console.log(`Files        ${chalk.green('✓')} ${totalFiles} file${totalFiles !== 1 ? 's' : ''} scanned`)
+      console.log(`Assertions   ${result.assertions.length} defined\n`)
+
+      // Per-layer summary
+      for (const layer of ['L1', 'L2', 'L3'] as const) {
+        const assertions = byLayer[layer] ?? []
+        if (assertions.length === 0) continue
+        const pass = assertions.filter((a) => a.status === 'pass' || a.status === 'skip').length
+        const fail = assertions.filter((a) => a.status === 'fail').length
+        const noMention = assertions.filter((a) => a.status === 'no-mention').length
+        const error = assertions.filter((a) => a.status === 'error').length
+
+        const layerLabel =
+          layer === 'L1' ? 'Doc Drift   ' :
+          layer === 'L2' ? 'Quality     ' : 'Assembly    '
+
+        const parts = [
+          pass > 0 ? chalk.green(`${pass} pass`) : '',
+          fail > 0 ? chalk.red(`${fail} fail`) : '',
+          noMention > 0 ? chalk.yellow(`${noMention} no-mention`) : '',
+          error > 0 ? chalk.red(`${error} error`) : '',
+        ].filter(Boolean).join(' · ')
+
+        console.log(`${layer}  ${layerLabel}  ${parts || chalk.dim('none')}`)
+      }
+
+      // Score
+      const gradeColor =
+        grade === 'S' || grade === 'A' ? 'green'
+          : grade === 'B' ? 'cyan'
+          : grade === 'C' ? 'yellow' : 'red'
+
+      console.log('')
+      console.log(`Score  ${chalk[gradeColor].bold(`${score}/100`)}  ${chalk[gradeColor].bold(grade)}`)
+      console.log('')
+
+      // Issues
+      const failing = result.assertions.filter((a) => a.status === 'fail' || a.status === 'error' || a.status === 'no-mention')
+      if (failing.length > 0) {
+        console.log(chalk.bold('Issues'))
+        for (const assertion of failing) {
+          const scanner = assertionScanner.get(assertion.id) ?? ''
+          const layer = getLayer(scanner)
+          const icon = assertion.status === 'fail' ? chalk.red('✗') : chalk.yellow('–')
+
+          if (assertion.status === 'fail') {
+            const firstFail = assertion.results.find((r) => r.status === 'fail')
+            const where = firstFail ? `${relative(cwd, firstFail.file)}:${firstFail.line}` : ''
+            console.log(
+              `  ${icon} ${chalk.dim(`[${layer}]`)} ${assertion.label}` +
+              (where ? `  ${chalk.dim(where)}` : '') +
+              `  found "${firstFail?.actual}" expected "${firstFail?.expected}"`,
+            )
+          } else if (assertion.status === 'no-mention') {
+            console.log(
+              `  ${icon} ${chalk.dim(`[${layer}]`)} ${assertion.label}  ` +
+              chalk.dim('not mentioned in any scanned file'),
+            )
+          } else {
+            console.log(
+              `  ${icon} ${chalk.dim(`[${layer}]`)} ${assertion.label}  ` +
+              chalk.red(assertion.error ?? 'extractor error'),
+            )
+          }
+        }
+        console.log('')
+      }
+
+      // Recommendations
+      const fixable = collectFixes(result.assertions)
+      const noMentionCount = result.assertions.filter((a) => a.status === 'no-mention').length
+
+      if (fixable.length > 0 || noMentionCount > 0) {
+        console.log(chalk.bold('Recommendations'))
+        if (fixable.length > 0) {
+          console.log(`  → Run ${chalk.cyan('ctxharness fix --apply')} to auto-fix ${fixable.length} drift${fixable.length !== 1 ? 's' : ''}`)
+        }
+        if (noMentionCount > 0) {
+          console.log(`  → ${noMentionCount} assertion${noMentionCount !== 1 ? 's' : ''} have no mention — add them to your AI docs`)
+        }
+        console.log('')
+      }
 
       process.exit(result.totalFail > 0 || result.totalError > 0 ? 1 : 0)
     } catch (e) {

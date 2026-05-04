@@ -134,6 +134,8 @@ Read ground truth from your codebase:
 | `prismaEnum` | Count of values in a named Prisma enum | `path: string`, `enum: string` |
 | `trpcRouter` | Count of router entries in a tRPC root file | `path: string` |
 | `gitStaleness` | Commits since a file was last changed (0 = up-to-date) | `path: string` |
+| `packageEngines` | Node/runtime version from `package.json` `engines` field (strips `>=` operators) | `field?: string` (default `"node"`) |
+| `tsconfigPaths` | Count of path aliases in `tsconfig.json` `compilerOptions.paths` (JSONC-aware) | `path?: string` (default `"tsconfig.json"`) |
 
 Version normalization: `v22` matches `22.14.0` — partial mentions are valid.
 
@@ -162,6 +164,7 @@ Find and validate content in your AI doc files:
 | `ruleGlobValidity` | Claude Code rules file — checks for YAML frontmatter and optional `paths:` field | `requirePaths?: boolean` (default false) |
 | `hookValidity` | Claude Code `settings.json` — validates each hook entry has a non-empty matcher and hooks array | — |
 | `backtickEntityPresence` | Checks that `` `entity` `` appears as inline code in the doc | `entity: string` |
+| `skillValidity` | `.claude/skills/` files — validates YAML frontmatter has `name:` and `description:` | `requireDescription?: boolean` (default `true`) |
 
 `vaguenessPattern` accepts custom patterns via `scannerArgs.patterns` (array of regex strings).
 
@@ -172,10 +175,12 @@ Find and validate content in your AI doc files:
 ## CLI
 
 ```bash
-ctxharness run    # run all assertions, exit 1 on drift
-ctxharness check  # alias for run --format text
-ctxharness score  # run assertions and report a 0-100 health score (A/B/C/D/F)
-ctxharness init   # scaffold .ctxharness.yml
+ctxharness run      # run all assertions, exit 1 on drift
+ctxharness check    # alias for run --format text
+ctxharness score    # run assertions and report a 0-100 health score with grade (S/A/B/C/D/F)
+ctxharness fix      # auto-fix version drift — dry-run by default, --apply writes files
+ctxharness doctor   # comprehensive health check with L1/L2/L3 breakdown and remediation advice
+ctxharness init     # scaffold .ctxharness.yml
 ```
 
 Options:
@@ -185,6 +190,80 @@ Options:
 -f, --format <fmt>     Output format: text | json | gha (default: text)
 -r, --root <dir>       Project root (default: cwd)
 -w, --watch            Re-run on file changes (run command only)
+```
+
+`ctxharness fix` finds every assertion where the actual version differs from expected on a specific line and shows what it would change. Pass `--apply` to write the files:
+
+```
+$ ctxharness fix
+CLAUDE.md:13  prisma-version  7.5 → 7.7.0
+CLAUDE.md:42  next-version    15.2.0 → 15.3.1
+
+Run ctxharness fix --apply to write changes.
+```
+
+`ctxharness doctor` categorizes all issues by layer, shows a per-layer score, and suggests next actions:
+
+```
+ctxharness doctor
+
+L1  Doc Drift           ██████████  100/100
+L2  Instruction Quality ████████░░   80/100
+L3  Context Assembly    ██████░░░░   60/100
+
+Score: 80/100  Grade: B
+
+Issues:
+  L2  no-vague-language   AGENTS.md:14   vague pattern found: "be careful"
+  L3  hook-validity        .claude/settings.json   hook entry has empty matcher
+```
+
+## Plugin API
+
+Register custom extractors and scanners programmatically:
+
+```typescript
+import { definePlugin, loadPlugin } from '@ctxharness/core'
+
+const myPlugin = definePlugin({
+  extractors: [
+    {
+      name: 'myExtractor',
+      fn: (root, args) => {
+        // read ground truth from codebase, return a string
+        return '1.2.3'
+      },
+    },
+  ],
+  scanners: [
+    {
+      name: 'myScanner',
+      fn: (filePath, expectedValue, args) => {
+        // check the file, return ScanResult[]
+        return [{ status: 'pass', line: 0, actual: expectedValue }]
+      },
+    },
+  ],
+})
+
+loadPlugin(myPlugin)
+```
+
+Use `name: myExtractor` and `scanner: myScanner` in your `.ctxharness.yml` like any built-in.
+
+## Stack presets
+
+Ready-to-use config templates for common stacks:
+
+| Preset | Path | Covers |
+|--------|------|--------|
+| T3 (Next.js + Prisma + tRPC) | `templates/presets/t3.yml` | node, next, typescript, prisma, trpc versions + model/router counts |
+| Next.js App Router | `templates/presets/next-app-router.yml` | node, next, typescript, react versions + quality assertions |
+
+Copy a preset as your `.ctxharness.yml` starting point:
+
+```bash
+cp node_modules/ctxharness/templates/presets/t3.yml .ctxharness.yml
 ```
 
 ## CI integration
@@ -199,7 +278,7 @@ GitHub Actions:
     format: gha
 ```
 
-Or copy `templates/ci/github-actions.yml` for a full workflow.
+Or copy `templates/ci/github-actions.yml` for a full workflow. GitLab CI and CircleCI templates are at `templates/ci/gitlab-ci.yml` and `templates/ci/circleci.yml`.
 
 Husky (post-merge, post-checkout): copy from `templates/husky/`.
 

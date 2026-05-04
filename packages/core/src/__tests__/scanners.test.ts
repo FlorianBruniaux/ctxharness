@@ -11,6 +11,9 @@ const RULE_NO_FRONTMATTER = join(FIXTURES, 'rule-no-frontmatter.md')
 const RULE_FRONTMATTER_NO_PATHS = join(FIXTURES, 'rule-frontmatter-no-paths.md')
 const SETTINGS_VALID = join(FIXTURES, 'settings-valid.json')
 const SETTINGS_INVALID = join(FIXTURES, 'settings-invalid-hook.json')
+const SKILL_VALID = join(FIXTURES, 'skill-valid.md')
+const SKILL_NO_FRONTMATTER = join(FIXTURES, 'skill-no-frontmatter.md')
+const SKILL_NO_NAME = join(FIXTURES, 'skill-no-name.md')
 
 describe('normalizeMatch', () => {
   it('passes when doc mentions major only', () => {
@@ -278,5 +281,36 @@ describe('backtickEntityPresence scanner', () => {
 
   it('throws when entity arg is missing', () => {
     expect(() => runScanner('backtickEntityPresence', CLAUDE_MD, '', {})).toThrow()
+  })
+})
+
+describe('skillValidity scanner', () => {
+  it('passes on a skill file with name and description', () => {
+    const results = runScanner('skillValidity', SKILL_VALID, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('fails on a skill file without frontmatter', () => {
+    const results = runScanner('skillValidity', SKILL_NO_FRONTMATTER, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('fails on a skill file with frontmatter but no name: field', () => {
+    const results = runScanner('skillValidity', SKILL_NO_NAME, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('passes when requireDescription is false and only name is present', () => {
+    const results = runScanner('skillValidity', SKILL_NO_NAME, '', { requireDescription: false })
+    // skill-no-name.md has description: but no name: — so this still fails
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('passes with requireDescription: false when only name: is present (valid-skill has both)', () => {
+    const results = runScanner('skillValidity', SKILL_VALID, '', { requireDescription: false })
+    expect(results[0]?.status).toBe('pass')
   })
 })
