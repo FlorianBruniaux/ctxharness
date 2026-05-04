@@ -7,8 +7,15 @@
   "bin": {
     "ctxharness": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@ctxharness/core": "workspace:*",
