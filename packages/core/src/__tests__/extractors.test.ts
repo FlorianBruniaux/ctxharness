@@ -128,3 +128,18 @@ describe('trpcRouter extractor', () => {
     ).toThrow()
   })
 })
+
+describe('gitStaleness extractor', () => {
+  it('returns a numeric string for a tracked file', () => {
+    const result = runExtractor('gitStaleness', FIXTURES, { path: '.nvmrc' })
+    expect(result).toMatch(/^\d+$/)
+  })
+  it('throws if path arg is missing', () => {
+    expect(() => runExtractor('gitStaleness', FIXTURES, {})).toThrow()
+  })
+  it('throws if file not found', () => {
+    expect(() =>
+      runExtractor('gitStaleness', FIXTURES, { path: 'nonexistent-file.txt' })
+    ).toThrow()
+  })
+})

@@ -10,7 +10,7 @@ export type AssertionResult = {
   expected: string | null
   error: string | null
   results: ScanResult[]
-  status: 'pass' | 'fail' | 'error' | 'no-mention'
+  status: 'pass' | 'fail' | 'error' | 'no-mention' | 'skip'
 }
 
 export type RunResult = {
@@ -18,6 +18,7 @@ export type RunResult = {
   totalPass: number
   totalFail: number
   totalError: number
+  totalSkip: number
   durationMs: number
 }
 
@@ -75,20 +76,35 @@ export async function run(config: CtxharnessConfig, root: string): Promise<RunRe
       }
     }
 
+    // Apply allowlist: mark fail results from allowlisted files as 'skip'
+    if (assertion.allowlist && assertion.allowlist.length > 0) {
+      results = results.map((r) => {
+        if (r.status !== 'fail') return r
+        const isAllowlisted = assertion.allowlist!.some(
+          (pattern) => r.file.endsWith(pattern) || r.file.includes(pattern),
+        )
+        return isAllowlisted ? { ...r, status: 'skip' as const } : r
+      })
+    }
+
     // Determine overall status for this assertion:
-    //   - 'fail'       if any result has status === 'fail'
-    //   - 'no-mention' if no result had a non-empty actual (nothing found anywhere)
+    //   - 'fail'       if any (non-allowlisted) result has status === 'fail'
+    //   - 'skip'       if fails existed but all were allowlisted (no real pass either)
+    //   - 'no-mention' if nothing was found anywhere (no matches at all)
     //   - 'pass'       otherwise
     const hasFail = results.some((r) => r.status === 'fail')
+    const hasSkip = results.some((r) => r.status === 'skip')
     const hasMentions = results.some((r) => r.actual !== '' || r.status === 'pass')
 
     let status: AssertionResult['status']
     if (hasFail) {
       status = 'fail'
-    } else if (!hasMentions) {
-      status = 'no-mention'
-    } else {
+    } else if (hasMentions) {
       status = 'pass'
+    } else if (hasSkip) {
+      status = 'skip'
+    } else {
+      status = 'no-mention'
     }
 
     return {
@@ -105,6 +121,7 @@ export async function run(config: CtxharnessConfig, root: string): Promise<RunRe
   const totalPass = assertions.filter((a) => a.status === 'pass').length
   const totalFail = assertions.filter((a) => a.status === 'fail').length
   const totalError = assertions.filter((a) => a.status === 'error').length
+  const totalSkip = assertions.filter((a) => a.status === 'skip').length
 
-  return { assertions, totalPass, totalFail, totalError, durationMs }
+  return { assertions, totalPass, totalFail, totalError, totalSkip, durationMs }
 }

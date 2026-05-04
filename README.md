@@ -104,6 +104,17 @@ assertions:
     scanner: negativeConstraintDensity
     scannerArgs:
       minRatio: 2.0
+
+  # allowlist: skip known-intentional mismatches in legacy files
+  - id: next-version-strict
+    extractor: packageJson
+    extractorArgs:
+      package: next
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Next\.js\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+    allowlist:
+      - CHANGELOG.md
 ```
 
 ## Extractors
@@ -122,6 +133,7 @@ Read ground truth from your codebase:
 | `prismaModel` | Count of `model X {}` blocks in a Prisma schema | `path: string` |
 | `prismaEnum` | Count of values in a named Prisma enum | `path: string`, `enum: string` |
 | `trpcRouter` | Count of router entries in a tRPC root file | `path: string` |
+| `gitStaleness` | Commits since a file was last changed (0 = up-to-date) | `path: string` |
 
 Version normalization: `v22` matches `22.14.0` — partial mentions are valid.
 
@@ -148,6 +160,8 @@ Find and validate content in your AI doc files:
 | `negativeConstraintDensity` | Positive/negative instruction ratio below threshold | `minRatio?: number` (default 1.0) |
 | `contextBudget` | File token footprint — fails if estimated tokens exceed threshold | `maxTokens?: number` (default 3000), `followImports?: boolean` (follows `@file.md` chains, depth 3) |
 | `ruleGlobValidity` | Claude Code rules file — checks for YAML frontmatter and optional `paths:` field | `requirePaths?: boolean` (default false) |
+| `hookValidity` | Claude Code `settings.json` — validates each hook entry has a non-empty matcher and hooks array | — |
+| `backtickEntityPresence` | Checks that `` `entity` `` appears as inline code in the doc | `entity: string` |
 
 `vaguenessPattern` accepts custom patterns via `scannerArgs.patterns` (array of regex strings).
 
@@ -160,6 +174,7 @@ Find and validate content in your AI doc files:
 ```bash
 ctxharness run    # run all assertions, exit 1 on drift
 ctxharness check  # alias for run --format text
+ctxharness score  # run assertions and report a 0-100 health score (A/B/C/D/F)
 ctxharness init   # scaffold .ctxharness.yml
 ```
 
@@ -169,6 +184,7 @@ Options:
 -c, --config <path>    Config file path (default: .ctxharness.yml)
 -f, --format <fmt>     Output format: text | json | gha (default: text)
 -r, --root <dir>       Project root (default: cwd)
+-w, --watch            Re-run on file changes (run command only)
 ```
 
 ## CI integration
@@ -195,7 +211,7 @@ ctxharness covers three layers of context engineering testing:
 |-------|------|-------|
 | **L1 Doc Drift** | Facts in AI docs vs code reality | v0.1 |
 | **L2 Instruction Quality** | Vague language, positive/negative ratio, multi-file coherence, token budget | v0.1 (quality) · v0.3 (coherence) |
-| **L3 Context Assembly** | Hook validation, skill loading, MCP routing | v0.4 |
+| **L3 Context Assembly** | Hook validation, skill loading, MCP routing | v0.1 (`hookValidity`) · v0.4 (full) |
 
 L4 (agent behavior eval) is out of scope — use [Promptfoo](https://promptfoo.dev) or [Braintrust](https://braintrust.dev) for that.
 

@@ -19,9 +19,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 - `prismaModel` extractor — counts `model X {}` blocks in a Prisma schema file; args: `path`
 - `prismaEnum` extractor — counts values in a named Prisma enum block; args: `path`, `enum`
 - `trpcRouter` extractor — counts registered router entries in a tRPC root file; args: `path`
+- `gitStaleness` extractor — counts commits made since a file was last changed; args: `path`; "0" means up-to-date; requires a git repository
+- `hookValidity` scanner — validates Claude Code `settings.json` hook entries (matcher non-empty, hooks array non-empty, command present); L3 context assembly
+- `backtickEntityPresence` scanner — checks that a named entity appears as `` `entity` `` (inline code) in the doc; args: `entity`
+- `allowlist` field on assertions — list of file path patterns to skip from fail results (marks them `skip`); useful to suppress known-intentional gaps in legacy files (e.g. `CHANGELOG.md`)
+- `ctxharness score` CLI command — runs all assertions and reports a 0–100 health score with grade (S/A/B/C/D/F); `pass` and `skip` earn full weight, `fail`/`error`/`no-mention` score 0
+- `--watch` / `-w` flag on `ctxharness run` — re-runs assertions on file changes using `fs.watch` with `recursive: true`; 300ms debounce
+- `skip` status in `ScanResult` and `AssertionResult` — allowlisted failures render as `~ N skipped` in the text reporter
+- `totalSkip` field in `RunResult`
 - 3 new rule fixtures: `rule-with-paths.md`, `rule-no-frontmatter.md`, `rule-frontmatter-no-paths.md`
-- 5 new test fixtures: `trpc-root.ts`, `claude-with-imports.md`, `imported-rule.md`, plus model + enum blocks in `schema.prisma`
-- 22 new vitest tests (62 total)
+- 7 new test fixtures: `trpc-root.ts`, `claude-with-imports.md`, `imported-rule.md`, plus model + enum blocks in `schema.prisma`, `settings-valid.json`, `settings-invalid-hook.json`
+- 31 new vitest tests (71 total)
 - `.claude/skills/eval-rules/` — interactive audit of `.claude/rules/` glob patterns and relevance
 - `.claude/skills/eval-skills/` — scored quality audit of all skills in `.claude/skills/`
 - `.claude/skills/token-audit/` — context token overhead measurement with prioritized action plan

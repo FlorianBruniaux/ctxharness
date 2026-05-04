@@ -10,7 +10,7 @@ export type ScanResult = {
   line: number     // 1-indexed (0 if no position available)
   actual: string   // what was found in the doc
   expected: string // what the extractor said
-  status: 'pass' | 'fail'
+  status: 'pass' | 'fail' | 'skip'
 }
 
 export type ScannerFn = (
@@ -595,6 +595,154 @@ function ruleGlobValidity(
   ]
 }
 
+// ─── 11. hookValidity ────────────────────────────────────────────────────────
+
+/**
+ * Validates Claude Code settings.json hook entries.
+ * Each hook group entry must have a non-empty `matcher` string and a non-empty `hooks` array.
+ * Each hook item in the array must have `type` and `command` fields.
+ *
+ * Designed to run over `.claude/settings.json`.
+ * Args: none
+ * Returns one fail per invalid entry, or one pass result if all valid / no hooks defined.
+ */
+function hookValidity(
+  filePath: string,
+  _expected: string,
+  _args: Record<string, unknown>,
+): ScanResult[] {
+  const content = readFileSync(filePath, 'utf-8')
+
+  let settings: unknown
+  try {
+    settings = JSON.parse(content)
+  } catch {
+    return [{ file: filePath, line: 0, actual: 'invalid JSON', expected: 'valid JSON', status: 'fail' }]
+  }
+
+  const hooks = (settings as Record<string, unknown>)['hooks']
+  if (hooks === undefined || hooks === null || typeof hooks !== 'object') {
+    return [{ file: filePath, line: 0, actual: 'no hooks', expected: 'valid hooks', status: 'pass' }]
+  }
+
+  const results: ScanResult[] = []
+
+  for (const [eventType, entries] of Object.entries(hooks as Record<string, unknown>)) {
+    if (!Array.isArray(entries)) continue
+
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      if (typeof entry !== 'object' || entry === null) continue
+
+      const e = entry as Record<string, unknown>
+      const matcher = e['matcher']
+      const cmds = e['hooks']
+
+      if (typeof matcher !== 'string' || matcher.trim().length === 0) {
+        results.push({
+          file: filePath,
+          line: 0,
+          actual: `${eventType}[${i}].matcher is empty or missing`,
+          expected: 'non-empty matcher string',
+          status: 'fail',
+        })
+      }
+
+      if (!Array.isArray(cmds) || cmds.length === 0) {
+        results.push({
+          file: filePath,
+          line: 0,
+          actual: `${eventType}[${i}].hooks is empty or missing`,
+          expected: 'non-empty hooks array',
+          status: 'fail',
+        })
+      } else {
+        for (let j = 0; j < cmds.length; j++) {
+          const cmd = cmds[j]
+          if (typeof cmd !== 'object' || cmd === null) continue
+          const c = cmd as Record<string, unknown>
+          if (typeof c['type'] !== 'string' || c['type'].length === 0) {
+            results.push({
+              file: filePath,
+              line: 0,
+              actual: `${eventType}[${i}].hooks[${j}].type is missing`,
+              expected: 'hook type string',
+              status: 'fail',
+            })
+          }
+          if (c['type'] === 'command' && (typeof c['command'] !== 'string' || (c['command'] as string).length === 0)) {
+            results.push({
+              file: filePath,
+              line: 0,
+              actual: `${eventType}[${i}].hooks[${j}].command is empty or missing`,
+              expected: 'non-empty command string',
+              status: 'fail',
+            })
+          }
+        }
+      }
+    }
+  }
+
+  if (results.length === 0) {
+    const hookCount = Object.keys(hooks as Record<string, unknown>).length
+    results.push({
+      file: filePath,
+      line: 0,
+      actual: `${hookCount} hook event type(s) valid`,
+      expected: 'valid hooks',
+      status: 'pass',
+    })
+  }
+
+  return results
+}
+
+// ─── 12. backtickEntityPresence ──────────────────────────────────────────────
+
+/**
+ * Checks that a named entity appears as an inline code token (`entity`) in the doc.
+ * Useful for verifying that function names, model names, or config keys are referenced
+ * with proper code formatting rather than as plain text.
+ *
+ * Args: { entity: string }
+ * Returns one result.
+ */
+function backtickEntityPresence(
+  filePath: string,
+  _expected: string,
+  args: Record<string, unknown>,
+): ScanResult[] {
+  const entity = args['entity']
+  if (typeof entity !== 'string' || entity.length === 0) {
+    throw new Error('backtickEntityPresence scanner requires args.entity (string)')
+  }
+
+  const target = `\`${entity}\``
+  const lines = readLines(filePath)
+  let firstLine = 0
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line !== undefined && line.includes(target)) {
+      firstLine = i + 1
+      break
+    }
+  }
+
+  const found = firstLine > 0
+
+  return [
+    {
+      file: filePath,
+      line: firstLine,
+      actual: found ? target : '',
+      expected: target,
+      status: found ? 'pass' : 'fail',
+    },
+  ]
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 const SCANNERS: Record<ScannerName, ScannerFn> = {
@@ -608,6 +756,8 @@ const SCANNERS: Record<ScannerName, ScannerFn> = {
   negativeConstraintDensity,
   contextBudget,
   ruleGlobValidity,
+  hookValidity,
+  backtickEntityPresence,
 }
 
 export function runScanner(

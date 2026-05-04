@@ -1,4 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import type { ExtractorName } from '../config.js'
 
@@ -280,6 +281,43 @@ function trpcRouter(root: string, args: ExtractorArgs): ExtractorResult {
   return matches === null ? '0' : String(matches.length)
 }
 
+/**
+ * gitStaleness — counts how many commits have been made since a file was last changed
+ * Args: { path: string }  — relative path to the file
+ * Returns: commit count as string (e.g. "5" means 5 commits since last touch, "0" means up-to-date)
+ * Useful to surface context files that haven't been updated while the codebase evolved.
+ */
+function gitStaleness(root: string, args: ExtractorArgs): ExtractorResult {
+  const filePath = args['path']
+  if (typeof filePath !== 'string' || filePath.length === 0) {
+    throw new Error('gitStaleness extractor requires args.path (string)')
+  }
+
+  const fullPath = resolve(root, filePath)
+  if (!existsSync(fullPath)) {
+    throw new Error(`File not found: ${fullPath}`)
+  }
+
+  // Get the hash of the last commit that touched this file
+  const lastCommit = execFileSync(
+    'git',
+    ['log', '-1', '--format=%H', '--', filePath],
+    { cwd: root, encoding: 'utf-8' },
+  ).trim()
+
+  // File exists but has never been committed (untracked or ignored)
+  if (lastCommit.length === 0) return '0'
+
+  // Count commits reachable from HEAD but not from lastCommit (commits after last touch)
+  const count = execFileSync(
+    'git',
+    ['rev-list', '--count', 'HEAD', `^${lastCommit}`],
+    { cwd: root, encoding: 'utf-8' },
+  ).trim()
+
+  return count.length > 0 ? count : '0'
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 const EXTRACTORS: Record<ExtractorName, ExtractorFn> = {
@@ -293,6 +331,7 @@ const EXTRACTORS: Record<ExtractorName, ExtractorFn> = {
   prismaModel,
   prismaEnum,
   trpcRouter,
+  gitStaleness,
 }
 
 export function runExtractor(name: ExtractorName, root: string, args: ExtractorArgs): string {

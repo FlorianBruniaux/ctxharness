@@ -14,6 +14,7 @@ const ExtractorNameSchema = z.enum([
   'prismaModel',
   'prismaEnum',
   'trpcRouter',
+  'gitStaleness',
 ])
 
 // Scanner schemas
@@ -28,6 +29,8 @@ const ScannerNameSchema = z.enum([
   'negativeConstraintDensity',
   'contextBudget',
   'ruleGlobValidity',
+  'hookValidity',
+  'backtickEntityPresence',
 ])
 
 // One assertion
@@ -38,6 +41,7 @@ const AssertionSchema = z.object({
   extractorArgs: z.record(z.unknown()).optional(),
   scanner: ScannerNameSchema,
   scannerArgs: z.record(z.unknown()).default({}),
+  allowlist: z.array(z.string()).optional(),
 })
 
 // Files config

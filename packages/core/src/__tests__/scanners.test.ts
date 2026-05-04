@@ -9,6 +9,8 @@ const VAGUE_DOC = join(FIXTURES, 'vague-doc.md')
 const RULE_WITH_PATHS = join(FIXTURES, 'rule-with-paths.md')
 const RULE_NO_FRONTMATTER = join(FIXTURES, 'rule-no-frontmatter.md')
 const RULE_FRONTMATTER_NO_PATHS = join(FIXTURES, 'rule-frontmatter-no-paths.md')
+const SETTINGS_VALID = join(FIXTURES, 'settings-valid.json')
+const SETTINGS_INVALID = join(FIXTURES, 'settings-invalid-hook.json')
 
 describe('normalizeMatch', () => {
   it('passes when doc mentions major only', () => {
@@ -239,5 +241,42 @@ describe('contextBudget scanner — followImports', () => {
       followImports: true,
     })
     expect(results[0]?.status).toBe('fail')
+  })
+})
+
+describe('hookValidity scanner', () => {
+  it('passes on valid settings.json with well-formed hooks', () => {
+    const results = runScanner('hookValidity', SETTINGS_VALID, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('fails when hook entry has empty matcher and empty hooks array', () => {
+    const results = runScanner('hookValidity', SETTINGS_INVALID, '', {})
+    expect(results.some((r) => r.status === 'fail')).toBe(true)
+  })
+
+  it('passes when settings.json has no hooks field', () => {
+    const results = runScanner('hookValidity', join(FIXTURES, 'package.json'), '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+})
+
+describe('backtickEntityPresence scanner', () => {
+  it('passes when entity appears as `entity` in file', () => {
+    const results = runScanner('backtickEntityPresence', CLAUDE_MD, '', { entity: 'User' })
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('fails when entity is absent', () => {
+    const results = runScanner('backtickEntityPresence', CLAUDE_MD, '', { entity: 'NonExistentEntity' })
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('throws when entity arg is missing', () => {
+    expect(() => runScanner('backtickEntityPresence', CLAUDE_MD, '', {})).toThrow()
   })
 })

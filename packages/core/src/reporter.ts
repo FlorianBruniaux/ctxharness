@@ -44,7 +44,7 @@ const RULE = '─'.repeat(72)
 // ─── Text reporter ────────────────────────────────────────────────────────────
 
 function reportText(result: RunResult): void {
-  const { assertions, totalPass, totalError, durationMs } = result
+  const { assertions, totalPass, totalSkip, totalError, durationMs } = result
 
   const totalFiles = new Set(
     assertions.flatMap((a) => a.results.map((r) => r.file)),
@@ -75,6 +75,11 @@ function reportText(result: RunResult): void {
       case 'fail': {
         const failCount = results.filter((r) => r.status === 'fail').length
         statusStr = c('red', `✗ ${failCount} mismatch${failCount !== 1 ? 'es' : ''}`)
+        break
+      }
+      case 'skip': {
+        const skipCount = results.filter((r) => r.status === 'skip').length
+        statusStr = c('dim', `~ ${skipCount} skipped`)
         break
       }
       case 'no-mention':
@@ -138,6 +143,11 @@ function reportText(result: RunResult): void {
       console.log(c('red', `  ${assertion.label}: ${assertion.error ?? 'unknown error'}`))
     }
     console.log(c('dim', RULE))
+  } else if (totalSkip > 0) {
+    console.log(
+      c('green', `✓ ${totalPass} pass`) +
+      c('dim', ` · ${totalSkip} skipped (allowlisted)`),
+    )
   } else {
     console.log(c('green', `✓ All ${totalPass} assertion${totalPass !== 1 ? 's' : ''} passed`))
   }

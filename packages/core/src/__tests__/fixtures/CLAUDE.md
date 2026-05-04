@@ -10,7 +10,7 @@
 
 ## Database
 
-Using Prisma v6.2.1 for ORM. The Role enum has 3 values.
+Using Prisma v6.2.1 for ORM. The Role enum has 3 values. The `User` model is the primary entity.
 
 ## Counts
 

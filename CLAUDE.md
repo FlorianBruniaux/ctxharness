@@ -58,6 +58,17 @@ pnpm fmt             # prettier --write
 3. Add to the `SCANNERS` registry
 4. Add fixture + test in `__tests__/scanners.test.ts`
 
+## What NOT to Add
+
+Boundaries that keep ctxharness focused and safe:
+
+- **Never add a scanner that has write side-effects**: Scanners are read-only by contract. A scanner that modifies files, sends network requests, or executes code is a security violation.
+- **Never add async I/O in scanner `collect()` methods**: Scanners run synchronously. All file reads use `std::fs`. Async scanners break the sequential collection contract.
+- **Never add a scanner that walks outside `root_path`**: Every scanner must respect the `root_path` boundary passed at construction. Traversal outside it is a path traversal vulnerability.
+- **Never add a second config format**: Configuration is TOML only (`ctxharness.toml`). No JSON, no YAML, no env-var-only config.
+- **Never add a scanner dependency on another scanner's output**: Scanners are independent. Inter-scanner dependencies require a pipeline rewrite.
+- **Never output binary content in the harness bundle**: The bundle is UTF-8 text only. Scanners must skip binary files or emit a placeholder line.
+
 ## Testing
 
 Fixtures live in `packages/core/src/__tests__/fixtures/`. No mocking — tests hit real files.
