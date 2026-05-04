@@ -20,6 +20,7 @@
     "@types/node": "^22.0.0"
   },
   "dependencies": {
+    "fast-glob": "^3.3.3",
     "js-yaml": "^4.1.0",
     "zod": "^3.24.4"
   }
