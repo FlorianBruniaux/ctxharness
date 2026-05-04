@@ -298,7 +298,7 @@ function jsonField(filePath: string, expected: string, args: Record<string, unkn
  * Args: { literal: string }
  * Returns exactly one ScanResult.
  */
-function literalInMd(filePath: string, expected: string, args: Record<string, unknown>): ScanResult[] {
+function literalInMd(filePath: string, _expected: string, args: Record<string, unknown>): ScanResult[] {
   const literal = args['literal']
   if (typeof literal !== 'string' || literal.length === 0) {
     throw new Error('literalInMd scanner requires args.literal (string)')
@@ -335,7 +335,7 @@ function literalInMd(filePath: string, expected: string, args: Record<string, un
  * Args: { path: string }
  * Returns exactly one ScanResult.
  */
-function pathReference(filePath: string, expected: string, args: Record<string, unknown>): ScanResult[] {
+function pathReference(filePath: string, _expected: string, args: Record<string, unknown>): ScanResult[] {
   const path = args['path']
   if (typeof path !== 'string' || path.length === 0) {
     throw new Error('pathReference scanner requires args.path (string)')
