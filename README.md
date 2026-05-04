@@ -105,7 +105,7 @@ assertions:
     scannerArgs:
       minRatio: 2.0
 
-  # allowlist: skip known-intentional mismatches in legacy files
+  # allowlist: skip known-intentional mismatches in specific files
   - id: next-version-strict
     extractor: packageJson
     extractorArgs:
@@ -115,6 +115,22 @@ assertions:
       pattern: 'Next\.js\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
     allowlist:
       - CHANGELOG.md
+
+  # scopeFiles: restrict a single assertion to a subset of files
+  # (overrides global files.include for this assertion only)
+  - id: instruction-balance
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: negativeConstraintDensity
+    scannerArgs:
+      minRatio: 2.0
+    scopeFiles:
+      include:
+        - 'CLAUDE.md'
+        - 'AGENTS.md'
+      exclude:
+        - '.cursorrules'   # constraint-only file by design — skip ratio check
 ```
 
 ## Extractors
@@ -131,8 +147,10 @@ Read ground truth from your codebase:
 | `countMatches` | Count of pattern matches in a file | `path`, `pattern` |
 | `constant` | Fixed value (placeholder for quality scanners) | `value: string` |
 | `prismaModel` | Count of `model X {}` blocks in a Prisma schema | `path: string` |
+| `prismaModelList` | JSON array of model names from a Prisma schema | `path: string` |
 | `prismaEnum` | Count of values in a named Prisma enum | `path: string`, `enum: string` |
 | `trpcRouter` | Count of router entries in a tRPC root file | `path: string` |
+| `trpcRouterList` | JSON array of router names from a tRPC root file | `path: string` |
 | `gitStaleness` | Commits since a file was last changed (0 = up-to-date) | `path: string` |
 | `packageEngines` | Node/runtime version from `package.json` `engines` field (strips `>=` operators) | `field?: string` (default `"node"`) |
 | `tsconfigPaths` | Count of path aliases in `tsconfig.json` `compilerOptions.paths` (JSONC-aware) | `path?: string` (default `"tsconfig.json"`) |
@@ -162,25 +180,58 @@ Find and validate content in your AI doc files:
 | `negativeConstraintDensity` | Positive/negative instruction ratio below threshold | `minRatio?: number` (default 1.0) |
 | `contextBudget` | File token footprint — fails if estimated tokens exceed threshold | `maxTokens?: number` (default 3000), `followImports?: boolean` (follows `@file.md` chains, depth 3) |
 | `ruleGlobValidity` | Claude Code rules file — checks for YAML frontmatter and optional `paths:` field | `requirePaths?: boolean` (default false) |
-| `hookValidity` | Claude Code `settings.json` — validates each hook entry has a non-empty matcher and hooks array | — |
+| `hookValidity` | **Standalone.** Resolves `.claude/settings.json` from project root and validates each hook entry | — |
 | `backtickEntityPresence` | Checks that `` `entity` `` appears as inline code in the doc | `entity: string` |
-| `skillValidity` | `.claude/skills/` files — validates YAML frontmatter has `name:` and `description:` | `requireDescription?: boolean` (default `true`) |
+| `skillValidity` | **Standalone.** Globs `.claude/skills/**/*.md` from project root — validates YAML frontmatter has `name:` and `description:` | `requireDescription?: boolean` (default `true`) |
+| `freshnessScore` | **Standalone.** Interprets commit count from `gitStaleness` — returns pass/warn/fail based on thresholds | `warnAfter?: number` (default 30), `failAfter?: number` (default 100) |
+| `coverageRatio` | Checks what fraction of a JSON array (from `prismaModelList`/`trpcRouterList`) appears in the doc | `minRatio?: number` (default 0.8), `valueAllowlist?: string[]` |
+
+**Standalone scanners** (`hookValidity`, `skillValidity`, `freshnessScore`) bypass `files.include` and resolve their own targets from the project root. You do not add their paths to `files.include` — they run once regardless of how many files are in scope.
 
 `vaguenessPattern` accepts custom patterns via `scannerArgs.patterns` (array of regex strings).
 
-`contextBudget` estimates tokens as `chars ÷ 4`. Designed to run over `.claude/rules/**/*.md` or `CLAUDE.md` to catch bloated always-on context files. With `followImports: true`, it resolves `@file.md` references recursively (depth 3) and includes their sizes — useful when your `CLAUDE.md` uses `@-imports` to compose context.
+`contextBudget` estimates tokens as `chars ÷ 4`. Designed to run over `.claude/rules/**/*.md` or `CLAUDE.md` to catch bloated always-on context files. With `followImports: true`, it resolves `@file.md` references recursively (depth 3) and includes their sizes.
 
 `ruleGlobValidity` is designed to run over `.claude/rules/**/*.md`. By default it fails if a rules file has no YAML frontmatter (meaning it loads at every session with no scoping). Set `requirePaths: true` to also fail if the frontmatter lacks a `paths:` field.
+
+`freshnessScore` works with `gitStaleness` extractor. `gitStaleness` returns the commit count since the file was last changed; `freshnessScore` compares it to your thresholds:
+
+```yaml
+- id: claude-md-freshness
+  extractor: gitStaleness
+  extractorArgs:
+    path: CLAUDE.md
+  scanner: freshnessScore
+  scannerArgs:
+    warnAfter: 20   # ⚠ warn if >20 commits since last edit
+    failAfter: 50   # ✗ fail if >50 commits
+```
+
+`coverageRatio` checks that a fraction of your actual entities (models, routers…) are mentioned in the docs — useful when you can't document everything but want to enforce a minimum:
+
+```yaml
+- id: prisma-model-coverage
+  extractor: prismaModelList
+  extractorArgs:
+    path: src/server/db/prisma/schema.prisma
+  scanner: coverageRatio
+  scannerArgs:
+    minRatio: 0.5          # at least 50% of models mentioned
+  valueAllowlist:
+    - MigrationVersion     # internal model, not required in CLAUDE.md
+```
 
 ## CLI
 
 ```bash
-ctxharness run      # run all assertions, exit 1 on drift
-ctxharness check    # alias for run --format text
-ctxharness score    # run assertions and report a 0-100 health score with grade (S/A/B/C/D/F)
-ctxharness fix      # auto-fix version drift — dry-run by default, --apply writes files
-ctxharness doctor   # comprehensive health check with L1/L2/L3 breakdown and remediation advice
-ctxharness init     # scaffold .ctxharness.yml
+ctxharness run       # run all assertions, exit 1 on drift
+ctxharness check     # alias for run --format text
+ctxharness score     # run assertions and report a 0-100 health score with grade (S/A/B/C/D/F)
+ctxharness snapshot  # save a quality snapshot to .ctxharness/snapshots/
+ctxharness diff      # compare against latest snapshot — exit 1 on score regression
+ctxharness fix       # auto-fix version drift — dry-run by default, --apply writes files
+ctxharness doctor    # comprehensive health check with L1/L2/L3 breakdown and remediation advice
+ctxharness init      # scaffold .ctxharness.yml
 ```
 
 Options:
@@ -200,6 +251,28 @@ CLAUDE.md:13  prisma-version  7.5 → 7.7.0
 CLAUDE.md:42  next-version    15.2.0 → 15.3.1
 
 Run ctxharness fix --apply to write changes.
+```
+
+### Snapshot workflow
+
+Track quality over time and block regressions in CI:
+
+```bash
+# Save baseline after initial setup
+ctxharness snapshot
+
+# In CI: compare against the committed baseline
+ctxharness diff     # exit 1 if score dropped
+```
+
+Snapshots are saved to `.ctxharness/snapshots/` with timestamp. Commit the latest snapshot file to use `diff` in CI.
+
+### warn status
+
+Assertions can return three states: `pass`, `warn`, or `fail`. `warn` is counted as 0.5 in the score — useful for staleness checks where you want early signal without blocking CI:
+
+```
+⚠ 1 warn   — claude-md-freshness: 35 commits since last edit
 ```
 
 `ctxharness doctor` categorizes all issues by layer, shows a per-layer score, and suggests next actions:
