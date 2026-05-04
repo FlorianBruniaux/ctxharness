@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
-import { resolve, join, dirname } from 'node:path'
+import { resolve, join } from 'node:path'
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { loadConfig, run, report } from '@ctxharness/core'
 import type { OutputFormat } from '@ctxharness/core'
