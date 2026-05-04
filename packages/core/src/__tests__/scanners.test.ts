@@ -205,3 +205,39 @@ describe('ruleGlobValidity scanner', () => {
     expect(results[0]?.status).toBe('fail')
   })
 })
+
+describe('contextBudget scanner — followImports', () => {
+  const CLAUDE_WITH_IMPORTS = join(FIXTURES, 'claude-with-imports.md')
+  const IMPORTED_RULE = join(FIXTURES, 'imported-rule.md')
+
+  it('includes imported file size when followImports is true', () => {
+    const { readFileSync } = require('node:fs')
+    const baseChars = readFileSync(CLAUDE_WITH_IMPORTS, 'utf-8').length
+    const importedChars = readFileSync(IMPORTED_RULE, 'utf-8').length
+    const expectedTokens = Math.ceil((baseChars + importedChars) / 4)
+
+    const results = runScanner('contextBudget', CLAUDE_WITH_IMPORTS, '', {
+      maxTokens: 10000,
+      followImports: true,
+    })
+    expect(results[0]?.status).toBe('pass')
+    expect(results[0]?.actual).toContain('incl. imports')
+    expect(results[0]?.actual).toContain(String(expectedTokens))
+  })
+
+  it('does not include imports when followImports is false', () => {
+    const results = runScanner('contextBudget', CLAUDE_WITH_IMPORTS, '', {
+      maxTokens: 10000,
+      followImports: false,
+    })
+    expect(results[0]?.actual).not.toContain('incl. imports')
+  })
+
+  it('fails when total including imports exceeds maxTokens', () => {
+    const results = runScanner('contextBudget', CLAUDE_WITH_IMPORTS, '', {
+      maxTokens: 1,
+      followImports: true,
+    })
+    expect(results[0]?.status).toBe('fail')
+  })
+})

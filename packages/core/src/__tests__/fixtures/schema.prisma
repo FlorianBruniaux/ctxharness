@@ -12,3 +12,13 @@ enum Role {
   ADMIN
   MODERATOR
 }
+
+model User {
+  id   String @id @default(cuid())
+  role Role   @default(USER)
+}
+
+model Post {
+  id    String @id @default(cuid())
+  title String
+}

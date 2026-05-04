@@ -64,7 +64,7 @@ describe('countMatches extractor', () => {
       path: 'schema.prisma',
       pattern: '\\b(USER|ADMIN|MODERATOR)\\b',
     })
-    expect(result).toBe('3')
+    expect(result).toBe('4')
   })
   it('returns "0" for no matches', () => {
     expect(
@@ -82,5 +82,49 @@ describe('constant extractor', () => {
   })
   it('throws if value arg is missing', () => {
     expect(() => runExtractor('constant', FIXTURES, {})).toThrow()
+  })
+})
+
+describe('prismaModel extractor', () => {
+  it('counts model blocks in schema.prisma', () => {
+    expect(runExtractor('prismaModel', FIXTURES, { path: 'schema.prisma' })).toBe('2')
+  })
+  it('throws if path arg is missing', () => {
+    expect(() => runExtractor('prismaModel', FIXTURES, {})).toThrow()
+  })
+  it('throws if file not found', () => {
+    expect(() =>
+      runExtractor('prismaModel', FIXTURES, { path: 'nonexistent-schema.prisma' })
+    ).toThrow()
+  })
+})
+
+describe('prismaEnum extractor', () => {
+  it('counts values in a named enum', () => {
+    expect(runExtractor('prismaEnum', FIXTURES, { path: 'schema.prisma', enum: 'Role' })).toBe('3')
+  })
+  it('throws if enum not found', () => {
+    expect(() =>
+      runExtractor('prismaEnum', FIXTURES, { path: 'schema.prisma', enum: 'NonExistentEnum' })
+    ).toThrow()
+  })
+  it('throws if enum arg is missing', () => {
+    expect(() =>
+      runExtractor('prismaEnum', FIXTURES, { path: 'schema.prisma' })
+    ).toThrow()
+  })
+})
+
+describe('trpcRouter extractor', () => {
+  it('counts router entries in a tRPC root file', () => {
+    expect(runExtractor('trpcRouter', FIXTURES, { path: 'trpc-root.ts' })).toBe('3')
+  })
+  it('throws if path arg is missing', () => {
+    expect(() => runExtractor('trpcRouter', FIXTURES, {})).toThrow()
+  })
+  it('throws if file not found', () => {
+    expect(() =>
+      runExtractor('trpcRouter', FIXTURES, { path: 'nonexistent-root.ts' })
+    ).toThrow()
   })
 })

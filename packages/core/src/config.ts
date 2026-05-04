@@ -11,6 +11,9 @@ const ExtractorNameSchema = z.enum([
   'regexScan',
   'countMatches',
   'constant',
+  'prismaModel',
+  'prismaEnum',
+  'trpcRouter',
 ])
 
 // Scanner schemas

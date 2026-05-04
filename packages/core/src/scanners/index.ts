@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { load } from 'js-yaml'
 import type { ScannerName } from '../config.js'
 
@@ -480,31 +481,58 @@ function negativeConstraintDensity(
 // ─── 9. contextBudget ────────────────────────────────────────────────────────
 
 /**
- * Measures a single file's token footprint and fails if it exceeds a threshold.
+ * Measures a file's token footprint and fails if it exceeds a threshold.
  * Designed to be run over .claude/rules/**\/*.md or CLAUDE.md to catch bloated
  * context files before they degrade agent quality.
- * Args: { maxTokens?: number }  — threshold in tokens (default 3000)
+ *
+ * Args:
+ *   maxTokens?: number    — threshold in tokens (default 3000)
+ *   followImports?: boolean — follow @file.md references and include their sizes
+ *                             (resolves up to depth 3, relative to the scanned file)
  *
  * Token estimate: chars ÷ 4 (conservative average for English/code mix).
  * Returns one result.
  */
+function collectChars(filePath: string, visited: Set<string>, depth: number): number {
+  if (depth <= 0 || visited.has(filePath) || !existsSync(filePath)) return 0
+  visited.add(filePath)
+
+  const content = readFileSync(filePath, 'utf-8')
+  let total = content.length
+
+  const dir = dirname(filePath)
+  const importPattern = /@([\w./\-]+\.md)/g
+  let match: RegExpExecArray | null
+  while ((match = importPattern.exec(content)) !== null) {
+    const imported = resolve(dir, match[1]!)
+    total += collectChars(imported, visited, depth - 1)
+  }
+
+  return total
+}
+
 function contextBudget(
   filePath: string,
   _expected: string,
   args: Record<string, unknown>,
 ): ScanResult[] {
   const maxTokens = typeof args['maxTokens'] === 'number' ? args['maxTokens'] : 3000
-  const content = readFileSync(filePath, 'utf-8')
-  const estimatedTokens = Math.ceil(content.length / 4)
-  const status = estimatedTokens <= maxTokens ? 'pass' : 'fail'
+  const followImports = args['followImports'] === true
+
+  const totalChars = followImports
+    ? collectChars(filePath, new Set(), 3)
+    : readFileSync(filePath, 'utf-8').length
+
+  const estimatedTokens = Math.ceil(totalChars / 4)
+  const suffix = followImports ? ' (incl. imports)' : ''
 
   return [
     {
       file: filePath,
       line: 0,
-      actual: `${estimatedTokens} tokens`,
+      actual: `${estimatedTokens} tokens${suffix}`,
       expected: `≤${maxTokens} tokens`,
-      status,
+      status: estimatedTokens <= maxTokens ? 'pass' : 'fail',
     },
   ]
 }

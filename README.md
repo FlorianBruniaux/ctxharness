@@ -119,6 +119,9 @@ Read ground truth from your codebase:
 | `regexScan` | Capture group from any file | `path`, `pattern`, `group?` |
 | `countMatches` | Count of pattern matches in a file | `path`, `pattern` |
 | `constant` | Fixed value (placeholder for quality scanners) | `value: string` |
+| `prismaModel` | Count of `model X {}` blocks in a Prisma schema | `path: string` |
+| `prismaEnum` | Count of values in a named Prisma enum | `path: string`, `enum: string` |
+| `trpcRouter` | Count of router entries in a tRPC root file | `path: string` |
 
 Version normalization: `v22` matches `22.14.0` — partial mentions are valid.
 
@@ -143,12 +146,12 @@ Find and validate content in your AI doc files:
 |------|----------------|------|
 | `vaguenessPattern` | Vague instructions ("be careful", "as needed", "use your judgment"…) | `patterns?: string[]` |
 | `negativeConstraintDensity` | Positive/negative instruction ratio below threshold | `minRatio?: number` (default 1.0) |
-| `contextBudget` | File token footprint — fails if estimated tokens exceed threshold | `maxTokens?: number` (default 3000) |
+| `contextBudget` | File token footprint — fails if estimated tokens exceed threshold | `maxTokens?: number` (default 3000), `followImports?: boolean` (follows `@file.md` chains, depth 3) |
 | `ruleGlobValidity` | Claude Code rules file — checks for YAML frontmatter and optional `paths:` field | `requirePaths?: boolean` (default false) |
 
 `vaguenessPattern` accepts custom patterns via `scannerArgs.patterns` (array of regex strings).
 
-`contextBudget` estimates tokens as `chars ÷ 4`. Designed to run over `.claude/rules/**/*.md` or `CLAUDE.md` to catch bloated always-on context files.
+`contextBudget` estimates tokens as `chars ÷ 4`. Designed to run over `.claude/rules/**/*.md` or `CLAUDE.md` to catch bloated always-on context files. With `followImports: true`, it resolves `@file.md` references recursively (depth 3) and includes their sizes — useful when your `CLAUDE.md` uses `@-imports` to compose context.
 
 `ruleGlobValidity` is designed to run over `.claude/rules/**/*.md`. By default it fails if a rules file has no YAML frontmatter (meaning it loads at every session with no scoping). Set `requirePaths: true` to also fail if the frontmatter lacks a `paths:` field.
 

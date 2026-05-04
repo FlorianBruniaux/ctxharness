@@ -196,6 +196,90 @@ function constant(_root: string, args: ExtractorArgs): ExtractorResult {
   return value
 }
 
+/**
+ * prismaModel — counts model blocks in a Prisma schema file
+ * Args: { path: string }  — relative path to schema.prisma
+ * Returns: count as string (e.g. "34")
+ */
+function prismaModel(root: string, args: ExtractorArgs): ExtractorResult {
+  const filePath = args['path']
+  if (typeof filePath !== 'string' || filePath.length === 0) {
+    throw new Error('prismaModel extractor requires args.path (string)')
+  }
+
+  const fullPath = resolve(root, filePath)
+  if (!existsSync(fullPath)) {
+    throw new Error(`Prisma schema not found: ${fullPath}`)
+  }
+
+  const content = readFileSync(fullPath, 'utf-8')
+  const matches = content.match(/^model\s+\w+\s*\{/gm)
+  return matches === null ? '0' : String(matches.length)
+}
+
+/**
+ * prismaEnum — counts values in a named Prisma enum block
+ * Args: { path: string, enum: string }
+ * Returns: value count as string (e.g. "7")
+ */
+function prismaEnum(root: string, args: ExtractorArgs): ExtractorResult {
+  const filePath = args['path']
+  const enumName = args['enum']
+
+  if (typeof filePath !== 'string' || filePath.length === 0) {
+    throw new Error('prismaEnum extractor requires args.path (string)')
+  }
+  if (typeof enumName !== 'string' || enumName.length === 0) {
+    throw new Error('prismaEnum extractor requires args.enum (string)')
+  }
+
+  const fullPath = resolve(root, filePath)
+  if (!existsSync(fullPath)) {
+    throw new Error(`Prisma schema not found: ${fullPath}`)
+  }
+
+  const content = readFileSync(fullPath, 'utf-8')
+
+  // Match the enum block: `enum NAME { ... }`
+  const enumRegex = new RegExp(`\\benum\\s+${enumName}\\s*\\{([^}]*)\\}`)
+  const match = enumRegex.exec(content)
+  if (match === null) {
+    throw new Error(`Enum "${enumName}" not found in ${fullPath}`)
+  }
+
+  const body = match[1] ?? ''
+  // Count non-empty, non-comment lines (each is an enum value)
+  const valueLines = body
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('/'))
+
+  return String(valueLines.length)
+}
+
+/**
+ * trpcRouter — counts registered routers in a tRPC root file
+ * Args: { path: string }  — relative path to the root router file (e.g. src/server/api/root.ts)
+ * Detects lines matching `  name: someRouter,` inside createTRPCRouter({...})
+ * Returns: router count as string (e.g. "34")
+ */
+function trpcRouter(root: string, args: ExtractorArgs): ExtractorResult {
+  const filePath = args['path']
+  if (typeof filePath !== 'string' || filePath.length === 0) {
+    throw new Error('trpcRouter extractor requires args.path (string)')
+  }
+
+  const fullPath = resolve(root, filePath)
+  if (!existsSync(fullPath)) {
+    throw new Error(`tRPC root file not found: ${fullPath}`)
+  }
+
+  const content = readFileSync(fullPath, 'utf-8')
+  // Match router property assignments: `  name: someRouter,` or `  name: createTRPCRouter({`
+  const matches = content.match(/^\s+\w+:\s+\w+,?\s*$/gm)
+  return matches === null ? '0' : String(matches.length)
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 const EXTRACTORS: Record<ExtractorName, ExtractorFn> = {
@@ -206,6 +290,9 @@ const EXTRACTORS: Record<ExtractorName, ExtractorFn> = {
   regexScan,
   countMatches,
   constant,
+  prismaModel,
+  prismaEnum,
+  trpcRouter,
 }
 
 export function runExtractor(name: ExtractorName, root: string, args: ExtractorArgs): string {
