@@ -1,5 +1,5 @@
 import { styleText } from 'node:util'
-import type { RunResult, AssertionResult } from './runner.js'
+import type { RunResult } from './runner.js'
 import { relative } from 'node:path'
 
 export type OutputFormat = 'text' | 'json' | 'gha'
@@ -44,7 +44,7 @@ const RULE = '─'.repeat(72)
 // ─── Text reporter ────────────────────────────────────────────────────────────
 
 function reportText(result: RunResult): void {
-  const { assertions, totalPass, totalFail, totalError, durationMs } = result
+  const { assertions, totalPass, totalError, durationMs } = result
 
   const totalFiles = new Set(
     assertions.flatMap((a) => a.results.map((r) => r.file)),
