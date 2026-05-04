@@ -13,7 +13,9 @@ const ExtractorNameSchema = z.enum([
   'constant',
   'prismaModel',
   'prismaEnum',
+  'prismaModelList',
   'trpcRouter',
+  'trpcRouterList',
   'gitStaleness',
   'packageEngines',
   'tsconfigPaths',
@@ -34,6 +36,8 @@ const ScannerNameSchema = z.enum([
   'hookValidity',
   'backtickEntityPresence',
   'skillValidity',
+  'freshnessScore',
+  'coverageRatio',
 ])
 
 // One assertion
@@ -45,12 +49,18 @@ const AssertionSchema = z.object({
   scanner: ScannerNameSchema,
   scannerArgs: z.record(z.unknown()).default({}),
   allowlist: z.array(z.string()).optional(),
+  valueAllowlist: z.array(z.string()).optional(),
+  scopeFiles: z.object({
+    include: z.array(z.string()).optional(),
+    exclude: z.array(z.string()).optional(),
+  }).optional(),
 })
 
 // Files config
 const FilesConfigSchema = z.object({
   include: z.array(z.string()).default(['CLAUDE.md', 'AGENTS.md', '.cursorrules']),
   exclude: z.array(z.string()).default(['node_modules/**']),
+  generatedFrom: z.record(z.string(), z.string()).optional(),
 })
 
 // Full config

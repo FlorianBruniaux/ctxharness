@@ -9,11 +9,9 @@ const VAGUE_DOC = join(FIXTURES, 'vague-doc.md')
 const RULE_WITH_PATHS = join(FIXTURES, 'rule-with-paths.md')
 const RULE_NO_FRONTMATTER = join(FIXTURES, 'rule-no-frontmatter.md')
 const RULE_FRONTMATTER_NO_PATHS = join(FIXTURES, 'rule-frontmatter-no-paths.md')
-const SETTINGS_VALID = join(FIXTURES, 'settings-valid.json')
-const SETTINGS_INVALID = join(FIXTURES, 'settings-invalid-hook.json')
-const SKILL_VALID = join(FIXTURES, 'skill-valid.md')
-const SKILL_NO_FRONTMATTER = join(FIXTURES, 'skill-no-frontmatter.md')
-const SKILL_NO_NAME = join(FIXTURES, 'skill-no-name.md')
+// Standalone scanner fixture roots (.claude/settings.json + .claude/skills/ live here)
+const ROOT_VALID = join(FIXTURES, 'root-valid')
+const ROOT_INVALID_HOOKS = join(FIXTURES, 'root-invalid-hooks')
 
 describe('normalizeMatch', () => {
   it('passes when doc mentions major only', () => {
@@ -247,22 +245,23 @@ describe('contextBudget scanner — followImports', () => {
   })
 })
 
-describe('hookValidity scanner', () => {
-  it('passes on valid settings.json with well-formed hooks', () => {
-    const results = runScanner('hookValidity', SETTINGS_VALID, '', {})
+describe('hookValidity scanner (standalone — receives root)', () => {
+  it('passes when root has a valid .claude/settings.json', () => {
+    const results = runScanner('hookValidity', ROOT_VALID, '', {})
     expect(results).toHaveLength(1)
     expect(results[0]?.status).toBe('pass')
   })
 
-  it('fails when hook entry has empty matcher and empty hooks array', () => {
-    const results = runScanner('hookValidity', SETTINGS_INVALID, '', {})
+  it('fails when .claude/settings.json has malformed hook entries', () => {
+    const results = runScanner('hookValidity', ROOT_INVALID_HOOKS, '', {})
     expect(results.some((r) => r.status === 'fail')).toBe(true)
   })
 
-  it('passes when settings.json has no hooks field', () => {
-    const results = runScanner('hookValidity', join(FIXTURES, 'package.json'), '', {})
+  it('returns skip when .claude/settings.json is absent', () => {
+    // FIXTURES root has no .claude/settings.json
+    const results = runScanner('hookValidity', FIXTURES, '', {})
     expect(results).toHaveLength(1)
-    expect(results[0]?.status).toBe('pass')
+    expect(results[0]?.status).toBe('skip')
   })
 })
 
@@ -284,33 +283,113 @@ describe('backtickEntityPresence scanner', () => {
   })
 })
 
-describe('skillValidity scanner', () => {
-  it('passes on a skill file with name and description', () => {
-    const results = runScanner('skillValidity', SKILL_VALID, '', {})
+describe('skillValidity scanner (standalone — receives root)', () => {
+  it('returns one result per skill file — root-valid has 3 skill files', () => {
+    // root-valid/.claude/skills/ has skill-valid.md, skill-no-frontmatter.md, skill-no-name.md
+    const results = runScanner('skillValidity', ROOT_VALID, '', {})
+    expect(results).toHaveLength(3)
+  })
+
+  it('passes on skill-valid.md (has name: and description:)', () => {
+    const results = runScanner('skillValidity', ROOT_VALID, '', {})
+    const valid = results.find((r) => r.file.includes('skill-valid'))
+    expect(valid?.status).toBe('pass')
+  })
+
+  it('fails on skill-no-frontmatter.md', () => {
+    const results = runScanner('skillValidity', ROOT_VALID, '', {})
+    const noFm = results.find((r) => r.file.includes('skill-no-frontmatter'))
+    expect(noFm?.status).toBe('fail')
+  })
+
+  it('fails on skill-no-name.md (missing name:)', () => {
+    const results = runScanner('skillValidity', ROOT_VALID, '', {})
+    const noName = results.find((r) => r.file.includes('skill-no-name'))
+    expect(noName?.status).toBe('fail')
+  })
+
+  it('returns skip when .claude/skills directory does not exist', () => {
+    const results = runScanner('skillValidity', FIXTURES, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('skip')
+  })
+})
+
+describe('freshnessScore scanner', () => {
+  it('passes when commits is 0 (up-to-date)', () => {
+    const results = runScanner('freshnessScore', CLAUDE_MD, '0', {})
     expect(results).toHaveLength(1)
     expect(results[0]?.status).toBe('pass')
   })
 
-  it('fails on a skill file without frontmatter', () => {
-    const results = runScanner('skillValidity', SKILL_NO_FRONTMATTER, '', {})
+  it('passes when commits is at the warnAfter threshold (30)', () => {
+    const results = runScanner('freshnessScore', CLAUDE_MD, '30', {})
     expect(results).toHaveLength(1)
-    expect(results[0]?.status).toBe('fail')
-  })
-
-  it('fails on a skill file with frontmatter but no name: field', () => {
-    const results = runScanner('skillValidity', SKILL_NO_NAME, '', {})
-    expect(results).toHaveLength(1)
-    expect(results[0]?.status).toBe('fail')
-  })
-
-  it('passes when requireDescription is false and only name is present', () => {
-    const results = runScanner('skillValidity', SKILL_NO_NAME, '', { requireDescription: false })
-    // skill-no-name.md has description: but no name: — so this still fails
-    expect(results[0]?.status).toBe('fail')
-  })
-
-  it('passes with requireDescription: false when only name: is present (valid-skill has both)', () => {
-    const results = runScanner('skillValidity', SKILL_VALID, '', { requireDescription: false })
     expect(results[0]?.status).toBe('pass')
+  })
+
+  it('warns when commits is 50 (between warnAfter=30 and failAfter=100)', () => {
+    const results = runScanner('freshnessScore', CLAUDE_MD, '50', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('warn')
+  })
+
+  it('fails when commits is 150 (exceeds failAfter=100)', () => {
+    const results = runScanner('freshnessScore', CLAUDE_MD, '150', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('respects custom warnAfter and failAfter', () => {
+    const resultsWarn = runScanner('freshnessScore', CLAUDE_MD, '5', { warnAfter: 3, failAfter: 10 })
+    expect(resultsWarn[0]?.status).toBe('warn')
+
+    const resultsFail = runScanner('freshnessScore', CLAUDE_MD, '15', { warnAfter: 3, failAfter: 10 })
+    expect(resultsFail[0]?.status).toBe('fail')
+  })
+
+  it('throws on non-numeric expected value', () => {
+    expect(() => runScanner('freshnessScore', CLAUDE_MD, 'not-a-number', {})).toThrow()
+  })
+})
+
+describe('coverageRatio scanner', () => {
+  it('passes when all items are mentioned in the file', () => {
+    // CLAUDE.md mentions "User" and "Post" is not in the file; use only User and Next.js
+    // Use items we know are in CLAUDE.md
+    const results = runScanner('coverageRatio', CLAUDE_MD, '["User","Prisma"]', { minRatio: 1.0 })
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('fails when ratio is below minRatio', () => {
+    // "TOTALLY_ABSENT_XYZ" is definitely not in CLAUDE.md — 0/1 = 0% < 80%
+    const results = runScanner('coverageRatio', CLAUDE_MD, '["TOTALLY_ABSENT_XYZ_123"]', { minRatio: 0.8 })
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('respects valueAllowlist — skips specified items', () => {
+    // With TOTALLY_ABSENT_XYZ skipped, only User remains — which is present → pass
+    const results = runScanner('coverageRatio', CLAUDE_MD, '["User","TOTALLY_ABSENT_XYZ_123"]', {
+      minRatio: 1.0,
+      valueAllowlist: ['TOTALLY_ABSENT_XYZ_123'],
+    })
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+    expect(results[0]?.note).toContain('skipped by valueAllowlist')
+  })
+
+  it('throws on invalid JSON expected value', () => {
+    expect(() => runScanner('coverageRatio', CLAUDE_MD, 'not-json', {})).toThrow()
+  })
+
+  it('throws when expected is not a string array', () => {
+    expect(() => runScanner('coverageRatio', CLAUDE_MD, '{"key":"value"}', {})).toThrow()
+  })
+
+  it('reports actual coverage in actual field', () => {
+    const results = runScanner('coverageRatio', CLAUDE_MD, '["User","Prisma"]', {})
+    expect(results[0]?.actual).toMatch(/\d+\/\d+ \(\d+%\)/)
   })
 })

@@ -171,3 +171,50 @@ describe('tsconfigPaths extractor', () => {
     ).toThrow()
   })
 })
+
+describe('prismaModelList extractor', () => {
+  it('returns a JSON array of model names', () => {
+    const result = runExtractor('prismaModelList', FIXTURES, { path: 'schema.prisma' })
+    const parsed = JSON.parse(result)
+    expect(Array.isArray(parsed)).toBe(true)
+    expect(parsed).toContain('User')
+    expect(parsed).toContain('Post')
+  })
+  it('returns both model names from the fixture schema', () => {
+    const result = runExtractor('prismaModelList', FIXTURES, { path: 'schema.prisma' })
+    const parsed = JSON.parse(result) as string[]
+    expect(parsed).toHaveLength(2)
+  })
+  it('throws if path arg is missing', () => {
+    expect(() => runExtractor('prismaModelList', FIXTURES, {})).toThrow()
+  })
+  it('throws if file not found', () => {
+    expect(() =>
+      runExtractor('prismaModelList', FIXTURES, { path: 'nonexistent-schema.prisma' })
+    ).toThrow()
+  })
+})
+
+describe('trpcRouterList extractor', () => {
+  it('returns a JSON array of router names', () => {
+    const result = runExtractor('trpcRouterList', FIXTURES, { path: 'trpc-root.ts' })
+    const parsed = JSON.parse(result)
+    expect(Array.isArray(parsed)).toBe(true)
+    expect(parsed).toContain('user')
+    expect(parsed).toContain('post')
+    expect(parsed).toContain('auth')
+  })
+  it('returns 3 router names from the fixture', () => {
+    const result = runExtractor('trpcRouterList', FIXTURES, { path: 'trpc-root.ts' })
+    const parsed = JSON.parse(result) as string[]
+    expect(parsed).toHaveLength(3)
+  })
+  it('throws if path arg is missing', () => {
+    expect(() => runExtractor('trpcRouterList', FIXTURES, {})).toThrow()
+  })
+  it('throws if file not found', () => {
+    expect(() =>
+      runExtractor('trpcRouterList', FIXTURES, { path: 'nonexistent-root.ts' })
+    ).toThrow()
+  })
+})

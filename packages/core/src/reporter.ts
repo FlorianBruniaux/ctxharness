@@ -44,7 +44,7 @@ const RULE = '─'.repeat(72)
 // ─── Text reporter ────────────────────────────────────────────────────────────
 
 function reportText(result: RunResult): void {
-  const { assertions, totalPass, totalSkip, totalError, durationMs } = result
+  const { assertions, totalPass, totalWarn, totalSkip, totalError, durationMs } = result
 
   const totalFiles = new Set(
     assertions.flatMap((a) => a.results.map((r) => r.file)),
@@ -80,6 +80,11 @@ function reportText(result: RunResult): void {
       case 'skip': {
         const skipCount = results.filter((r) => r.status === 'skip').length
         statusStr = c('dim', `~ ${skipCount} skipped`)
+        break
+      }
+      case 'warn': {
+        const warnCount = results.filter((r) => r.status === 'warn').length
+        statusStr = c('yellow', `⚠ ${warnCount} warn`)
         break
       }
       case 'no-mention':
@@ -125,6 +130,9 @@ function reportText(result: RunResult): void {
           '  ' + col(r.expected, 10) +
           '  ' + c('red', r.actual === '' ? '(not found)' : r.actual),
         )
+        if (r.note) {
+          console.log(c('dim', '  '.padEnd(25) + r.note))
+        }
       }
     }
     console.log(c('dim', RULE))
@@ -143,6 +151,12 @@ function reportText(result: RunResult): void {
       console.log(c('red', `  ${assertion.label}: ${assertion.error ?? 'unknown error'}`))
     }
     console.log(c('dim', RULE))
+  } else if (totalWarn > 0) {
+    console.log(
+      c('green', `✓ ${totalPass} pass`) +
+      c('yellow', ` · ⚠ ${totalWarn} warn`) +
+      (totalSkip > 0 ? c('dim', ` · ${totalSkip} skipped`) : ''),
+    )
   } else if (totalSkip > 0) {
     console.log(
       c('green', `✓ ${totalPass} pass`) +

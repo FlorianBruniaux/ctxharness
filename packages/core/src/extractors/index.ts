@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, statSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import type { ExtractorName } from '../config.js'
@@ -228,6 +228,34 @@ function prismaModel(root: string, args: ExtractorArgs): ExtractorResult {
 }
 
 /**
+ * prismaModelList — extracts model names from a Prisma schema file
+ * Args: { path: string }  — relative path to schema.prisma
+ * Returns: JSON array string of model names (e.g. '["User","Post"]')
+ */
+function prismaModelList(root: string, args: ExtractorArgs): ExtractorResult {
+  const filePath = args['path']
+  if (typeof filePath !== 'string' || filePath.length === 0) {
+    throw new Error('prismaModelList extractor requires args.path (string)')
+  }
+
+  const fullPath = resolve(root, filePath)
+  if (!existsSync(fullPath)) {
+    throw new Error(`Prisma schema not found: ${fullPath}`)
+  }
+
+  const content = readFileSync(fullPath, 'utf-8')
+  const matches = content.match(/^model\s+(\w+)\s*\{/gm)
+  if (matches === null) return '[]'
+
+  const names = matches.map((m) => {
+    const match = /^model\s+(\w+)/.exec(m)
+    return match?.[1] ?? ''
+  }).filter((n) => n.length > 0)
+
+  return JSON.stringify(names)
+}
+
+/**
  * prismaEnum — counts values in a named Prisma enum block
  * Args: { path: string, enum: string }
  * Returns: value count as string (e.g. "7")
@@ -288,6 +316,40 @@ function trpcRouter(root: string, args: ExtractorArgs): ExtractorResult {
   // Match router property assignments: `  name: someRouter,` or `  name: createTRPCRouter({`
   const matches = content.match(/^\s+\w+:\s+\w+,?\s*$/gm)
   return matches === null ? '0' : String(matches.length)
+}
+
+/**
+ * trpcRouterList — extracts router names from a tRPC root file
+ * Args: { path: string }  — relative path to the root router file (must be a file, not a directory)
+ * Returns: JSON array string of router names (e.g. '["user","post","auth"]')
+ */
+function trpcRouterList(root: string, args: ExtractorArgs): ExtractorResult {
+  const filePath = args['path']
+  if (typeof filePath !== 'string' || filePath.length === 0) {
+    throw new Error('trpcRouterList extractor requires args.path (string)')
+  }
+
+  const fullPath = resolve(root, filePath)
+  if (!existsSync(fullPath)) {
+    throw new Error(`tRPC root file not found: ${fullPath}`)
+  }
+
+  if (statSync(fullPath).isDirectory()) {
+    throw new Error(
+      `trpcRouterList: "${filePath}" is a directory. Point to the root router file that calls createTRPCRouter() (e.g. src/server/api/root.ts)`,
+    )
+  }
+
+  const content = readFileSync(fullPath, 'utf-8')
+  const matches = content.match(/^\s+\w+:\s+\w+,?\s*$/gm)
+  if (matches === null) return '[]'
+
+  const names = matches.map((m) => {
+    const match = /^\s+(\w+):/.exec(m)
+    return match?.[1] ?? ''
+  }).filter((n) => n.length > 0)
+
+  return JSON.stringify(names)
 }
 
 /**
@@ -396,8 +458,10 @@ const EXTRACTORS: Record<string, ExtractorFn> = {
   countMatches,
   constant,
   prismaModel,
+  prismaModelList,
   prismaEnum,
   trpcRouter,
+  trpcRouterList,
   gitStaleness,
   packageEngines,
   tsconfigPaths,

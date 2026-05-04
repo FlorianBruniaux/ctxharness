@@ -10,6 +10,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ### Added
 
+- `warn` status — `ScanResult` and `AssertionResult` now support `'warn'`; `RunResult` gains `totalWarn`; warn earns 50% of score weight in `computeScore`; reporter shows `⚠ N warn` in yellow
+- `note` field on `ScanResult` — optional contextual message shown indented below the mismatch row in text output
+- `freshnessScore` scanner — interprets `gitStaleness` commit count; `pass` if commits <= `warnAfter` (default 30), `warn` if <= `failAfter` (default 100), `fail` otherwise
+- `prismaModelList` extractor — same as `prismaModel` but returns a JSON array of model names instead of a count; args: `path`
+- `trpcRouterList` extractor — same as `trpcRouter` but returns a JSON array of router key names instead of a count; args: `path`
+- `coverageRatio` scanner — checks what fraction of a JSON array (from `prismaModelList`/`trpcRouterList`) appears in the file; args: `minRatio` (default 0.8), `valueAllowlist`
+- `valueAllowlist` field on assertions — merged with `scannerArgs.valueAllowlist` before calling `coverageRatio`; entity names to skip from coverage computation
+- `generatedFrom` field on `files` config — map from file path fragment to source path; files matching are annotated with `generated file — fix in: <source>` note on fail results
+- Generated-file detection in runner — first 5 lines of scanned files are checked for `/generated/i`, `/@generated/`, `/DO NOT EDIT/i`, `/auto-generated/i` markers
+- `ctxharness snapshot` CLI command — runs all assertions and saves result to `.ctxharness/snapshots/{timestamp}.json` with score and grade
+- `ctxharness diff [baseline]` CLI command — compares current run against a saved snapshot; shows score delta, grade change, and per-assertion status changes; exits 1 on score regression
+
 - `constant` extractor — returns a fixed value; placeholder for quality scanners that define their threshold via `scannerArgs`
 - `vaguenessPattern` scanner — detects vague AI instruction language ("be careful", "as needed", "use your judgment", etc.), extensible via `scannerArgs.patterns`
 - `negativeConstraintDensity` scanner — checks positive:negative instruction ratio meets a minimum threshold (`scannerArgs.minRatio`, default 1.0)

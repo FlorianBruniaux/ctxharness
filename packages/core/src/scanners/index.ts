@@ -1,5 +1,5 @@
-import { readFileSync, existsSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { dirname, resolve, join } from 'node:path'
 import { load } from 'js-yaml'
 import type { ScannerName } from '../config.js'
 
@@ -10,7 +10,8 @@ export type ScanResult = {
   line: number     // 1-indexed (0 if no position available)
   actual: string   // what was found in the doc
   expected: string // what the extractor said
-  status: 'pass' | 'fail' | 'skip'
+  status: 'pass' | 'fail' | 'skip' | 'warn'
+  note?: string
 }
 
 export type ScannerFn = (
@@ -598,31 +599,34 @@ function ruleGlobValidity(
 // ─── 11. hookValidity ────────────────────────────────────────────────────────
 
 /**
- * Validates Claude Code settings.json hook entries.
- * Each hook group entry must have a non-empty `matcher` string and a non-empty `hooks` array.
- * Each hook item in the array must have `type` and `command` fields.
- *
- * Designed to run over `.claude/settings.json`.
- * Args: none
- * Returns one fail per invalid entry, or one pass result if all valid / no hooks defined.
+ * STANDALONE scanner — receives root (not a file path).
+ * Resolves .claude/settings.json from root and validates its hook entries.
+ * Each hook group entry must have a non-empty `matcher` and a non-empty `hooks` array.
+ * Each hook item must have `type` and `command` fields.
  */
 function hookValidity(
-  filePath: string,
+  root: string,
   _expected: string,
   _args: Record<string, unknown>,
 ): ScanResult[] {
-  const content = readFileSync(filePath, 'utf-8')
+  const settingsPath = resolve(root, '.claude', 'settings.json')
+
+  if (!existsSync(settingsPath)) {
+    return [{ file: settingsPath, line: 0, actual: '.claude/settings.json not found', expected: 'valid hooks', status: 'skip' }]
+  }
+
+  const content = readFileSync(settingsPath, 'utf-8')
 
   let settings: unknown
   try {
     settings = JSON.parse(content)
   } catch {
-    return [{ file: filePath, line: 0, actual: 'invalid JSON', expected: 'valid JSON', status: 'fail' }]
+    return [{ file: settingsPath, line: 0, actual: 'invalid JSON', expected: 'valid JSON', status: 'fail' }]
   }
 
   const hooks = (settings as Record<string, unknown>)['hooks']
   if (hooks === undefined || hooks === null || typeof hooks !== 'object') {
-    return [{ file: filePath, line: 0, actual: 'no hooks', expected: 'valid hooks', status: 'pass' }]
+    return [{ file: settingsPath, line: 0, actual: 'no hooks defined', expected: 'valid hooks', status: 'pass' }]
   }
 
   const results: ScanResult[] = []
@@ -640,7 +644,7 @@ function hookValidity(
 
       if (typeof matcher !== 'string' || matcher.trim().length === 0) {
         results.push({
-          file: filePath,
+          file: settingsPath,
           line: 0,
           actual: `${eventType}[${i}].matcher is empty or missing`,
           expected: 'non-empty matcher string',
@@ -650,7 +654,7 @@ function hookValidity(
 
       if (!Array.isArray(cmds) || cmds.length === 0) {
         results.push({
-          file: filePath,
+          file: settingsPath,
           line: 0,
           actual: `${eventType}[${i}].hooks is empty or missing`,
           expected: 'non-empty hooks array',
@@ -663,7 +667,7 @@ function hookValidity(
           const c = cmd as Record<string, unknown>
           if (typeof c['type'] !== 'string' || c['type'].length === 0) {
             results.push({
-              file: filePath,
+              file: settingsPath,
               line: 0,
               actual: `${eventType}[${i}].hooks[${j}].type is missing`,
               expected: 'hook type string',
@@ -672,7 +676,7 @@ function hookValidity(
           }
           if (c['type'] === 'command' && (typeof c['command'] !== 'string' || (c['command'] as string).length === 0)) {
             results.push({
-              file: filePath,
+              file: settingsPath,
               line: 0,
               actual: `${eventType}[${i}].hooks[${j}].command is empty or missing`,
               expected: 'non-empty command string',
@@ -687,7 +691,7 @@ function hookValidity(
   if (results.length === 0) {
     const hookCount = Object.keys(hooks as Record<string, unknown>).length
     results.push({
-      file: filePath,
+      file: settingsPath,
       line: 0,
       actual: `${hookCount} hook event type(s) valid`,
       expected: 'valid hooks',
@@ -745,71 +749,177 @@ function backtickEntityPresence(
 
 // ─── 13. skillValidity ───────────────────────────────────────────────────────
 
+function findMdFilesRecursive(dir: string): string[] {
+  const results: string[] = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      results.push(...findMdFilesRecursive(fullPath))
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      results.push(fullPath)
+    }
+  }
+  return results
+}
+
+function validateOneSkillFile(
+  filePath: string,
+  requireDescription: boolean,
+): ScanResult {
+  let content: string
+  try {
+    content = readFileSync(filePath, 'utf-8')
+  } catch {
+    return { file: filePath, line: 0, actual: 'unreadable', expected: 'valid skill frontmatter', status: 'fail' }
+  }
+
+  const fmMatch = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content)
+  if (fmMatch === null) {
+    return { file: filePath, line: 0, actual: 'no frontmatter', expected: 'YAML frontmatter with name: field', status: 'fail' }
+  }
+
+  const fm = fmMatch[1] ?? ''
+  if (!/^name:/m.test(fm)) {
+    return { file: filePath, line: 0, actual: 'frontmatter missing name:', expected: 'name: field required', status: 'fail' }
+  }
+  if (requireDescription && !/^description:/m.test(fm)) {
+    return { file: filePath, line: 0, actual: 'frontmatter missing description:', expected: 'description: field required', status: 'fail' }
+  }
+
+  return { file: filePath, line: 0, actual: requireDescription ? 'has name: and description:' : 'has name:', expected: 'valid skill frontmatter', status: 'pass' }
+}
+
 /**
- * Validates that a Claude Code skill file has YAML frontmatter with `name:` (required)
- * and `description:` (required by default, opt-out via requireDescription: false).
- *
- * A skill file without proper frontmatter loads but won't be selectable by name in the UI.
- * Designed to run over `.claude/skills/**\/prompt.md`.
- *
+ * STANDALONE scanner — receives root (not a file path).
+ * Globs all .md files under .claude/skills/ from root and validates each one.
  * Args: { requireDescription?: boolean }  — default true
  */
 function skillValidity(
-  filePath: string,
+  root: string,
   _expected: string,
   args: Record<string, unknown>,
 ): ScanResult[] {
   const requireDescription = args['requireDescription'] !== false
+  const skillsDir = resolve(root, '.claude', 'skills')
+
+  if (!existsSync(skillsDir) || !statSync(skillsDir).isDirectory()) {
+    return [{ file: skillsDir, line: 0, actual: 'no .claude/skills directory', expected: 'valid skill frontmatter', status: 'skip' }]
+  }
+
+  const mdFiles = findMdFilesRecursive(skillsDir)
+  if (mdFiles.length === 0) {
+    return [{ file: skillsDir, line: 0, actual: 'no .md files in .claude/skills', expected: 'valid skill frontmatter', status: 'skip' }]
+  }
+
+  return mdFiles.map((f) => validateOneSkillFile(f, requireDescription))
+}
+
+// ─── 14. freshnessScore ──────────────────────────────────────────────────────
+
+/**
+ * STANDALONE scanner — receives root (not a file path).
+ * Interprets the expected value (from gitStaleness extractor) as a commit count.
+ * The source file path is passed via args._sourceFile (injected by runner from extractorArgs.path).
+ * Args:
+ *   warnAfter?: number   — commits after which to warn (default 30)
+ *   failAfter?: number   — commits after which to fail (default 100)
+ *   _sourceFile?: string — injected by runner for display purposes
+ */
+function freshnessScore(
+  root: string,
+  expected: string,
+  args: Record<string, unknown>,
+): ScanResult[] {
+  const warnAfter = typeof args['warnAfter'] === 'number' ? args['warnAfter'] : 30
+  const failAfter = typeof args['failAfter'] === 'number' ? args['failAfter'] : 100
+  const sourceFile = typeof args['_sourceFile'] === 'string' ? args['_sourceFile'] : root
+
+  const commits = parseInt(expected, 10)
+  if (isNaN(commits)) {
+    throw new Error(`freshnessScore: expected must be a numeric commit count string, got "${expected}"`)
+  }
+
+  let status: ScanResult['status']
+  if (commits <= warnAfter) {
+    status = 'pass'
+  } else if (commits <= failAfter) {
+    status = 'warn'
+  } else {
+    status = 'fail'
+  }
+
+  return [
+    {
+      file: sourceFile,
+      line: 0,
+      actual: `${commits} commits since last edit`,
+      expected: `≤${warnAfter} (warn after), ≤${failAfter} (fail after)`,
+      status,
+    },
+  ]
+}
+
+// ─── 15. coverageRatio ───────────────────────────────────────────────────────
+
+/**
+ * Checks what fraction of items in a JSON array (from prismaModelList/trpcRouterList)
+ * appear in the file content.
+ * Args:
+ *   minRatio?: number          — minimum fraction required (default 0.8)
+ *   valueAllowlist?: string[]  — entity names to skip before computing ratio
+ * expected = JSON array string (e.g. '["User","Skill","UserSkill"]')
+ * Returns ONE ScanResult.
+ */
+function coverageRatio(
+  filePath: string,
+  expected: string,
+  args: Record<string, unknown>,
+): ScanResult[] {
+  const minRatio = typeof args['minRatio'] === 'number' ? args['minRatio'] : 0.8
+  const argAllowlist = (args['valueAllowlist'] as string[] | undefined) ?? []
+
+  let items: string[]
+  try {
+    const parsed: unknown = JSON.parse(expected)
+    if (!Array.isArray(parsed) || parsed.some((x) => typeof x !== 'string')) {
+      throw new Error('not a string array')
+    }
+    items = parsed as string[]
+  } catch {
+    throw new Error(`coverageRatio: expected must be a JSON string array, got "${expected}"`)
+  }
+
+  // Filter out allowlisted items
+  const filtered = items.filter((item) => !argAllowlist.includes(item))
+  const skippedCount = items.length - filtered.length
+
   const content = readFileSync(filePath, 'utf-8')
-  const fmMatch = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content)
 
-  if (fmMatch === null) {
-    return [
-      {
-        file: filePath,
-        line: 0,
-        actual: 'no frontmatter',
-        expected: 'YAML frontmatter with name: field',
-        status: 'fail',
-      },
-    ]
+  let mentioned = 0
+  for (const item of filtered) {
+    // Word-boundary match OR substring match
+    const wordBoundaryRe = new RegExp(`\\b${item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`)
+    if (wordBoundaryRe.test(content) || content.includes(item)) {
+      mentioned++
+    }
   }
 
-  const fm = fmMatch[1] ?? ''
-  const hasName = /^name:/m.test(fm)
-  const hasDescription = /^description:/m.test(fm)
+  const total = filtered.length
+  const ratio = total === 0 ? 1 : mentioned / total
+  const percent = Math.round(ratio * 100)
+  const actualStr = `${mentioned}/${total} (${percent}%)`
+  const expectedStr = `≥${Math.round(minRatio * 100)}% coverage`
 
-  if (!hasName) {
-    return [
-      {
-        file: filePath,
-        line: 0,
-        actual: 'frontmatter missing name:',
-        expected: 'name: field required',
-        status: 'fail',
-      },
-    ]
-  }
-
-  if (requireDescription && !hasDescription) {
-    return [
-      {
-        file: filePath,
-        line: 0,
-        actual: 'frontmatter missing description:',
-        expected: 'description: field required',
-        status: 'fail',
-      },
-    ]
-  }
+  const note = skippedCount > 0 ? `${skippedCount} item${skippedCount !== 1 ? 's' : ''} skipped by valueAllowlist` : undefined
 
   return [
     {
       file: filePath,
       line: 0,
-      actual: requireDescription ? 'has name: and description:' : 'has name:',
-      expected: 'valid skill frontmatter',
-      status: 'pass',
+      actual: actualStr,
+      expected: expectedStr,
+      status: ratio >= minRatio ? 'pass' : 'fail',
+      ...(note !== undefined ? { note } : {}),
     },
   ]
 }
@@ -830,13 +940,30 @@ const SCANNERS: Record<string, ScannerFn> = {
   hookValidity,
   backtickEntityPresence,
   skillValidity,
+  freshnessScore,
+  coverageRatio,
 }
 
 /**
- * Register a custom scanner at runtime (plugin API).
+ * Scanners that bypass per-file iteration and run once with project root.
+ * hookValidity and skillValidity resolve their own targets from root.
+ * freshnessScore uses extractor output (expected) directly — root is unused.
  */
-export function registerScanner(name: string, fn: ScannerFn): void {
+export const STANDALONE_SCANNERS: Set<string> = new Set([
+  'hookValidity',
+  'skillValidity',
+  'freshnessScore',
+])
+
+/**
+ * Register a custom scanner at runtime (plugin API).
+ * Pass { standalone: true } for scanners that should run once with root, not per file.
+ */
+export function registerScanner(name: string, fn: ScannerFn, options?: { standalone?: boolean }): void {
   SCANNERS[name] = fn
+  if (options?.standalone === true) {
+    STANDALONE_SCANNERS.add(name)
+  }
 }
 
 export function runScanner(
