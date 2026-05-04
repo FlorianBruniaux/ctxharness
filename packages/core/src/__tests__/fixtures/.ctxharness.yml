@@ -1,0 +1,23 @@
+version: 1
+
+files:
+  include:
+    - 'CLAUDE.md'
+    - 'AGENTS.md'
+  exclude: []
+
+assertions:
+  - id: next-version
+    label: Next.js version
+    extractor: packageJson
+    extractorArgs:
+      package: next
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Next\.js\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: node-version
+    extractor: nvmrc
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Node(?:\.js)?\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
