@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Detect AI documentation drift — L1/L2/L3 context engineering testing",
+  "license": "MIT",
+  "homepage": "https://ctxharness.bruniaux.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FlorianBruniaux/ctxharness"
+  },
+  "keywords": ["claude", "ai", "documentation", "drift", "testing", "context-engineering"],
   "main": "./dist/index.js",
   "bin": {
     "ctxharness": "./dist/index.js"

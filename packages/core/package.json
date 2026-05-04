@@ -2,6 +2,12 @@
   "name": "@ctxharness/core",
   "version": "0.1.0",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FlorianBruniaux/ctxharness",
+    "directory": "packages/core"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
