@@ -23,6 +23,8 @@ const ScannerNameSchema = z.enum([
   'pathReference',
   'vaguenessPattern',
   'negativeConstraintDensity',
+  'contextBudget',
+  'ruleGlobValidity',
 ])
 
 // One assertion

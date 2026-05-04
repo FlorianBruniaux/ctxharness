@@ -6,6 +6,9 @@ const FIXTURES = join(import.meta.dirname, 'fixtures')
 const CLAUDE_MD = join(FIXTURES, 'CLAUDE.md')
 const AGENTS_MD = join(FIXTURES, 'AGENTS.md')
 const VAGUE_DOC = join(FIXTURES, 'vague-doc.md')
+const RULE_WITH_PATHS = join(FIXTURES, 'rule-with-paths.md')
+const RULE_NO_FRONTMATTER = join(FIXTURES, 'rule-no-frontmatter.md')
+const RULE_FRONTMATTER_NO_PATHS = join(FIXTURES, 'rule-frontmatter-no-paths.md')
 
 describe('normalizeMatch', () => {
   it('passes when doc mentions major only', () => {
@@ -142,5 +145,63 @@ describe('negativeConstraintDensity scanner', () => {
     // with minRatio=0.1 it should pass
     const results = runScanner('negativeConstraintDensity', VAGUE_DOC, '', { minRatio: 0.1 })
     expect(results[0]?.status).toBe('pass')
+  })
+})
+
+describe('contextBudget scanner', () => {
+  it('passes when file is under maxTokens threshold', () => {
+    const results = runScanner('contextBudget', CLAUDE_MD, '', { maxTokens: 10000 })
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('fails when file exceeds maxTokens threshold', () => {
+    const results = runScanner('contextBudget', CLAUDE_MD, '', { maxTokens: 1 })
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('uses default threshold of 3000 tokens when not specified', () => {
+    const results = runScanner('contextBudget', CLAUDE_MD, '', {})
+    expect(results).toHaveLength(1)
+  })
+
+  it('reports estimated token count in actual field', () => {
+    const results = runScanner('contextBudget', CLAUDE_MD, '', {})
+    expect(results[0]?.actual).toMatch(/\d+ tokens/)
+  })
+})
+
+describe('ruleGlobValidity scanner', () => {
+  it('passes on rule file with YAML frontmatter', () => {
+    const results = runScanner('ruleGlobValidity', RULE_WITH_PATHS, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('fails on rule file without any frontmatter', () => {
+    const results = runScanner('ruleGlobValidity', RULE_NO_FRONTMATTER, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('passes on rule file with frontmatter but no paths: by default', () => {
+    const results = runScanner('ruleGlobValidity', RULE_FRONTMATTER_NO_PATHS, '', {})
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('passes when requirePaths=true and paths: field is present', () => {
+    const results = runScanner('ruleGlobValidity', RULE_WITH_PATHS, '', { requirePaths: true })
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('fails when requirePaths=true and frontmatter lacks paths: field', () => {
+    const results = runScanner('ruleGlobValidity', RULE_FRONTMATTER_NO_PATHS, '', { requirePaths: true })
+    expect(results[0]?.status).toBe('fail')
+  })
+
+  it('fails when requirePaths=true and no frontmatter at all', () => {
+    const results = runScanner('ruleGlobValidity', RULE_NO_FRONTMATTER, '', { requirePaths: true })
+    expect(results[0]?.status).toBe('fail')
   })
 })

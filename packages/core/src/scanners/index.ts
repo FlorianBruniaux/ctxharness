@@ -477,6 +477,96 @@ function negativeConstraintDensity(
   ]
 }
 
+// ─── 9. contextBudget ────────────────────────────────────────────────────────
+
+/**
+ * Measures a single file's token footprint and fails if it exceeds a threshold.
+ * Designed to be run over .claude/rules/**\/*.md or CLAUDE.md to catch bloated
+ * context files before they degrade agent quality.
+ * Args: { maxTokens?: number }  — threshold in tokens (default 3000)
+ *
+ * Token estimate: chars ÷ 4 (conservative average for English/code mix).
+ * Returns one result.
+ */
+function contextBudget(
+  filePath: string,
+  _expected: string,
+  args: Record<string, unknown>,
+): ScanResult[] {
+  const maxTokens = typeof args['maxTokens'] === 'number' ? args['maxTokens'] : 3000
+  const content = readFileSync(filePath, 'utf-8')
+  const estimatedTokens = Math.ceil(content.length / 4)
+  const status = estimatedTokens <= maxTokens ? 'pass' : 'fail'
+
+  return [
+    {
+      file: filePath,
+      line: 0,
+      actual: `${estimatedTokens} tokens`,
+      expected: `≤${maxTokens} tokens`,
+      status,
+    },
+  ]
+}
+
+// ─── 10. ruleGlobValidity ────────────────────────────────────────────────────
+
+/**
+ * Validates that a Claude Code rules file has proper YAML frontmatter.
+ * Optionally enforces the presence of a `paths:` field for contextual loading.
+ *
+ * Args: { requirePaths?: boolean }
+ *   - false (default): pass if the file has any YAML frontmatter
+ *   - true: pass only if frontmatter includes a `paths:` field
+ *
+ * A rule file without frontmatter loads at every session regardless of context
+ * (always-on), which is often unintentional overhead.
+ */
+function ruleGlobValidity(
+  filePath: string,
+  _expected: string,
+  args: Record<string, unknown>,
+): ScanResult[] {
+  const requirePaths = args['requirePaths'] === true
+  const content = readFileSync(filePath, 'utf-8')
+  const frontmatterMatch = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content)
+
+  if (frontmatterMatch === null) {
+    return [
+      {
+        file: filePath,
+        line: 0,
+        actual: 'no frontmatter',
+        expected: requirePaths ? 'YAML frontmatter with paths: field' : 'YAML frontmatter',
+        status: 'fail',
+      },
+    ]
+  }
+
+  if (requirePaths) {
+    const hasPaths = /^paths:/m.test(frontmatterMatch[1] ?? '')
+    return [
+      {
+        file: filePath,
+        line: 0,
+        actual: hasPaths ? 'has paths:' : 'frontmatter present, no paths: field (always-on)',
+        expected: 'YAML frontmatter with paths: field',
+        status: hasPaths ? 'pass' : 'fail',
+      },
+    ]
+  }
+
+  return [
+    {
+      file: filePath,
+      line: 0,
+      actual: 'has frontmatter',
+      expected: 'YAML frontmatter',
+      status: 'pass',
+    },
+  ]
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 const SCANNERS: Record<ScannerName, ScannerFn> = {
@@ -488,6 +578,8 @@ const SCANNERS: Record<ScannerName, ScannerFn> = {
   pathReference,
   vaguenessPattern,
   negativeConstraintDensity,
+  contextBudget,
+  ruleGlobValidity,
 }
 
 export function runScanner(
