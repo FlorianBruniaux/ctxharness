@@ -3,8 +3,8 @@ import { Command } from 'commander'
 import { resolve, join } from 'node:path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { relative } from 'node:path'
-import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots } from '@florianbruniaux/ctxharness-core'
-import type { OutputFormat, AssertionResult } from '@florianbruniaux/ctxharness-core'
+import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots, scanFile } from '@florianbruniaux/ctxharness-core'
+import type { OutputFormat, AssertionResult, HeuristicResult } from '@florianbruniaux/ctxharness-core'
 
 // ─── Score helpers ────────────────────────────────────────────────────────────
 
@@ -661,6 +661,197 @@ program
 
       // Exit 1 if score regressed
       process.exit(diff.scoreDelta < 0 ? 1 : 0)
+    } catch (e) {
+      process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
+      process.exit(1)
+    }
+  })
+
+// ─── scan command ─────────────────────────────────────────────────────────────
+
+const SCAN_SEP = '─'.repeat(68)
+const COL_CLAIM = 24
+const COL_DETECTED = 16
+const COL_ACTUAL = 16
+const COL_STATUS = 12
+
+function truncate(s: string, width: number): string {
+  const max = width - 2
+  return s.length > max ? s.slice(0, max) + '…' : s
+}
+
+function padRight(s: string, width: number): string {
+  return s.padEnd(width)
+}
+
+function claimDisplayName(r: HeuristicResult): string {
+  if (r.claim.type === 'semver') return r.claim.tech
+  if (r.claim.type === 'path') return r.claim.value
+  return r.claim.raw
+}
+
+function detectedDisplay(r: HeuristicResult): string {
+  if (r.claim.type === 'semver') return r.claim.value
+  return 'mentioned'
+}
+
+function actualDisplay(r: HeuristicResult): string {
+  return r.actual
+}
+
+function yamlQ(s: string): string {
+  return `'${s.replace(/'/g, "''")}'`
+}
+
+function buildSuggestedConfig(file: string, results: HeuristicResult[]): string {
+  const resolvable = results.filter((r) => r.status !== 'unresolvable')
+  const lines: string[] = [
+    '',
+    'Suggested .ctxharness.yml based on detected claims:',
+    '',
+    'version: 1',
+    'files:',
+    '  include:',
+    `    - ${yamlQ(file)}`,
+    'assertions:',
+  ]
+
+  const seenIds = new Set<string>()
+
+  for (const r of resolvable) {
+    const { claim } = r
+    if (claim.type === 'semver') {
+      const tech = claim.tech
+      const id = `${tech}-version`
+      if (seenIds.has(id)) continue
+      seenIds.add(id)
+      if (tech === 'node' || tech === 'nodejs') {
+        lines.push(`  - id: ${id}`)
+        lines.push(`    extractor: nvmrc`)
+        lines.push(`    scanner: inlineRegex`)
+        lines.push(`    scannerArgs:`)
+        lines.push(`      pattern: 'Node(?:\\.js)?\\s+v?(\\d+(?:\\.\\d+(?:\\.\\d+)?)?)'`)
+      } else {
+        lines.push(`  - id: ${id}`)
+        lines.push(`    extractor: packageJson`)
+        lines.push(`    extractorArgs:`)
+        lines.push(`      package: ${tech}`)
+        lines.push(`    scanner: inlineRegex`)
+        lines.push(`    scannerArgs:`)
+        lines.push(`      pattern: '${tech}\\s+v?(\\d+(?:\\.\\d+(?:\\.\\d+)?)?)'`)
+      }
+    } else if (claim.type === 'path') {
+      const val = claim.value
+      const safeId = val.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+      const id = `path-${safeId}`
+      if (seenIds.has(id)) continue
+      seenIds.add(id)
+      lines.push(`  - id: ${id}`)
+      lines.push(`    extractor: fileExists`)
+      lines.push(`    extractorArgs:`)
+      lines.push(`      path: ${yamlQ(val)}`)
+      lines.push(`    scanner: literalInMd`)
+      lines.push(`    scannerArgs:`)
+      lines.push(`      literal: ${yamlQ(val)}`)
+    } else if (claim.type === 'script') {
+      const scriptName = claim.value
+      const safeId = scriptName.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+      const id = `script-${safeId}`
+      if (seenIds.has(id)) continue
+      seenIds.add(id)
+      lines.push(`  - id: ${id}`)
+      lines.push(`    extractor: packageScript`)
+      lines.push(`    extractorArgs:`)
+      lines.push(`      script: ${yamlQ(scriptName)}`)
+      lines.push(`    scanner: literalInMd`)
+      lines.push(`    scannerArgs:`)
+      lines.push(`      literal: ${yamlQ(claim.raw)}`)
+    }
+  }
+
+  return lines.join('\n')
+}
+
+program
+  .command('scan [file]')
+  .description('Scan a markdown file for verifiable claims (semver, paths, scripts) and check them against ground truth')
+  .option('-r, --root <dir>', 'Project root directory', '')
+  .option('--suggest-config', 'Also print a starter .ctxharness.yml based on detected claims')
+  .action(async (file: string | undefined, opts: { root: string; suggestConfig?: boolean }) => {
+    try {
+      const { default: chalk } = await import('chalk')
+      const cwd = process.cwd()
+      const targetFile = file ?? 'CLAUDE.md'
+      const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
+      const filePath = resolve(cwd, targetFile)
+
+      if (!existsSync(filePath)) {
+        process.stderr.write(`Error: file not found: ${filePath}\n`)
+        process.exit(1)
+      }
+
+      process.stdout.write(`Scanning ${targetFile} for verifiable claims...\n\n`)
+
+      let results: HeuristicResult[]
+      try {
+        results = scanFile(filePath, root)
+      } catch (err) {
+        process.stderr.write(`Error reading file: ${err instanceof Error ? err.message : String(err)}\n`)
+        process.exit(1)
+      }
+
+      if (results.length === 0) {
+        process.stdout.write(`No verifiable claims found in ${targetFile}.\n`)
+        process.stdout.write(`Run \`ctxharness init\` to set up structured assertions.\n`)
+        process.exit(0)
+      }
+
+      // Header row
+      const header =
+        padRight(truncate('claim', COL_CLAIM), COL_CLAIM) +
+        padRight(truncate('detected', COL_DETECTED), COL_DETECTED) +
+        padRight(truncate('actual', COL_ACTUAL), COL_ACTUAL) +
+        padRight('status', COL_STATUS)
+
+      process.stdout.write(header + '\n')
+      process.stdout.write(SCAN_SEP + '\n')
+
+      for (const r of results) {
+        const claimCol = padRight(truncate(claimDisplayName(r), COL_CLAIM), COL_CLAIM)
+        const detectedCol = padRight(truncate(detectedDisplay(r), COL_DETECTED), COL_DETECTED)
+        const actualCol = padRight(truncate(actualDisplay(r), COL_ACTUAL), COL_ACTUAL)
+
+        let statusStr: string
+        if (r.status === 'match') {
+          statusStr = chalk.green('✓ match')
+        } else if (r.status === 'drift') {
+          statusStr = chalk.red('✗ drift')
+        } else {
+          statusStr = chalk.yellow('? unknown')
+        }
+
+        process.stdout.write(claimCol + detectedCol + actualCol + statusStr + '\n')
+      }
+
+      process.stdout.write(SCAN_SEP + '\n')
+
+      const driftCount = results.filter((r) => r.status === 'drift').length
+      const unknownCount = results.filter((r) => r.status === 'unresolvable').length
+      const matchCount = results.filter((r) => r.status === 'match').length
+
+      if (driftCount > 0) {
+        console.log(chalk.red(`✗ ${driftCount} drift${driftCount !== 1 ? 's' : ''} found`))
+      } else if (unknownCount > 0) {
+        console.log(chalk.green(`✓ ${matchCount} claim${matchCount !== 1 ? 's' : ''} verified, ${unknownCount} unknown`))
+      } else {
+        console.log(chalk.green('✓ All claims match'))
+      }
+
+      if (opts.suggestConfig === true) {
+        process.stdout.write(buildSuggestedConfig(targetFile, results) + '\n')
+      }
+
+      process.exit(driftCount > 0 ? 1 : 0)
     } catch (e) {
       process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
       process.exit(1)

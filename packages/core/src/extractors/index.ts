@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, statSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import { resolve } from 'node:path'
+import { resolve, sep } from 'node:path'
 import type { ExtractorName } from '../config.js'
 import { parse as parseToml } from 'smol-toml'
 
@@ -137,7 +137,9 @@ function fileExists(root: string, args: ExtractorArgs): ExtractorResult {
     throw new Error('fileExists extractor requires args.path (string)')
   }
 
-  return existsSync(resolve(root, filePath)) ? 'true' : 'false'
+  const abs = resolve(root, filePath)
+  if (!abs.startsWith(resolve(root) + sep)) return 'false'
+  return existsSync(abs) ? 'true' : 'false'
 }
 
 /**
