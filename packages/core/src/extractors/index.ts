@@ -666,10 +666,6 @@ function packageScript(root: string, args: ExtractorArgs): ExtractorResult {
   const pkgFile = typeof args['file'] === 'string' ? args['file'] : 'package.json'
   const pkgPath = resolve(root, pkgFile)
 
-  if (!existsSync(pkgPath)) {
-    throw new Error(`package.json not found: ${pkgPath}`)
-  }
-
   const pkg = readJson(pkgPath)
 
   const scripts = pkg['scripts']

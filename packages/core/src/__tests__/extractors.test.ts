@@ -337,10 +337,10 @@ describe('packageScript extractor', () => {
       runExtractor('packageScript', FIXTURES, { script: 'build', file: 'package-invalid.json' })
     ).toThrow()
   })
-  it('uses custom file arg to read from a specific path', () => {
-    expect(
-      runExtractor('packageScript', FIXTURES, { script: 'test', file: 'package-with-scripts.json' })
-    ).toBe('true')
+  it('throws when the script arg is an empty string', () => {
+    expect(() =>
+      runExtractor('packageScript', FIXTURES, { script: '', file: 'package-with-scripts.json' })
+    ).toThrow()
   })
 })
 
