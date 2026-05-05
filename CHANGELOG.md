@@ -8,6 +8,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ## [Unreleased]
 
+### Added
+
+- `--exit-zero` flag on `scan` — always exits 0 even when drifts are found; designed for Husky hooks and warning-only CI steps where you want visibility without blocking
+
+### Fixed
+
+- `scan` no longer detects Claude Code slash commands (`/plan`, `/ship`, `/tech:commit`) as file path claims
+- `scan` no longer detects URL route patterns without a file extension (`/api/chunk`, `/about/`, `/devs/atlas`) as file path claims
+- `scan` no longer detects template placeholder patterns (`{slug}`, `{PR_NUMBER}`, `[owner]`, `<pkgname>`) as file path claims
+
 ---
 
 ## [0.4.0] — 2026-05-05
