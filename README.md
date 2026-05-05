@@ -7,8 +7,10 @@ Your `CLAUDE.md` says Prisma 7.5. Your `package.json` has `^7.7.0`. Your agent i
 ctxharness catches this before it reaches your agents.
 
 ```bash
-npx ctxharness init   # scaffold .ctxharness.yml
-npx ctxharness run    # check for drift
+npx ctxharness scan CLAUDE.md   # zero-config — detect drift instantly
+# or, with full config:
+npx ctxharness init              # scaffold .ctxharness.yml
+npx ctxharness run               # check all assertions
 ```
 
 ## What it checks
@@ -31,7 +33,7 @@ npm install -g ctxharness
 pnpm add -D ctxharness
 ```
 
-> **Standalone binary** for Python, Go, Rust and other non-Node projects: planned for v0.3.
+> **Standalone binary** for Python, Go, Rust and other non-Node projects: planned for v1.0.
 
 ## Quick start
 
@@ -381,7 +383,7 @@ GitHub Actions:
 
 ```yaml
 - name: Check AI doc drift
-  uses: FlorianBruniaux/ctxharness@v0.2
+  uses: FlorianBruniaux/ctxharness@v0.4
   with:
     config: .ctxharness.yml
     format: gha

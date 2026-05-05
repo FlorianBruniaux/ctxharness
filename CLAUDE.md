@@ -16,7 +16,7 @@ templates/       Husky hooks + CI workflow templates
 
 ```bash
 pnpm build           # compile all packages
-pnpm test            # vitest (141 tests)
+pnpm test            # vitest (164 tests)
 pnpm test:watch      # watch mode
 pnpm lint            # tsc --noEmit
 pnpm fmt             # prettier --write
@@ -94,13 +94,15 @@ Semver. `CHANGELOG.md` updated before every release.
 
 ## Roadmap
 
-### Released in v0.1.0
+### Current — v0.4.0
 
-- L1/L2/L3 full surface: 15 extractors, 15 scanners
+- `scan` command — zero-config heuristic claim detection (semver, paths, npm scripts)
+- `packageScript` extractor (shipped in v0.3) — validates npm script references in AI docs
+- 20 extractors, 15 scanners, 164 tests
 - 9 CLI commands: run / check / scan / score / fix / doctor / init / snapshot / diff
 - Plugin API, stack presets (T3, Next App Router), GitHub Action
 
 ### Upcoming
 
-- v0.5 — LSP + VSCode extension
+- v0.5 — LSP + VSCode extension (triggered by ≥ 200 GitHub stars)
 - v1.0 — monorepo-turbo preset, multi-root support
