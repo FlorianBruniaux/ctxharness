@@ -431,6 +431,29 @@ L4 (agent behavior eval) is out of scope — use [Promptfoo](https://promptfoo.d
 
 **ctxharness vs Promptfoo**: Promptfoo evals what your agent *says* (output quality). ctxharness evals what your agent *reads* (input freshness). They're complementary, not competing.
 
+## Further Reading
+
+The problem ctxharness addresses is well-documented. These are the sources worth reading.
+
+**Context engineering — why accuracy matters**
+
+- [Context Engineering](https://simonwillison.net/2025/Jun/27/context-engineering/) — Simon Willison, June 2025. Why "context engineering" is a better term than "prompt engineering" and what it means in practice.
+- [The Rise of Context Engineering](https://www.langchain.com/blog/the-rise-of-context-engineering) — LangChain, June 2025. *"Most of the time when an agent is not performing reliably, the underlying cause is that the appropriate context has not been communicated to the model."*
+- [Context Engineering for Large Codebases](https://packmind.com/context-engineering-ai-coding/context-engineering-large-codebases/) — Packmind, April 2026. Documents "context drift" — stale instruction files referencing deprecated frameworks cause agents to silently generate code using wrong patterns.
+
+**What stale context does to LLMs**
+
+- [Contextual Drag: How Errors in the Context Affect LLM Reasoning](https://arxiv.org/abs/2602.04288) — arXiv, Feb 2026. Wrong context causes 10–20% performance drops across 11 models and 8 reasoning tasks. Self-refinement makes it worse, not better.
+- [Knowledge Conflicts for LLMs: A Survey](https://arxiv.org/abs/2403.08319) — EMNLP 2024. Temporal knowledge conflicts (outdated context vs. model knowledge) are a primary source of factually wrong outputs. LLMs may generate code using deprecated function signatures from older library versions.
+- [Lost in the Middle](https://arxiv.org/abs/2307.03172) — Stanford / ACL 2024. Relevant information placed in the middle of long contexts is systematically under-weighted by LLMs. Instruction files that accumulate stale content push critical facts into this dead zone.
+- [Your Agent's Context Is a Junk Drawer](https://www.augmentcode.com/blog/your-agents-context-is-a-junk-drawer) — Augment Code, Feb 2026. Documents "context collapse" — agents forget earlier constraints when context grows stale and unmanaged.
+
+**The CLAUDE.md / AGENTS.md problem specifically**
+
+- [Writing a Good CLAUDE.md](https://www.humanlayer.dev/blog/writing-a-good-claude-md) — HumanLayer, Nov 2025. *"Don't include code snippets — they will become out-of-date quickly."* Direct practitioner warning on content drift.
+- [New Research Reassesses the Value of AGENTS.md Files](https://www.infoq.com/news/2026/03/agents-context-file-value-review/) — InfoQ, March 2026. ETH Zurich study: LLM-generated context files reduce task success by 3% on average and increase inference costs by 20%+. Authors recommend limiting instructions to non-inferable details — exactly the facts ctxharness verifies.
+- [When AGENTS.md Backfires](https://notchrisgroves.com/when-agents-md-backfires/) — Feb 2026. Only 14.5% of agent context files include security instructions. LLM-generated files reduced task success in 5 of 8 evaluation settings.
+
 ## License
 
 MIT
