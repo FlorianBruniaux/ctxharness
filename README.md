@@ -393,6 +393,30 @@ Or copy `templates/ci/github-actions.yml` for a full workflow. GitLab CI and Cir
 
 Husky (post-merge, post-checkout): copy from `templates/husky/`.
 
+## Ecosystem Positioning
+
+```
+                         FACTUAL ACCURACY
+                                ▲
+                                │
+                                │              ★ ctxharness
+                                │         "Are the claims still true?"
+                                │          versions · paths · scripts
+                                │
+  ──────────────────────────────┼──────────────────────────────────► RUNTIME
+  [vigiles]                     │                                    VERIFICATION
+  TS spec → CLAUDE.md           │
+                                │
+  [AgentLint]                   │     [cclint / cursor-doctor]
+  structural linter             │     syntax & format checks
+                                │
+  [Ruler / rulesync]            │
+  rule distribution             │
+                         STATIC / STRUCTURAL
+```
+
+ctxharness does not compete with any of these tools. It validates what they write, compile, or distribute.
+
 ## Taxonomy
 
 ctxharness covers three layers of context engineering testing:
