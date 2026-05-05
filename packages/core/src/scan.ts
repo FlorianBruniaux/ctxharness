@@ -141,6 +141,18 @@ function detectPathClaims(
     // Skip URLs
     if (raw.startsWith('http://') || raw.startsWith('https://')) continue
 
+    // Skip slash commands — `/word` or `/word:subcommand` with no file extension or nested path
+    // e.g. `/plan`, `/ship`, `/mcp`, `/tech:commit` — Claude Code slash commands, not file paths
+    if (/^\/[a-zA-Z][a-zA-Z0-9_:-]*$/.test(raw)) continue
+
+    // Skip URL route patterns — absolute paths starting with `/` that have no file extension
+    // e.g. `/api/chunk`, `/devs/atlas`, `/about/` — Next.js / web routes, not file paths
+    if (raw.startsWith('/') && !raw.includes('.')) continue
+
+    // Skip template / placeholder patterns — paths with `{…}`, `[…]`, or `<…>`
+    // e.g. `{slug}`, `/[owner]/[repo]`, `<pkgname>`, `YYYY-MM-DD-{slug}.md`
+    if (/[{[<]/.test(raw)) continue
+
     // Skip snake_case-only non-path strings (e.g. Rust crate names like `ruff_python_ast`)
     if (!raw.includes('/') && /^[a-zA-Z][a-zA-Z0-9_]*\.[a-z]+$/.test(raw)) {
       // Only allow if it has a real path indicator (starts with . / src etc.)

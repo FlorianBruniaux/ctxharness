@@ -102,6 +102,41 @@ describe('detectClaims — path', () => {
     expect(pathClaims.length).toBe(0)
   })
 
+  it('does NOT detect Claude Code slash commands as paths', () => {
+    const content = 'Use `/plan` to start, `/ship` to release, `/tech:commit` to commit.'
+    const claims = detectClaims(content)
+    const pathClaims = claims.filter((c) => c.type === 'path')
+    expect(pathClaims.length).toBe(0)
+  })
+
+  it('does NOT detect template placeholder patterns as paths', () => {
+    const content = 'Create `YYYY-MM-DD-{slug}.md` or `changelog/fragments/{PR_NUMBER}/change.md`.'
+    const claims = detectClaims(content)
+    const pathClaims = claims.filter((c) => c.type === 'path')
+    expect(pathClaims.length).toBe(0)
+  })
+
+  it('does NOT detect Next.js dynamic route segments as paths', () => {
+    const content = 'Routes: `/[owner]/[repo]/page.tsx` and `/api/stats/[owner]/route.ts`.'
+    const claims = detectClaims(content)
+    const pathClaims = claims.filter((c) => c.type === 'path')
+    expect(pathClaims.length).toBe(0)
+  })
+
+  it('does NOT detect URL route paths without file extension as file paths', () => {
+    const content = 'Visit `/api/chunk`, `/devs/atlas`, or `/about/` in your browser.'
+    const claims = detectClaims(content)
+    const pathClaims = claims.filter((c) => c.type === 'path')
+    expect(pathClaims.length).toBe(0)
+  })
+
+  it('DOES detect absolute paths that have a file extension', () => {
+    const content = 'Config at `/etc/nginx/nginx.conf` and source at `/home/user/app/index.ts`.'
+    const claims = detectClaims(content)
+    const pathClaims = claims.filter((c) => c.type === 'path')
+    expect(pathClaims.some((c) => c.value.includes('nginx.conf'))).toBe(true)
+  })
+
   it('deduplicates identical paths', () => {
     const content = [
       'See `src/config.ts`.',
