@@ -19,7 +19,7 @@ npx ctxharness run    # check for drift
 
 **L3 — Context assembly**: hook validation, skill loading, rule glob validity, coverage ratio.
 
-**Brownfield-first.** Works on your existing `CLAUDE.md`/`AGENTS.md`/`.cursorrules` with zero migration.
+**No migration needed.** Works on your existing CLAUDE.md, AGENTS.md, and .cursorrules files as-is.
 
 ## Install
 
@@ -31,26 +31,13 @@ npm install -g ctxharness
 pnpm add -D ctxharness
 ```
 
-**Single binary — Python, Go, Rust, or any non-Node project (no Node.js required):**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/FlorianBruniaux/ctxharness/main/install.sh | bash
-```
-
-Or download directly from [GitHub Releases](https://github.com/FlorianBruniaux/ctxharness/releases/latest):
-
-| Platform | Binary |
-|----------|--------|
-| Linux x64 | `ctxharness-linux-x64` |
-| Linux arm64 | `ctxharness-linux-arm64` |
-| macOS Apple Silicon | `ctxharness-darwin-arm64` |
-| Windows x64 | `ctxharness-windows-x64.exe` |
+> **Standalone binary** for Python, Go, Rust and other non-Node projects: planned for v0.3.
 
 ## Quick start
 
 ```bash
 ctxharness init          # creates .ctxharness.yml
-ctxharness run           # check all assertions
+ctxharness doctor        # full health check with L1/L2/L3 breakdown
 ```
 
 Example output:
@@ -77,7 +64,7 @@ prisma-version          CLAUDE.md                                     13  7.7.0 
 
 ## Configuration
 
-`.ctxharness.yml`:
+`.ctxharness.yml` — minimal starter (one assertion per layer):
 
 ```yaml
 version: 1
@@ -87,12 +74,38 @@ files:
     - 'CLAUDE.md'
     - 'AGENTS.md'
     - '.cursorrules'
-    - 'doc/**/*.md'
   exclude:
     - 'node_modules/**'
 
 assertions:
-  # L1 — fact drift
+  # L1 — fact drift: node version in docs matches .nvmrc
+  - id: node-version
+    extractor: nvmrc
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Node(?:\.js)?\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  # L2 — instruction quality: no vague language
+  - id: no-vague-language
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: vaguenessPattern
+
+  # L3 — context assembly: hooks are valid
+  - id: hook-validity
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: hookValidity
+```
+
+<details>
+<summary>Advanced config — allowlist, scopeFiles, multi-version assertions</summary>
+
+```yaml
+assertions:
+  # allowlist: skip known-intentional mismatches in specific files
   - id: next-version
     extractor: packageJson
     extractorArgs:
@@ -100,41 +113,10 @@ assertions:
     scanner: inlineRegex
     scannerArgs:
       pattern: 'Next\.js\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
-
-  - id: node-version
-    extractor: nvmrc
-    scanner: inlineRegex
-    scannerArgs:
-      pattern: 'Node(?:\.js)?\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
-
-  # L2 — instruction quality
-  - id: no-vague-language
-    extractor: constant
-    extractorArgs:
-      value: check
-    scanner: vaguenessPattern
-
-  - id: instruction-balance
-    extractor: constant
-    extractorArgs:
-      value: check
-    scanner: negativeConstraintDensity
-    scannerArgs:
-      minRatio: 2.0
-
-  # allowlist: skip known-intentional mismatches in specific files
-  - id: next-version-strict
-    extractor: packageJson
-    extractorArgs:
-      package: next
-    scanner: inlineRegex
-    scannerArgs:
-      pattern: 'Next\.js\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
     allowlist:
-      - CHANGELOG.md
+      - CHANGELOG.md   # version history file — intentional old values
 
-  # scopeFiles: restrict a single assertion to a subset of files
-  # (overrides global files.include for this assertion only)
+  # scopeFiles: restrict an assertion to a subset of files
   - id: instruction-balance
     extractor: constant
     extractorArgs:
@@ -147,12 +129,17 @@ assertions:
         - 'CLAUDE.md'
         - 'AGENTS.md'
       exclude:
-        - '.cursorrules'   # constraint-only file by design — skip ratio check
+        - '.cursorrules'   # constraint-only file by design
 ```
+
+</details>
 
 ## Extractors
 
-Read ground truth from your codebase:
+Read ground truth from your codebase. Common ones: `packageJson`, `nvmrc`, `gitStaleness`, `prismaModelList`, `goMod`, `cargoToml`.
+
+<details>
+<summary>Full extractor list (19)</summary>
 
 | Name | What it reads | Args |
 |------|--------------|------|
@@ -178,9 +165,14 @@ Read ground truth from your codebase:
 
 Version normalization: `v22` matches `22.14.0` — partial mentions are valid.
 
+</details>
+
 ## Scanners
 
-Find and validate content in your AI doc files:
+Find and validate content in your AI doc files. Common ones: `inlineRegex`, `vaguenessPattern`, `hookValidity`, `coverageRatio`, `freshnessScore`.
+
+<details>
+<summary>Full scanner list (15)</summary>
 
 ### Drift scanners (compare against extractor value)
 
@@ -241,6 +233,8 @@ Find and validate content in your AI doc files:
   valueAllowlist:
     - MigrationVersion     # internal model, not required in CLAUDE.md
 ```
+
+</details>
 
 ## CLI
 
@@ -385,16 +379,15 @@ Husky (post-merge, post-checkout): copy from `templates/husky/`.
 
 ctxharness covers three layers of context engineering testing:
 
-| Layer | What | Ships |
-|-------|------|-------|
-| **L1 Doc Drift** | Facts in AI docs vs code reality | v0.1 |
-| **L2 Instruction Quality** | Vague language, positive/negative ratio, multi-file coherence, token budget | v0.1 |
-| **L3 Context Assembly** | Hook validation, skill loading, rule glob validity, coverage ratio | v0.1 |
-| **L1+ v0.2** | Prisma/tRPC extractors, gitStaleness, goMod, cargoToml, pyprojectToml, tsconfigPaths | v0.2 |
-| **L2+ v0.2** | freshnessScore, coverageRatio, contextBudget followImports, warn/skip statuses | v0.2 |
-| **L3+ v0.2** | snapshot/diff CLI, score/fix/doctor commands, plugin API, stack presets | v0.2 |
+| Layer | What |
+|-------|------|
+| **L1 Doc Drift** | Facts in AI docs vs code reality — versions, file existence, counts, regex captures |
+| **L2 Instruction Quality** | Vague language, positive/negative ratio, token budget, multi-file coherence |
+| **L3 Context Assembly** | Hook validation, skill loading, rule glob validity, coverage ratio |
 
 L4 (agent behavior eval) is out of scope — use [Promptfoo](https://promptfoo.dev) or [Braintrust](https://braintrust.dev) for that.
+
+**ctxharness vs Promptfoo**: Promptfoo evals what your agent *says* (output quality). ctxharness evals what your agent *reads* (input freshness). They're complementary, not competing.
 
 ## License
 
