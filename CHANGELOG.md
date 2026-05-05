@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ## [Unreleased]
 
+---
+
+## [0.4.1] — 2026-05-05
+
 ### Added
 
 - `--exit-zero` flag on `scan` — always exits 0 even when drifts are found; designed for Husky hooks and warning-only CI steps where you want visibility without blocking

@@ -1,6 +1,6 @@
 {
   "name": "ctxharness",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "description": "Detect AI documentation drift — L1/L2/L3 context engineering testing",
   "license": "MIT",
