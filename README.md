@@ -371,7 +371,7 @@ GitHub Actions:
 
 ```yaml
 - name: Check AI doc drift
-  uses: FlorianBruniaux/ctxharness@v0.1
+  uses: FlorianBruniaux/ctxharness@v0.2
   with:
     config: .ctxharness.yml
     format: gha
@@ -390,6 +390,9 @@ ctxharness covers three layers of context engineering testing:
 | **L1 Doc Drift** | Facts in AI docs vs code reality | v0.1 |
 | **L2 Instruction Quality** | Vague language, positive/negative ratio, multi-file coherence, token budget | v0.1 |
 | **L3 Context Assembly** | Hook validation, skill loading, rule glob validity, coverage ratio | v0.1 |
+| **L1+ v0.2** | Prisma/tRPC extractors, gitStaleness, goMod, cargoToml, pyprojectToml, tsconfigPaths | v0.2 |
+| **L2+ v0.2** | freshnessScore, coverageRatio, contextBudget followImports, warn/skip statuses | v0.2 |
+| **L3+ v0.2** | snapshot/diff CLI, score/fix/doctor commands, plugin API, stack presets | v0.2 |
 
 L4 (agent behavior eval) is out of scope — use [Promptfoo](https://promptfoo.dev) or [Braintrust](https://braintrust.dev) for that.
 
