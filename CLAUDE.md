@@ -16,7 +16,7 @@ templates/       Husky hooks + CI workflow templates
 
 ```bash
 pnpm build           # compile all packages
-pnpm test            # vitest (102 tests)
+pnpm test            # vitest (129 tests)
 pnpm test:watch      # watch mode
 pnpm lint            # tsc --noEmit
 pnpm fmt             # prettier --write
@@ -27,7 +27,7 @@ pnpm fmt             # prettier --write
 | File | Purpose |
 |------|---------|
 | `packages/core/src/config.ts` | Zod schema — `.ctxharness.yml` format |
-| `packages/core/src/extractors/index.ts` | 15 extractors (ground truth from code) |
+| `packages/core/src/extractors/index.ts` | 19 extractors (ground truth from code) |
 | `packages/core/src/scanners/index.ts` | 15 scanners (find mentions in docs) |
 | `packages/core/src/runner.ts` | Orchestrates run, returns `RunResult` |
 | `packages/core/src/reporter.ts` | text / json / gha output formats |

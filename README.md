@@ -23,11 +23,28 @@ npx ctxharness run    # check for drift
 
 ## Install
 
+**npm/pnpm (Node.js projects):**
+
 ```bash
 npm install -g ctxharness
 # or
 pnpm add -D ctxharness
 ```
+
+**Single binary — Python, Go, Rust, or any non-Node project (no Node.js required):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/FlorianBruniaux/ctxharness/main/install.sh | bash
+```
+
+Or download directly from [GitHub Releases](https://github.com/FlorianBruniaux/ctxharness/releases/latest):
+
+| Platform | Binary |
+|----------|--------|
+| Linux x64 | `ctxharness-linux-x64` |
+| Linux arm64 | `ctxharness-linux-arm64` |
+| macOS Apple Silicon | `ctxharness-darwin-arm64` |
+| Windows x64 | `ctxharness-windows-x64.exe` |
 
 ## Quick start
 
@@ -154,6 +171,10 @@ Read ground truth from your codebase:
 | `gitStaleness` | Commits since a file was last changed (0 = up-to-date) | `path: string` |
 | `packageEngines` | Node/runtime version from `package.json` `engines` field (strips `>=` operators) | `field?: string` (default `"node"`) |
 | `tsconfigPaths` | Count of path aliases in `tsconfig.json` `compilerOptions.paths` (JSONC-aware) | `path?: string` (default `"tsconfig.json"`) |
+| `pyprojectToml` | Version from `pyproject.toml` — Poetry and PEP 621 formats | `package?: string`, `field?: string` |
+| `requirementsTxt` | Package version from `requirements.txt` | `package: string`, `path?: string` |
+| `cargoToml` | Version from `Cargo.toml` — own version or dependency | `package?: string`, `field?: string` |
+| `goMod` | Module version from `go.mod` | `module: string` |
 
 Version normalization: `v22` matches `22.14.0` — partial mentions are valid.
 
@@ -334,6 +355,9 @@ Ready-to-use config templates for common stacks:
 |--------|------|--------|
 | T3 (Next.js + Prisma + tRPC) | `templates/presets/t3.yml` | node, next, typescript, prisma, trpc versions + model/router counts |
 | Next.js App Router | `templates/presets/next-app-router.yml` | node, next, typescript, react versions + quality assertions |
+| Python | `templates/presets/python.yml` | python version, pyproject.toml deps + quality assertions |
+| Go | `templates/presets/go.yml` | go toolchain version, go.mod deps + quality assertions |
+| Rust | `templates/presets/rust.yml` | crate version, Cargo.toml deps + quality assertions |
 
 Copy a preset as your `.ctxharness.yml` starting point:
 

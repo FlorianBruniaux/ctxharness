@@ -1,0 +1,61 @@
+version: 1
+
+files:
+  include:
+    - 'CLAUDE.md'
+    - 'AGENTS.md'
+    - '.cursorrules'
+    - 'docs/**/*.md'
+  exclude:
+    - '.venv/**'
+    - '__pycache__/**'
+
+assertions:
+  # L1 — fact drift
+  - id: project-version
+    extractor: pyprojectToml
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'v?(\d+\.\d+\.\d+)'
+
+  - id: django-version
+    extractor: pyprojectToml
+    extractorArgs:
+      package: django
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Django\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  - id: python-version
+    extractor: regexScan
+    extractorArgs:
+      path: '.python-version'
+      pattern: '(\d+\.\d+(?:\.\d+)?)'
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Python\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  # L2 — instruction quality
+  - id: no-vague-language
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: vaguenessPattern
+
+  - id: instruction-balance
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: negativeConstraintDensity
+    scannerArgs:
+      minRatio: 2.0
+
+  # L3 — context freshness
+  - id: claude-md-freshness
+    extractor: gitStaleness
+    extractorArgs:
+      path: CLAUDE.md
+    scanner: freshnessScore
+    scannerArgs:
+      warnAfter: 30
+      failAfter: 100

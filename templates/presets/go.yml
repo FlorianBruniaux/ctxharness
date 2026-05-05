@@ -1,0 +1,53 @@
+version: 1
+
+files:
+  include:
+    - 'CLAUDE.md'
+    - 'AGENTS.md'
+    - 'docs/**/*.md'
+  exclude:
+    - 'vendor/**'
+
+assertions:
+  # L1 — fact drift
+  - id: go-toolchain-version
+    extractor: regexScan
+    extractorArgs:
+      path: 'go.mod'
+      pattern: '^go\s+(\d+\.\d+)'
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'Go\s+v?(\d+\.\d+(?:\.\d+)?)'
+
+  - id: gin-version
+    extractor: goMod
+    extractorArgs:
+      module: github.com/gin-gonic/gin
+    scanner: inlineRegex
+    scannerArgs:
+      pattern: 'gin\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+
+  # L2 — instruction quality
+  - id: no-vague-language
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: vaguenessPattern
+
+  - id: instruction-balance
+    extractor: constant
+    extractorArgs:
+      value: check
+    scanner: negativeConstraintDensity
+    scannerArgs:
+      minRatio: 2.0
+
+  # L3 — context freshness
+  - id: claude-md-freshness
+    extractor: gitStaleness
+    extractorArgs:
+      path: CLAUDE.md
+    scanner: freshnessScore
+    scannerArgs:
+      warnAfter: 30
+      failAfter: 100

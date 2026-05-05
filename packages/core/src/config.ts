@@ -19,6 +19,10 @@ const ExtractorNameSchema = z.enum([
   'gitStaleness',
   'packageEngines',
   'tsconfigPaths',
+  'pyprojectToml',
+  'requirementsTxt',
+  'cargoToml',
+  'goMod',
 ])
 
 // Scanner schemas
