@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.22.0"
+edition = "2021"
+
+[workspace.dependencies]
+tokio = { version = "1.36.0", features = ["full"] }
+serde = { version = "1.0.200", features = ["derive"] }
+ratatui = "0.30.0"

@@ -587,7 +587,12 @@ function cargoToml(root: string, args: ExtractorArgs): ExtractorResult {
   }
 
   if (typeof pkgName === 'string' && pkgName.length > 0) {
-    for (const section of ['dependencies', 'dev-dependencies', 'build-dependencies']) {
+    for (const section of [
+      'dependencies',
+      'dev-dependencies',
+      'build-dependencies',
+      'workspace.dependencies',
+    ]) {
       const deps = getTomlPath(parsed, section)
       if (typeof deps !== 'object' || deps === null || Array.isArray(deps)) continue
       const dep = (deps as Record<string, unknown>)[pkgName]
@@ -601,7 +606,8 @@ function cargoToml(root: string, args: ExtractorArgs): ExtractorResult {
     throw new Error(`Crate "${pkgName}" not found in Cargo.toml dependencies`)
   }
 
-  const version = getTomlPath(parsed, 'package.version')
+  const version =
+    getTomlPath(parsed, 'package.version') ?? getTomlPath(parsed, 'workspace.package.version')
   if (typeof version !== 'string') {
     throw new Error('package.version not found in Cargo.toml')
   }

@@ -285,6 +285,22 @@ describe('cargoToml extractor', () => {
   })
 })
 
+describe('cargoToml extractor — workspace', () => {
+  const WS = join(FIXTURES, 'workspace')
+  it('returns workspace.package.version by default', () => {
+    expect(runExtractor('cargoToml', WS, {})).toBe('0.22.0')
+  })
+  it('returns workspace dependency version in object format', () => {
+    expect(runExtractor('cargoToml', WS, { package: 'tokio' })).toBe('1.36.0')
+  })
+  it('returns workspace dependency version in string format', () => {
+    expect(runExtractor('cargoToml', WS, { package: 'ratatui' })).toBe('0.30.0')
+  })
+  it('throws for unknown crate in workspace', () => {
+    expect(() => runExtractor('cargoToml', WS, { package: 'nonexistent-xyz' })).toThrow()
+  })
+})
+
 describe('goMod extractor', () => {
   it('extracts module version from require block', () => {
     expect(
