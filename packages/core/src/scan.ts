@@ -159,8 +159,6 @@ function detectPathClaims(
 
 // ─── Heuristic 3: npm/pnpm/yarn scripts ──────────────────────────────────────
 
-const SCRIPT_RE = /`(?:npm|pnpm|yarn)(?:\s+run)?\s+([a-zA-Z][a-zA-Z0-9:_-]*)`/g
-
 function detectScriptClaims(
   line: string,
   lineNum: number,
