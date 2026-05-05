@@ -2,6 +2,7 @@ import { readFileSync, existsSync, statSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import type { ExtractorName } from '../config.js'
+import { parse as parseToml } from 'smol-toml'
 
 // ─── JSONC parser ────────────────────────────────────────────────────────────
 // TypeScript configs often use // comments. Strip them before JSON.parse.
@@ -36,6 +37,20 @@ function getString(obj: Record<string, unknown>, key: string): string | undefine
 
 function stripVersionPrefix(version: string): string {
   return version.replace(/^[~^>=<!]+/, '')
+}
+
+function getTomlPath(obj: unknown, path: string): unknown {
+  const parts = path.split('.')
+  let current: unknown = obj
+  for (const part of parts) {
+    if (typeof current !== 'object' || current === null || Array.isArray(current)) return undefined
+    current = (current as Record<string, unknown>)[part]
+  }
+  return current
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 // ─── Extractors ─────────────────────────────────────────────────────────────
@@ -447,6 +462,189 @@ function tsconfigPaths(root: string, args: ExtractorArgs): ExtractorResult {
   return String(Object.keys(paths).length)
 }
 
+/**
+ * pyprojectToml — reads versions from pyproject.toml
+ * Args: { package?: string, field?: string }
+ * - field: dot-path (e.g. "project.version")
+ * - package: dep name — searches tool.poetry.dependencies then project.dependencies
+ * - neither: returns project.version (PEP 621) or tool.poetry.version
+ */
+function pyprojectToml(root: string, args: ExtractorArgs): ExtractorResult {
+  const pkgName = args['package']
+  const field = args['field']
+
+  const pyprojectPath = resolve(root, 'pyproject.toml')
+  if (!existsSync(pyprojectPath)) {
+    throw new Error('pyproject.toml not found')
+  }
+
+  const content = readFileSync(pyprojectPath, 'utf-8')
+  const parsed = parseToml(content)
+
+  if (typeof field === 'string' && field.length > 0) {
+    const value = getTomlPath(parsed, field)
+    if (typeof value !== 'string') {
+      throw new Error(`Field "${field}" not found or not a string in pyproject.toml`)
+    }
+    return stripVersionPrefix(value)
+  }
+
+  if (typeof pkgName === 'string' && pkgName.length > 0) {
+    const poetryDeps = getTomlPath(parsed, 'tool.poetry.dependencies')
+    if (typeof poetryDeps === 'object' && poetryDeps !== null && !Array.isArray(poetryDeps)) {
+      const dep = (poetryDeps as Record<string, unknown>)[pkgName]
+      if (dep !== undefined) {
+        if (typeof dep === 'string') return stripVersionPrefix(dep)
+        if (typeof dep === 'object' && dep !== null) {
+          const ver = (dep as Record<string, unknown>)['version']
+          if (typeof ver === 'string') return stripVersionPrefix(ver)
+        }
+      }
+    }
+
+    const projectDeps = getTomlPath(parsed, 'project.dependencies')
+    if (Array.isArray(projectDeps)) {
+      for (const dep of projectDeps) {
+        if (typeof dep !== 'string') continue
+        const match = new RegExp(
+          `^${escapeRegex(pkgName)}(?:\\[.*?\\])?\\s*[=><!~]+\\s*([\\d.]+)`,
+          'i',
+        ).exec(dep)
+        if (match !== null && match[1] !== undefined) return match[1]
+      }
+    }
+
+    throw new Error(`Package "${pkgName}" not found in pyproject.toml`)
+  }
+
+  const pep621 = getTomlPath(parsed, 'project.version')
+  if (typeof pep621 === 'string') return pep621
+
+  const poetryVer = getTomlPath(parsed, 'tool.poetry.version')
+  if (typeof poetryVer === 'string') return poetryVer
+
+  throw new Error('No version found in pyproject.toml')
+}
+
+/**
+ * requirementsTxt — reads a package version from requirements.txt
+ * Args: { package: string, path?: string }
+ * Supports: ==, >=, ~=, <=, >, < operators. Extracts first version number found.
+ */
+function requirementsTxt(root: string, args: ExtractorArgs): ExtractorResult {
+  const pkgName = args['package']
+  if (typeof pkgName !== 'string' || pkgName.length === 0) {
+    throw new Error('requirementsTxt extractor requires args.package (string)')
+  }
+
+  const filePath = typeof args['path'] === 'string' ? args['path'] : 'requirements.txt'
+  const reqPath = resolve(root, filePath)
+  if (!existsSync(reqPath)) {
+    throw new Error(`${filePath} not found`)
+  }
+
+  const lines = readFileSync(reqPath, 'utf-8').split('\n')
+  const pkgRegex = new RegExp(
+    `^${escapeRegex(pkgName)}(?:\\[.*?\\])?\\s*[=><!~]+\\s*([\\d.]+)`,
+    'i',
+  )
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed.length === 0 || trimmed.startsWith('#') || trimmed.startsWith('-')) continue
+    const match = pkgRegex.exec(trimmed)
+    if (match !== null && match[1] !== undefined) return match[1]
+  }
+
+  throw new Error(`Package "${pkgName}" not found in ${filePath}`)
+}
+
+/**
+ * cargoToml — reads versions from Cargo.toml
+ * Args: { package?: string, field?: string }
+ * - field: dot-path (e.g. "package.version")
+ * - package: crate name — searches dependencies, dev-dependencies, build-dependencies
+ * - neither: returns package.version
+ */
+function cargoToml(root: string, args: ExtractorArgs): ExtractorResult {
+  const pkgName = args['package']
+  const field = args['field']
+
+  const cargoPath = resolve(root, 'Cargo.toml')
+  if (!existsSync(cargoPath)) {
+    throw new Error('Cargo.toml not found')
+  }
+
+  const content = readFileSync(cargoPath, 'utf-8')
+  const parsed = parseToml(content)
+
+  if (typeof field === 'string' && field.length > 0) {
+    const value = getTomlPath(parsed, field)
+    if (typeof value !== 'string') {
+      throw new Error(`Field "${field}" not found or not a string in Cargo.toml`)
+    }
+    return stripVersionPrefix(value)
+  }
+
+  if (typeof pkgName === 'string' && pkgName.length > 0) {
+    for (const section of ['dependencies', 'dev-dependencies', 'build-dependencies']) {
+      const deps = getTomlPath(parsed, section)
+      if (typeof deps !== 'object' || deps === null || Array.isArray(deps)) continue
+      const dep = (deps as Record<string, unknown>)[pkgName]
+      if (dep === undefined) continue
+      if (typeof dep === 'string') return stripVersionPrefix(dep)
+      if (typeof dep === 'object' && dep !== null) {
+        const ver = (dep as Record<string, unknown>)['version']
+        if (typeof ver === 'string') return stripVersionPrefix(ver)
+      }
+    }
+    throw new Error(`Crate "${pkgName}" not found in Cargo.toml dependencies`)
+  }
+
+  const version = getTomlPath(parsed, 'package.version')
+  if (typeof version !== 'string') {
+    throw new Error('package.version not found in Cargo.toml')
+  }
+  return version
+}
+
+/**
+ * goMod — reads a module version from go.mod
+ * Args: { module: string }
+ * Strips leading "v" from version tags. Handles // indirect entries.
+ */
+function goMod(root: string, args: ExtractorArgs): ExtractorResult {
+  const moduleName = args['module']
+  if (typeof moduleName !== 'string' || moduleName.length === 0) {
+    throw new Error('goMod extractor requires args.module (string)')
+  }
+
+  const goModPath = resolve(root, 'go.mod')
+  if (!existsSync(goModPath)) {
+    throw new Error('go.mod not found')
+  }
+
+  const content = readFileSync(goModPath, 'utf-8')
+  const escaped = escapeRegex(moduleName)
+  // Matches both block-style (`\t<module> v<ver>`) and single-line (`require <module> v<ver>`)
+  const regex = new RegExp(
+    `^\\s*(?:require\\s+)?${escaped}\\s+v?([\\d]+(?:\\.[\\d]+)*(?:-[\\w.]+)?)`,
+    'gm',
+  )
+  const match = regex.exec(content)
+
+  if (match === null) {
+    throw new Error(`Module "${moduleName}" not found in go.mod`)
+  }
+
+  const version = match[1]
+  if (version === undefined || version.length === 0) {
+    throw new Error(`Cannot parse version for "${moduleName}" in go.mod`)
+  }
+
+  return version
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 const EXTRACTORS: Record<string, ExtractorFn> = {
@@ -465,6 +663,10 @@ const EXTRACTORS: Record<string, ExtractorFn> = {
   gitStaleness,
   packageEngines,
   tsconfigPaths,
+  pyprojectToml,
+  requirementsTxt,
+  cargoToml,
+  goMod,
 }
 
 /**

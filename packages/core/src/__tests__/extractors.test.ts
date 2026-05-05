@@ -218,3 +218,90 @@ describe('trpcRouterList extractor', () => {
     ).toThrow()
   })
 })
+
+describe('pyprojectToml extractor', () => {
+  it('returns project.version by default (PEP 621)', () => {
+    expect(runExtractor('pyprojectToml', FIXTURES, {})).toBe('1.2.3')
+  })
+  it('returns dependency version from PEP 621 dependencies array', () => {
+    expect(runExtractor('pyprojectToml', FIXTURES, { package: 'requests' })).toBe('2.28.0')
+  })
+  it('returns dependency version from tool.poetry.dependencies (string)', () => {
+    expect(runExtractor('pyprojectToml', FIXTURES, { package: 'django' })).toBe('4.2.0')
+  })
+  it('returns dependency version from tool.poetry.dependencies (object)', () => {
+    expect(runExtractor('pyprojectToml', FIXTURES, { package: 'sqlalchemy' })).toBe('2.0.0')
+  })
+  it('returns field value via dot-path', () => {
+    expect(runExtractor('pyprojectToml', FIXTURES, { field: 'project.name' })).toBe('my-python-app')
+  })
+  it('throws for unknown package', () => {
+    expect(() =>
+      runExtractor('pyprojectToml', FIXTURES, { package: 'nonexistent-xyz' })
+    ).toThrow()
+  })
+})
+
+describe('requirementsTxt extractor', () => {
+  it('extracts == pinned version', () => {
+    expect(runExtractor('requirementsTxt', FIXTURES, { package: 'django' })).toBe('4.2.0')
+  })
+  it('extracts >= version', () => {
+    expect(runExtractor('requirementsTxt', FIXTURES, { package: 'requests' })).toBe('2.28.0')
+  })
+  it('extracts ~= version', () => {
+    expect(runExtractor('requirementsTxt', FIXTURES, { package: 'numpy' })).toBe('1.24.0')
+  })
+  it('extracts package with extras notation', () => {
+    expect(runExtractor('requirementsTxt', FIXTURES, { package: 'Flask' })).toBe('2.3.0')
+  })
+  it('throws when package not found', () => {
+    expect(() =>
+      runExtractor('requirementsTxt', FIXTURES, { package: 'nonexistent-xyz' })
+    ).toThrow()
+  })
+})
+
+describe('cargoToml extractor', () => {
+  it('returns package.version by default', () => {
+    expect(runExtractor('cargoToml', FIXTURES, {})).toBe('0.3.1')
+  })
+  it('returns dependency version in string format', () => {
+    expect(runExtractor('cargoToml', FIXTURES, { package: 'tokio' })).toBe('1.35.1')
+  })
+  it('returns dependency version in object format', () => {
+    expect(runExtractor('cargoToml', FIXTURES, { package: 'serde' })).toBe('1.0.193')
+  })
+  it('returns dev-dependency version', () => {
+    expect(runExtractor('cargoToml', FIXTURES, { package: 'criterion' })).toBe('0.5.1')
+  })
+  it('returns field value via dot-path', () => {
+    expect(runExtractor('cargoToml', FIXTURES, { field: 'package.name' })).toBe('my-rust-app')
+  })
+  it('throws for unknown crate', () => {
+    expect(() =>
+      runExtractor('cargoToml', FIXTURES, { package: 'nonexistent-xyz' })
+    ).toThrow()
+  })
+})
+
+describe('goMod extractor', () => {
+  it('extracts module version from require block', () => {
+    expect(
+      runExtractor('goMod', FIXTURES, { module: 'github.com/gin-gonic/gin' })
+    ).toBe('1.9.1')
+  })
+  it('extracts version with // indirect comment', () => {
+    expect(
+      runExtractor('goMod', FIXTURES, { module: 'github.com/bytedance/sonic' })
+    ).toBe('1.9.1')
+  })
+  it('throws for unknown module', () => {
+    expect(() =>
+      runExtractor('goMod', FIXTURES, { module: 'github.com/nonexistent/pkg' })
+    ).toThrow()
+  })
+  it('throws when module arg is missing', () => {
+    expect(() => runExtractor('goMod', FIXTURES, {})).toThrow()
+  })
+})
