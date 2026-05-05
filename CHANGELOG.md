@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ## [Unreleased]
 
+### Fixed
+
+- `cargoToml` extractor now supports Cargo workspaces — falls back to `[workspace.package].version` when `[package].version` is absent, and searches `[workspace.dependencies]` in addition to `[dependencies]`, `[dev-dependencies]`, and `[build-dependencies]`
+
 ### Added
 
 - `warn` status — `ScanResult` and `AssertionResult` now support `'warn'`; `RunResult` gains `totalWarn`; warn earns 50% of score weight in `computeScore`; reporter shows `⚠ N warn` in yellow

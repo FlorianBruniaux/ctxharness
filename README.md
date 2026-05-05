@@ -173,7 +173,7 @@ Read ground truth from your codebase:
 | `tsconfigPaths` | Count of path aliases in `tsconfig.json` `compilerOptions.paths` (JSONC-aware) | `path?: string` (default `"tsconfig.json"`) |
 | `pyprojectToml` | Version from `pyproject.toml` — Poetry and PEP 621 formats | `package?: string`, `field?: string` |
 | `requirementsTxt` | Package version from `requirements.txt` | `package: string`, `path?: string` |
-| `cargoToml` | Version from `Cargo.toml` — own version or dependency | `package?: string`, `field?: string` |
+| `cargoToml` | Version from `Cargo.toml` — own version or dependency; supports Cargo workspaces (`[workspace.package]`, `[workspace.dependencies]`) | `package?: string`, `field?: string` |
 | `goMod` | Module version from `go.mod` | `module: string` |
 
 Version normalization: `v22` matches `22.14.0` — partial mentions are valid.
@@ -357,7 +357,7 @@ Ready-to-use config templates for common stacks:
 | Next.js App Router | `templates/presets/next-app-router.yml` | node, next, typescript, react versions + quality assertions |
 | Python | `templates/presets/python.yml` | python version, pyproject.toml deps + quality assertions |
 | Go | `templates/presets/go.yml` | go toolchain version, go.mod deps + quality assertions |
-| Rust | `templates/presets/rust.yml` | crate version, Cargo.toml deps + quality assertions |
+| Rust | `templates/presets/rust.yml` | crate version, Cargo.toml deps + quality assertions (workspace-aware) |
 
 Copy a preset as your `.ctxharness.yml` starting point:
 
