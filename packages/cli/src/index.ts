@@ -669,7 +669,7 @@ program
 
 // ─── scan command ─────────────────────────────────────────────────────────────
 
-const SCAN_SEP = '─'.repeat(64)
+const SCAN_SEP = '─'.repeat(68)
 const COL_CLAIM = 24
 const COL_DETECTED = 16
 const COL_ACTUAL = 16
@@ -699,6 +699,10 @@ function actualDisplay(r: HeuristicResult): string {
   return r.actual
 }
 
+function yamlQ(s: string): string {
+  return `'${s.replace(/'/g, "''")}'`
+}
+
 function buildSuggestedConfig(file: string, results: HeuristicResult[]): string {
   const resolvable = results.filter((r) => r.status !== 'unresolvable')
   const lines: string[] = [
@@ -708,15 +712,19 @@ function buildSuggestedConfig(file: string, results: HeuristicResult[]): string 
     'version: 1',
     'files:',
     '  include:',
-    `    - '${file}'`,
+    `    - ${yamlQ(file)}`,
     'assertions:',
   ]
+
+  const seenIds = new Set<string>()
 
   for (const r of resolvable) {
     const { claim } = r
     if (claim.type === 'semver') {
       const tech = claim.tech
       const id = `${tech}-version`
+      if (seenIds.has(id)) continue
+      seenIds.add(id)
       if (tech === 'node' || tech === 'nodejs') {
         lines.push(`  - id: ${id}`)
         lines.push(`    extractor: nvmrc`)
@@ -735,23 +743,29 @@ function buildSuggestedConfig(file: string, results: HeuristicResult[]): string 
     } else if (claim.type === 'path') {
       const val = claim.value
       const safeId = val.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
-      lines.push(`  - id: path-${safeId}`)
+      const id = `path-${safeId}`
+      if (seenIds.has(id)) continue
+      seenIds.add(id)
+      lines.push(`  - id: ${id}`)
       lines.push(`    extractor: fileExists`)
       lines.push(`    extractorArgs:`)
-      lines.push(`      path: '${val}'`)
+      lines.push(`      path: ${yamlQ(val)}`)
       lines.push(`    scanner: literalInMd`)
       lines.push(`    scannerArgs:`)
-      lines.push(`      literal: '${val}'`)
+      lines.push(`      literal: ${yamlQ(val)}`)
     } else if (claim.type === 'script') {
       const scriptName = claim.value
       const safeId = scriptName.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
-      lines.push(`  - id: script-${safeId}`)
+      const id = `script-${safeId}`
+      if (seenIds.has(id)) continue
+      seenIds.add(id)
+      lines.push(`  - id: ${id}`)
       lines.push(`    extractor: packageScript`)
       lines.push(`    extractorArgs:`)
-      lines.push(`      script: '${scriptName}'`)
+      lines.push(`      script: ${yamlQ(scriptName)}`)
       lines.push(`    scanner: literalInMd`)
       lines.push(`    scannerArgs:`)
-      lines.push(`      literal: '${claim.raw}'`)
+      lines.push(`      literal: ${yamlQ(claim.raw)}`)
     }
   }
 
@@ -789,10 +803,6 @@ program
       if (results.length === 0) {
         process.stdout.write(`No verifiable claims found in ${targetFile}.\n`)
         process.stdout.write(`Run \`ctxharness init\` to set up structured assertions.\n`)
-
-        if (opts.suggestConfig === true) {
-          process.stdout.write(buildSuggestedConfig(targetFile, results) + '\n')
-        }
         process.exit(0)
       }
 

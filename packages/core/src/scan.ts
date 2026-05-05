@@ -239,7 +239,7 @@ function verifySemverClaim(claim: HeuristicClaim, root: string): HeuristicResult
     actual = runExtractor('packageJson', root, { package: tech })
   }
 
-  const matched = normalizeMatch(claim.value, actual)
+  const matched = normalizeMatch(actual, claim.value)
   return {
     claim,
     detected: claim.value,
