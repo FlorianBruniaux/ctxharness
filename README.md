@@ -15,9 +15,9 @@ npx ctxharness run    # check for drift
 
 **L1 — Fact drift**: versions, file existence, counts, regex captures — any extractable fact from your codebase vs what your AI docs claim.
 
-**L2 — Instruction quality**: vague language that degrades agent reliability ("be careful", "use your judgment"), positive/negative instruction ratio, multi-file coherence (v0.3).
+**L2 — Instruction quality**: vague language that degrades agent reliability ("be careful", "use your judgment"), positive/negative instruction ratio, multi-file coherence, token budget.
 
-**L3 — Context assembly**: hook validation, skill loading, MCP routing (v0.4).
+**L3 — Context assembly**: hook validation, skill loading, rule glob validity, coverage ratio.
 
 **Brownfield-first.** Works on your existing `CLAUDE.md`/`AGENTS.md`/`.cursorrules` with zero migration.
 
@@ -234,6 +234,8 @@ ctxharness doctor    # comprehensive health check with L1/L2/L3 breakdown and re
 ctxharness init      # scaffold .ctxharness.yml
 ```
 
+`ctxharness init --hooks` also installs Husky post-merge / post-checkout hook scripts alongside the config.
+
 Options:
 
 ```
@@ -362,8 +364,8 @@ ctxharness covers three layers of context engineering testing:
 | Layer | What | Ships |
 |-------|------|-------|
 | **L1 Doc Drift** | Facts in AI docs vs code reality | v0.1 |
-| **L2 Instruction Quality** | Vague language, positive/negative ratio, multi-file coherence, token budget | v0.1 (quality) · v0.3 (coherence) |
-| **L3 Context Assembly** | Hook validation, skill loading, MCP routing | v0.1 (`hookValidity`) · v0.4 (full) |
+| **L2 Instruction Quality** | Vague language, positive/negative ratio, multi-file coherence, token budget | v0.1 |
+| **L3 Context Assembly** | Hook validation, skill loading, rule glob validity, coverage ratio | v0.1 |
 
 L4 (agent behavior eval) is out of scope — use [Promptfoo](https://promptfoo.dev) or [Braintrust](https://braintrust.dev) for that.
 

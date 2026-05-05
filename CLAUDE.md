@@ -16,7 +16,7 @@ templates/       Husky hooks + CI workflow templates
 
 ```bash
 pnpm build           # compile all packages
-pnpm test            # vitest (31 tests)
+pnpm test            # vitest (102 tests)
 pnpm test:watch      # watch mode
 pnpm lint            # tsc --noEmit
 pnpm fmt             # prettier --write
@@ -27,11 +27,13 @@ pnpm fmt             # prettier --write
 | File | Purpose |
 |------|---------|
 | `packages/core/src/config.ts` | Zod schema — `.ctxharness.yml` format |
-| `packages/core/src/extractors/index.ts` | 6 extractors (ground truth from code) |
-| `packages/core/src/scanners/index.ts` | 6 scanners (find mentions in docs) |
+| `packages/core/src/extractors/index.ts` | 15 extractors (ground truth from code) |
+| `packages/core/src/scanners/index.ts` | 15 scanners (find mentions in docs) |
 | `packages/core/src/runner.ts` | Orchestrates run, returns `RunResult` |
 | `packages/core/src/reporter.ts` | text / json / gha output formats |
-| `packages/cli/src/index.ts` | CLI entry point (run / check / init) |
+| `packages/core/src/snapshot.ts` | Snapshot save / load / diff for trend tracking |
+| `packages/core/src/plugin.ts` | Plugin API — register custom extractors/scanners |
+| `packages/cli/src/index.ts` | CLI entry point (run / check / score / fix / doctor / init / snapshot / diff) |
 | `packages/core/src/__tests__/fixtures/` | Test fixture files |
 
 ## Architecture rules
@@ -63,9 +65,9 @@ pnpm fmt             # prettier --write
 Boundaries that keep ctxharness focused and safe:
 
 - **Never add a scanner that has write side-effects**: Scanners are read-only by contract. A scanner that modifies files, sends network requests, or executes code is a security violation.
-- **Never add async I/O in scanner `collect()` methods**: Scanners run synchronously. All file reads use `std::fs`. Async scanners break the sequential collection contract.
-- **Never add a scanner that walks outside `root_path`**: Every scanner must respect the `root_path` boundary passed at construction. Traversal outside it is a path traversal vulnerability.
-- **Never add a second config format**: Configuration is TOML only (`ctxharness.toml`). No JSON, no YAML, no env-var-only config.
+- **Never add async I/O in scanner functions**: Scanners run synchronously. All file reads use `fs.readFileSync`. Async scanners break the sequential collection contract.
+- **Never add a scanner that walks outside the project root**: Every scanner must stay within the `root` directory passed at runtime. Traversal outside it is a path traversal vulnerability.
+- **Never add a second config format**: Configuration is YAML only (`.ctxharness.yml`). No TOML, no JSON, no env-var-only config.
 - **Never add a scanner dependency on another scanner's output**: Scanners are independent. Inter-scanner dependencies require a pipeline rewrite.
 - **Never output binary content in the harness bundle**: The bundle is UTF-8 text only. Scanners must skip binary files or emit a placeholder line.
 
@@ -92,9 +94,13 @@ Semver. `CHANGELOG.md` updated before every release.
 
 ## Roadmap
 
-- v0.1 — L1 core (this release): 6 extractors, 6 scanners, CLI, GHA
-- v0.2 — Stack-aware extractors (Prisma, tRPC, Zod, NextAuth, Knock)
-- v0.3 — L2 multi-file coherence + hook validation
-- v0.4 — L3 context assembly + plugin API
+### Released in v0.1.0
+
+- L1/L2/L3 full surface: 15 extractors, 15 scanners
+- 8 CLI commands: run / check / score / fix / doctor / init / snapshot / diff
+- Plugin API, stack presets (T3, Next App Router), GitHub Action
+
+### Upcoming
+
 - v0.5 — LSP + VSCode extension
-- v1.0 — Stack presets (t3, next-app-router, monorepo-turbo…)
+- v1.0 — monorepo-turbo preset, multi-root support
