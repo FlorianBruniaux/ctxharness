@@ -777,7 +777,8 @@ program
   .description('Scan a markdown file for verifiable claims (semver, paths, scripts) and check them against ground truth')
   .option('-r, --root <dir>', 'Project root directory', '')
   .option('--suggest-config', 'Also print a starter .ctxharness.yml based on detected claims')
-  .action(async (file: string | undefined, opts: { root: string; suggestConfig?: boolean }) => {
+  .option('--exit-zero', 'Always exit 0 even when drifts are found (for use in hooks / warning-only CI steps)')
+  .action(async (file: string | undefined, opts: { root: string; suggestConfig?: boolean; exitZero?: boolean }) => {
     try {
       const { default: chalk } = await import('chalk')
       const cwd = process.cwd()
@@ -851,7 +852,7 @@ program
         process.stdout.write(buildSuggestedConfig(targetFile, results) + '\n')
       }
 
-      process.exit(driftCount > 0 ? 1 : 0)
+      process.exit(driftCount > 0 && opts.exitZero !== true ? 1 : 0)
     } catch (e) {
       process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
       process.exit(1)

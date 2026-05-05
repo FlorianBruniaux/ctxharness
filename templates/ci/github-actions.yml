@@ -31,18 +31,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run ctxharness
-        uses: FlorianBruniaux/ctxharness@v0.1
-        with:
-          config: .ctxharness.yml
-          format: gha
-          fail-on-drift: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
-        # Note: fail-on-drift=true on PRs (blocking), false on push (informational)
-        # Flip both to 'true' once you've resolved initial drift.
+      - name: Install ctxharness
+        run: npm install -g ctxharness@latest
 
-      # Alternative: run without the action (if you prefer direct npm install):
-      # - name: Install ctxharness
-      #   run: npm install -g ctxharness@latest
-      # - name: Check drift
+      # Step 1 — zero-config scan (always passes, informational)
+      # Shows drift in the logs without breaking the build.
+      # Remove --exit-zero once you have a .ctxharness.yml configured.
+      - name: Scan AI docs (zero-config)
+        run: ctxharness scan --exit-zero
+        if: ${{ !hashFiles('.ctxharness.yml') }}
+
+      # Step 2 — full enforcement (exits 1 on drift, requires .ctxharness.yml)
+      # Uncomment once you have a config file in place.
+      # - name: Check AI doc drift
       #   run: ctxharness run --format gha
-      #   continue-on-error: true  # Remove once drift is resolved

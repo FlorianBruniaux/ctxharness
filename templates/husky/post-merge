@@ -4,9 +4,15 @@
 # Install: cp templates/husky/post-merge .husky/post-merge && chmod +x .husky/post-merge
 
 if command -v ctxharness &>/dev/null; then
-  ctxharness check || {
-    echo ""
-    echo "⚠  AI doc drift detected. Run: ctxharness run"
-    echo ""
-  }
+  if [ -f ".ctxharness.yml" ]; then
+    # Full enforcement mode — exits 1 on drift (blocking)
+    ctxharness check || {
+      echo ""
+      echo "⚠  AI doc drift detected. Run: ctxharness fix --apply"
+      echo ""
+    }
+  else
+    # Zero-config discovery mode — always exits 0 (informational)
+    ctxharness scan --exit-zero
+  fi
 fi
