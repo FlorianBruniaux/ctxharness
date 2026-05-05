@@ -12,6 +12,8 @@ const RULE_FRONTMATTER_NO_PATHS = join(FIXTURES, 'rule-frontmatter-no-paths.md')
 // Standalone scanner fixture roots (.claude/settings.json + .claude/skills/ live here)
 const ROOT_VALID = join(FIXTURES, 'root-valid')
 const ROOT_INVALID_HOOKS = join(FIXTURES, 'root-invalid-hooks')
+const ROOT_NESTED_SKILLS = join(FIXTURES, 'root-nested-skills')
+const ROOT_MATCHERLESS_HOOKS = join(FIXTURES, 'root-matcherless-hooks')
 
 describe('normalizeMatch', () => {
   it('passes when doc mentions major only', () => {
@@ -312,6 +314,49 @@ describe('skillValidity scanner (standalone — receives root)', () => {
     const results = runScanner('skillValidity', FIXTURES, '', {})
     expect(results).toHaveLength(1)
     expect(results[0]?.status).toBe('skip')
+  })
+})
+
+describe('skillValidity scanner — entryPointOnly', () => {
+  it('scans all md files by default including sub-directory reference files', () => {
+    // root-nested-skills has my-skill/skill.md (valid) + my-skill/references/ref.md (no frontmatter)
+    const results = runScanner('skillValidity', ROOT_NESTED_SKILLS, '', {})
+    expect(results).toHaveLength(2)
+    expect(results.some((r) => r.status === 'fail')).toBe(true)
+  })
+
+  it('only scans skill.md entry points when entryPointOnly is true', () => {
+    const results = runScanner('skillValidity', ROOT_NESTED_SKILLS, '', { entryPointOnly: true })
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+})
+
+describe('hookValidity scanner — always-on hooks without matcher', () => {
+  it('passes when hook has no matcher field (always-on hook)', () => {
+    const results = runScanner('hookValidity', ROOT_MATCHERLESS_HOOKS, '', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('pass')
+  })
+
+  it('passes when hook has empty matcher string (always-on hook)', () => {
+    // root-matcherless-hooks/SessionStart has matcher: "" — should be valid
+    const results = runScanner('hookValidity', ROOT_MATCHERLESS_HOOKS, '', {})
+    expect(results.every((r) => r.status !== 'fail')).toBe(true)
+  })
+})
+
+describe('freshnessScore scanner — generated flag', () => {
+  it('returns skip when generated is true regardless of commit count', () => {
+    const results = runScanner('freshnessScore', CLAUDE_MD, '500', { generated: true })
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('skip')
+  })
+
+  it('still fails normally when generated is not set', () => {
+    const results = runScanner('freshnessScore', CLAUDE_MD, '500', {})
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('fail')
   })
 })
 

@@ -1,5 +1,5 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
-import { dirname, resolve, join } from 'node:path'
+import { dirname, resolve, join, basename } from 'node:path'
 import { load } from 'js-yaml'
 import type { ScannerName } from '../config.js'
 
@@ -642,12 +642,13 @@ function hookValidity(
       const matcher = e['matcher']
       const cmds = e['hooks']
 
-      if (typeof matcher !== 'string' || matcher.trim().length === 0) {
+      // matcher is optional — absent or empty string means "match all" (always-on hook)
+      if (matcher !== undefined && typeof matcher !== 'string') {
         results.push({
           file: settingsPath,
           line: 0,
-          actual: `${eventType}[${i}].matcher is empty or missing`,
-          expected: 'non-empty matcher string',
+          actual: `${eventType}[${i}].matcher is not a string`,
+          expected: 'string or absent matcher',
           status: 'fail',
         })
       }
@@ -806,7 +807,11 @@ function skillValidity(
     return [{ file: skillsDir, line: 0, actual: 'no .claude/skills directory', expected: 'valid skill frontmatter', status: 'skip' }]
   }
 
-  const mdFiles = findMdFilesRecursive(skillsDir)
+  const entryPointOnly = args['entryPointOnly'] === true
+  let mdFiles = findMdFilesRecursive(skillsDir)
+  if (entryPointOnly) {
+    mdFiles = mdFiles.filter((f) => basename(f) === 'skill.md')
+  }
   if (mdFiles.length === 0) {
     return [{ file: skillsDir, line: 0, actual: 'no .md files in .claude/skills', expected: 'valid skill frontmatter', status: 'skip' }]
   }
@@ -833,6 +838,18 @@ function freshnessScore(
   const warnAfter = typeof args['warnAfter'] === 'number' ? args['warnAfter'] : 30
   const failAfter = typeof args['failAfter'] === 'number' ? args['failAfter'] : 100
   const sourceFile = typeof args['_sourceFile'] === 'string' ? args['_sourceFile'] : root
+
+  if (args['generated'] === true) {
+    return [
+      {
+        file: sourceFile,
+        line: 0,
+        actual: 'generated file — skipped',
+        expected: `≤${warnAfter} (warn after), ≤${failAfter} (fail after)`,
+        status: 'skip',
+      },
+    ]
+  }
 
   const commits = parseInt(expected, 10)
   if (isNaN(commits)) {

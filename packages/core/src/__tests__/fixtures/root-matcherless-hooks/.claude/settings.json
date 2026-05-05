@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          { "type": "command", "command": "echo done" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "echo started" }
+        ]
+      }
+    ]
+  }
+}
