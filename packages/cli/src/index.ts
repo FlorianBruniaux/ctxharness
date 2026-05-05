@@ -3,8 +3,8 @@ import { Command } from 'commander'
 import { resolve, join } from 'node:path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { relative } from 'node:path'
-import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots } from '@ctxharness/core'
-import type { OutputFormat, AssertionResult } from '@ctxharness/core'
+import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots } from '@florianbruniaux/ctxharness-core'
+import type { OutputFormat, AssertionResult } from '@florianbruniaux/ctxharness-core'
 
 // ─── Score helpers ────────────────────────────────────────────────────────────
 

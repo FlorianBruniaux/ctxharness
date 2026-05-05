@@ -319,7 +319,7 @@ Issues:
 Register custom extractors and scanners programmatically:
 
 ```typescript
-import { definePlugin, loadPlugin } from '@ctxharness/core'
+import { definePlugin, loadPlugin } from '@florianbruniaux/ctxharness-core'
 
 const myPlugin = definePlugin({
   extractors: [

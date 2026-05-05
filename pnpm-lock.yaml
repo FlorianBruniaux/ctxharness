@@ -23,7 +23,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@ctxharness/core':
+      '@florianbruniaux/ctxharness-core':
         specifier: workspace:*
         version: link:../core
       chalk:

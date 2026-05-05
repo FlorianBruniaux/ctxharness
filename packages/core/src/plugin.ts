@@ -35,7 +35,7 @@ export function definePlugin(plugin: CtxharnessPlugin): CtxharnessPlugin {
  * Call this before running assertions — typically at the top of your script.
  *
  * @example
- * import { loadPlugin } from '@ctxharness/core'
+ * import { loadPlugin } from '@florianbruniaux/ctxharness-core'
  * import myPlugin from './my-plugin.js'
  * loadPlugin(myPlugin)
  */

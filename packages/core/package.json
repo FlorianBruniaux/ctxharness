@@ -1,5 +1,5 @@
 {
-  "name": "@ctxharness/core",
+  "name": "@florianbruniaux/ctxharness-core",
   "version": "0.2.0",
   "type": "module",
   "license": "MIT",

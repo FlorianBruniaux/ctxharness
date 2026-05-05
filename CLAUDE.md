@@ -6,7 +6,7 @@ Framework for detecting AI documentation drift (L1/L2/L3 context engineering tes
 
 ```
 packages/
-├── core/        @ctxharness/core — lib (extractors, scanners, runner, reporter)
+├── core/        @florianbruniaux/ctxharness-core — lib (extractors, scanners, runner, reporter)
 └── cli/         ctxharness — CLI binary (commander)
 action.yml       GitHub Action wrapper
 templates/       Husky hooks + CI workflow templates
