@@ -5,7 +5,7 @@ import { normalizeMatch } from './scanners/index.js'
 // ─── Public types ─────────────────────────────────────────────────────────────
 
 export type ClaimType = 'semver' | 'path' | 'script'
-export type ClaimStatus = 'match' | 'drift' | 'error' | 'unresolvable'
+export type ClaimStatus = 'match' | 'drift' | 'unresolvable'
 
 export interface HeuristicClaim {
   type: ClaimType
@@ -29,6 +29,12 @@ const SEMVER_TECH_KEYWORDS = [
   'python', 'go', 'rust', 'cargo', 'next', 'nextjs',
   'react', 'typescript', 'ts', 'vitest', 'jest', 'deno',
 ]
+
+const SEMVER_TECH_KEYWORD_RES: ReadonlyArray<{ kw: string; re: RegExp }> =
+  SEMVER_TECH_KEYWORDS.map((kw) => ({
+    kw,
+    re: new RegExp(`(?:^|[^a-z])${kw}(?:[^a-z]|$)`),
+  }))
 
 const SCRIPT_EXCLUDE = new Set([
   'install', 'add', 'remove', 'update', 'init', 'ci',
@@ -91,9 +97,7 @@ function detectSemverClaims(
     const window = line.slice(windowStart, windowEnd).toLowerCase()
 
     let matchedTech: string | undefined
-    for (const kw of SEMVER_TECH_KEYWORDS) {
-      // Use word-boundary style matching — keyword must appear as a word
-      const kwRe = new RegExp(`(?:^|[^a-z])${kw}(?:[^a-z]|$)`)
+    for (const { kw, re: kwRe } of SEMVER_TECH_KEYWORD_RES) {
       if (kwRe.test(window)) {
         matchedTech = kw
         break
@@ -118,8 +122,8 @@ function detectSemverClaims(
 
 // ─── Heuristic 2: File paths ──────────────────────────────────────────────────
 
-const PATH_RE =
-  /`([./][^\s`]+|[a-zA-Z][^\s`]*\.(ts|tsx|js|jsx|py|rs|go|json|yml|yaml|md|sh|toml))`/g
+const PATH_RE_SRC =
+  '`([./][^\\s`]+|[a-zA-Z][^\\s`]*\\.(ts|tsx|js|jsx|py|rs|go|json|yml|yaml|md|sh|toml))`'
 
 function detectPathClaims(
   line: string,
@@ -127,7 +131,7 @@ function detectPathClaims(
   seen: Set<string>,
   results: HeuristicClaim[],
 ): void {
-  const re = new RegExp(PATH_RE.source, 'g')
+  const re = new RegExp(PATH_RE_SRC, 'g')
   let match: RegExpExecArray | null
 
   while ((match = re.exec(line)) !== null) {

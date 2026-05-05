@@ -46,11 +46,12 @@ describe('detectClaims — semver', () => {
     expect(semverClaims.length).toBe(0)
   })
 
-  it('skips URL versions (/v prefix)', () => {
-    const content = 'See https://example.com/v1.2.3/docs for the API endpoint.'
+  it('skips versions that are URL path segments (/v prefix)', () => {
+    // node is a tech keyword so detection runs, but /v before the backtick triggers the filter
+    const content = 'The node `/v2.0.0` endpoint handles auth.'
     const claims = detectClaims(content)
     const semverClaims = claims.filter((c) => c.type === 'semver')
-    expect(semverClaims.length).toBe(0)
+    expect(semverClaims).toHaveLength(0)
   })
 
   it('deduplicates identical (tech, value) pairs', () => {
