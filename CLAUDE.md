@@ -33,7 +33,7 @@ pnpm fmt             # prettier --write
 | `packages/core/src/reporter.ts` | text / json / gha output formats |
 | `packages/core/src/snapshot.ts` | Snapshot save / load / diff for trend tracking |
 | `packages/core/src/plugin.ts` | Plugin API — register custom extractors/scanners |
-| `packages/cli/src/index.ts` | CLI entry point (run / check / score / fix / doctor / init / snapshot / diff) |
+| `packages/cli/src/index.ts` | CLI entry point (run / check / scan / score / fix / doctor / init / snapshot / diff) |
 | `packages/core/src/__tests__/fixtures/` | Test fixture files |
 
 ## Architecture rules
@@ -97,7 +97,7 @@ Semver. `CHANGELOG.md` updated before every release.
 ### Released in v0.1.0
 
 - L1/L2/L3 full surface: 15 extractors, 15 scanners
-- 8 CLI commands: run / check / score / fix / doctor / init / snapshot / diff
+- 9 CLI commands: run / check / scan / score / fix / doctor / init / snapshot / diff
 - Plugin API, stack presets (T3, Next App Router), GitHub Action
 
 ### Upcoming

@@ -10,6 +10,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ### Added
 
+- `scan` command — zero-config heuristic scan of any markdown file; detects semver, file paths, and npm scripts; auto-maps to the right extractor; `--suggest-config` generates a starter `.ctxharness.yml`
+- `detectClaims`, `verifyClaim`, `scanFile` exported from `@florianbruniaux/ctxharness-core` for programmatic use
 - `packageScript` extractor — detects whether an npm script exists in `package.json`, enabling validation of script references in AI instruction files
 
 ---

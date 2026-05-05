@@ -242,6 +242,7 @@ Find and validate content in your AI doc files. Common ones: `inlineRegex`, `vag
 ```bash
 ctxharness run       # run all assertions, exit 1 on drift
 ctxharness check     # alias for run --format text
+ctxharness scan      # scan a markdown file for verifiable claims without a config file
 ctxharness score     # run assertions and report a 0-100 health score with grade (S/A/B/C/D/F)
 ctxharness snapshot  # save a quality snapshot to .ctxharness/snapshots/
 ctxharness diff      # compare against latest snapshot — exit 1 on score regression
@@ -269,6 +270,20 @@ CLAUDE.md:13  prisma-version  7.5 → 7.7.0
 CLAUDE.md:42  next-version    15.2.0 → 15.3.1
 
 Run ctxharness fix --apply to write changes.
+```
+
+### Zero-config scan
+
+Before setting up a full `.ctxharness.yml`, you can scan any AI instruction file for verifiable claims:
+
+```bash
+npx ctxharness scan CLAUDE.md
+```
+
+This detects version numbers, file paths, and npm scripts mentioned in the file and checks each against your codebase. Use `--suggest-config` to generate a starter `.ctxharness.yml`:
+
+```bash
+npx ctxharness scan CLAUDE.md --suggest-config
 ```
 
 ### Snapshot workflow
