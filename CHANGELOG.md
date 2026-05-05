@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ## [Unreleased]
 
+---
+
+## [0.2.0] — 2026-05-05
+
 ### Fixed
 
 - `cargoToml` extractor now supports Cargo workspaces — falls back to `[workspace.package].version` when `[package].version` is absent, and searches `[workspace.dependencies]` in addition to `[dependencies]`, `[dev-dependencies]`, and `[build-dependencies]`
