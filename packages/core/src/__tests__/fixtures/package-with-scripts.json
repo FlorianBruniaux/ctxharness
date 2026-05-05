@@ -1,0 +1,9 @@
+{
+  "name": "test-pkg",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}

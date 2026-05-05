@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ## [Unreleased]
 
+### Added
+
+- `packageScript` extractor — detects whether an npm script exists in `package.json`, enabling validation of script references in AI instruction files
+
 ---
 
 ## [0.2.0] — 2026-05-05

@@ -301,6 +301,45 @@ describe('cargoToml extractor — workspace', () => {
   })
 })
 
+describe('packageScript extractor', () => {
+  it('returns "true" when the script exists', () => {
+    expect(
+      runExtractor('packageScript', FIXTURES, { script: 'typecheck', file: 'package-with-scripts.json' })
+    ).toBe('true')
+  })
+  it('returns "true" for another existing script', () => {
+    expect(
+      runExtractor('packageScript', FIXTURES, { script: 'build', file: 'package-with-scripts.json' })
+    ).toBe('true')
+  })
+  it('returns "false" when the script is absent', () => {
+    expect(
+      runExtractor('packageScript', FIXTURES, { script: 'nonexistent-script', file: 'package-with-scripts.json' })
+    ).toBe('false')
+  })
+  it('returns "false" when the scripts field is missing', () => {
+    // The fixture package.json at FIXTURES root has no scripts field
+    expect(
+      runExtractor('packageScript', FIXTURES, { script: 'build' })
+    ).toBe('false')
+  })
+  it('throws when the script arg is missing', () => {
+    expect(() =>
+      runExtractor('packageScript', FIXTURES, { file: 'package-with-scripts.json' })
+    ).toThrow()
+  })
+  it('throws when the file is not found', () => {
+    expect(() =>
+      runExtractor('packageScript', FIXTURES, { script: 'build', file: 'nonexistent-package.json' })
+    ).toThrow()
+  })
+  it('uses custom file arg to read from a specific path', () => {
+    expect(
+      runExtractor('packageScript', FIXTURES, { script: 'test', file: 'package-with-scripts.json' })
+    ).toBe('true')
+  })
+})
+
 describe('goMod extractor', () => {
   it('extracts module version from require block', () => {
     expect(

@@ -139,7 +139,7 @@ assertions:
 Read ground truth from your codebase. Common ones: `packageJson`, `nvmrc`, `gitStaleness`, `prismaModelList`, `goMod`, `cargoToml`.
 
 <details>
-<summary>Full extractor list (19)</summary>
+<summary>Full extractor list (20)</summary>
 
 | Name | What it reads | Args |
 |------|--------------|------|
@@ -162,6 +162,7 @@ Read ground truth from your codebase. Common ones: `packageJson`, `nvmrc`, `gitS
 | `requirementsTxt` | Package version from `requirements.txt` | `package: string`, `path?: string` |
 | `cargoToml` | Version from `Cargo.toml` — own version or dependency; supports Cargo workspaces (`[workspace.package]`, `[workspace.dependencies]`) | `package?: string`, `field?: string` |
 | `goMod` | Module version from `go.mod` | `module: string` |
+| `packageScript` | Returns `"true"`/`"false"` if a named npm script exists in `package.json` | `script` (required), `file` (optional) |
 
 Version normalization: `v22` matches `22.14.0` — partial mentions are valid.
 

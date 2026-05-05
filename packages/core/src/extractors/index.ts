@@ -651,6 +651,35 @@ function goMod(root: string, args: ExtractorArgs): ExtractorResult {
   return version
 }
 
+/**
+ * packageScript — returns "true"/"false" based on whether a named script exists in package.json
+ * Args: { script: string, file?: string }
+ * - script: the script key to look up (e.g. "typecheck", "test:e2e")
+ * - file: path to package.json relative to root (default: "package.json")
+ */
+function packageScript(root: string, args: ExtractorArgs): ExtractorResult {
+  const scriptName = args['script']
+  if (typeof scriptName !== 'string' || scriptName.length === 0) {
+    throw new Error('packageScript extractor requires args.script (string)')
+  }
+
+  const pkgFile = typeof args['file'] === 'string' ? args['file'] : 'package.json'
+  const pkgPath = resolve(root, pkgFile)
+
+  if (!existsSync(pkgPath)) {
+    throw new Error(`package.json not found: ${pkgPath}`)
+  }
+
+  const pkg = readJson(pkgPath)
+
+  const scripts = pkg['scripts']
+  if (typeof scripts !== 'object' || scripts === null || Array.isArray(scripts)) {
+    return 'false'
+  }
+
+  return Object.prototype.hasOwnProperty.call(scripts, scriptName) ? 'true' : 'false'
+}
+
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 const EXTRACTORS: Record<string, ExtractorFn> = {
@@ -673,6 +702,7 @@ const EXTRACTORS: Record<string, ExtractorFn> = {
   requirementsTxt,
   cargoToml,
   goMod,
+  packageScript,
 }
 
 /**

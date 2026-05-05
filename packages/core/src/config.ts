@@ -23,6 +23,7 @@ const ExtractorNameSchema = z.enum([
   'requirementsTxt',
   'cargoToml',
   'goMod',
+  'packageScript',
 ])
 
 // Scanner schemas
