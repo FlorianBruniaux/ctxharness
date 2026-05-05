@@ -318,9 +318,8 @@ describe('packageScript extractor', () => {
     ).toBe('false')
   })
   it('returns "false" when the scripts field is missing', () => {
-    // The fixture package.json at FIXTURES root has no scripts field
     expect(
-      runExtractor('packageScript', FIXTURES, { script: 'build' })
+      runExtractor('packageScript', FIXTURES, { script: 'build', file: 'package-no-scripts.json' })
     ).toBe('false')
   })
   it('throws when the script arg is missing', () => {
@@ -331,6 +330,11 @@ describe('packageScript extractor', () => {
   it('throws when the file is not found', () => {
     expect(() =>
       runExtractor('packageScript', FIXTURES, { script: 'build', file: 'nonexistent-package.json' })
+    ).toThrow()
+  })
+  it('throws when package.json contains invalid JSON', () => {
+    expect(() =>
+      runExtractor('packageScript', FIXTURES, { script: 'build', file: 'package-invalid.json' })
     ).toThrow()
   })
   it('uses custom file arg to read from a specific path', () => {
