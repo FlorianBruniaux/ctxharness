@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { populateFromConfig, assertionsToYaml } from '../populate.js'
-import type { PopulateResult } from '../populate.js'
 import type { CtxharnessConfig } from '../config.js'
 import type { HeuristicClaim } from '../scan.js'
 
@@ -28,8 +27,6 @@ function makeClaim(overrides: Partial<HeuristicClaim> = {}): HeuristicClaim {
   }
 }
 
-// ─── populateFromConfig ───────────────────────────────────────────────────────
-
 describe('populateFromConfig', () => {
   it('returns empty suggested and skippedIds when no claims', () => {
     const result = populateFromConfig(makeConfig(), [])
@@ -45,7 +42,7 @@ describe('populateFromConfig', () => {
     expect(a.id).toBe('node-version')
     expect(a.extractor).toBe('nvmrc')
     expect(a.scanner).toBe('inlineRegex')
-    const pattern = (a.scannerArgs as Record<string, string>)['pattern']!
+    const pattern = (a.scannerArgs as Record<string, unknown>)['pattern'] as string
     expect(pattern).toContain('Node')
   })
 
@@ -64,7 +61,7 @@ describe('populateFromConfig', () => {
     const a = result.suggested[0]!
     expect(a.id).toBe('typescript-version')
     expect(a.extractor).toBe('packageJson')
-    expect((a.extractorArgs as Record<string, string>)['package']).toBe('typescript')
+    expect((a.extractorArgs as Record<string, unknown>)['package']).toBe('typescript')
     expect(a.scanner).toBe('inlineRegex')
   })
 
@@ -75,9 +72,9 @@ describe('populateFromConfig', () => {
     const a = result.suggested[0]!
     expect(a.id).toBe('path-src-index-ts')
     expect(a.extractor).toBe('fileExists')
-    expect((a.extractorArgs as Record<string, string>)['path']).toBe('src/index.ts')
+    expect((a.extractorArgs as Record<string, unknown>)['path']).toBe('src/index.ts')
     expect(a.scanner).toBe('literalInMd')
-    expect((a.scannerArgs as Record<string, string>)['literal']).toBe('src/index.ts')
+    expect((a.scannerArgs as Record<string, unknown>)['literal']).toBe('src/index.ts')
   })
 
   it('maps a script claim → packageScript extractor + literalInMd scanner', () => {
@@ -87,9 +84,9 @@ describe('populateFromConfig', () => {
     const a = result.suggested[0]!
     expect(a.id).toBe('script-build')
     expect(a.extractor).toBe('packageScript')
-    expect((a.extractorArgs as Record<string, string>)['script']).toBe('build')
+    expect((a.extractorArgs as Record<string, unknown>)['script']).toBe('build')
     expect(a.scanner).toBe('literalInMd')
-    expect((a.scannerArgs as Record<string, string>)['literal']).toBe('pnpm run build')
+    expect((a.scannerArgs as Record<string, unknown>)['literal']).toBe('pnpm run build')
   })
 
   it('skips claim whose generated ID already exists in config.assertions', () => {
@@ -120,8 +117,6 @@ describe('populateFromConfig', () => {
   })
 })
 
-// ─── assertionsToYaml ─────────────────────────────────────────────────────────
-
 describe('assertionsToYaml', () => {
   it('returns empty string for empty array', () => {
     expect(assertionsToYaml([])).toBe('')
@@ -138,7 +133,7 @@ describe('assertionsToYaml', () => {
     expect(yaml).toContain('scannerArgs:')
   })
 
-  it('each assertion block starts with "  - id:" (2-space indent for YAML list)', () => {
+  it('each assertion block starts with "  - id:"', () => {
     const { suggested } = populateFromConfig(makeConfig(), [
       makeClaim({ type: 'semver', tech: 'node', value: '22.0.0' }),
     ])
@@ -163,7 +158,6 @@ describe('assertionsToYaml', () => {
     ]
     const { suggested } = populateFromConfig(makeConfig(), claims)
     const yaml = assertionsToYaml(suggested)
-    // Should contain two id: blocks
     const idCount = (yaml.match(/^\s+- id:/gm) ?? []).length
     expect(idCount).toBe(2)
   })
