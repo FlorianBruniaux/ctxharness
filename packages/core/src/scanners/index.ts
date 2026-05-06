@@ -684,6 +684,20 @@ function hookValidity(
               status: 'fail',
             })
           }
+          // Warn on absolute paths in hook commands — breaks on other machines
+          if (c['type'] === 'command' && typeof c['command'] === 'string') {
+            const cmd = c['command'] as string
+            const absMatch = cmd.match(/(?:^|\s)(\/(?:Users|home|root|opt|var|srv)\/\S+)/)
+            if (absMatch) {
+              results.push({
+                file: settingsPath,
+                line: 0,
+                actual: `${eventType}[${i}].hooks[${j}].command contains absolute path: ${absMatch[1]}`,
+                expected: 'relative path (portability)',
+                status: 'warn',
+              })
+            }
+          }
         }
       }
     }

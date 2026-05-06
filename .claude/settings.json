@@ -28,11 +28,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/florianbruniaux/Sites/perso/ctxharness/.claude/hooks/dangerous-actions-blocker.sh"
+            "command": "bash .claude/hooks/dangerous-actions-blocker.sh"
           },
           {
             "type": "command",
-            "command": "bash /Users/florianbruniaux/Sites/perso/ctxharness/.claude/hooks/rtk-suggest.sh"
+            "command": "bash .claude/hooks/rtk-suggest.sh"
           }
         ]
       },
@@ -41,11 +41,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/florianbruniaux/Sites/perso/ctxharness/.claude/hooks/dangerous-actions-blocker.sh"
+            "command": "bash .claude/hooks/dangerous-actions-blocker.sh"
           },
           {
             "type": "command",
-            "command": "bash /Users/florianbruniaux/Sites/perso/ctxharness/.claude/hooks/security-gate.sh"
+            "command": "bash .claude/hooks/security-gate.sh"
           }
         ]
       }
@@ -56,11 +56,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/florianbruniaux/Sites/perso/ctxharness/.claude/hooks/auto-format.sh"
+            "command": "bash .claude/hooks/auto-format.sh"
           },
           {
             "type": "command",
-            "command": "bash /Users/florianbruniaux/Sites/perso/ctxharness/.claude/hooks/typecheck-feedback.sh"
+            "command": "bash .claude/hooks/typecheck-feedback.sh"
           }
         ]
       }
@@ -70,11 +70,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/florianbruniaux/Sites/perso/ctxharness/.claude/hooks/git-context.sh"
+            "command": "bash .claude/hooks/git-context.sh"
           },
           {
             "type": "command",
-            "command": "bash /Users/florianbruniaux/Sites/perso/ctxharness/.claude/hooks/smart-suggest.sh"
+            "command": "bash .claude/hooks/smart-suggest.sh"
           }
         ]
       }

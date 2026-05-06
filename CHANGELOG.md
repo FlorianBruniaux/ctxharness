@@ -10,6 +10,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ---
 
+## [0.4.3] — 2026-05-06
+
+### Added
+
+- `hookValidity` scanner now warns (`status: warn`) when a hook command in `.claude/settings.json` contains an absolute path (`/Users/`, `/home/`, `/root/`, etc.) — breaks portability across machines; use relative paths instead
+
+### Fixed
+
+- `.claude/settings.json` hook commands now use relative paths (`.claude/hooks/...`) instead of hardcoded absolute machine-specific paths
+
+---
+
 ## [0.4.2] — 2026-05-06
 
 ### Added
