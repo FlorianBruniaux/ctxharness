@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ---
 
+## [0.4.4] — 2026-05-06
+
+### Added
+
+- `trend` command — cross-run drift score history with sparkline, direction detection (improving/worsening/flat), and per-run table
+- Auto-recording to `~/.ctxharness/history.jsonl` after every `run`, `check`, `score`, and `doctor` run
+- `--no-trend` flag on `run`, `check`, `score`, and `doctor` to skip recording (useful in CI)
+
+---
+
 ## [0.4.3] — 2026-05-06
 
 ### Added
