@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
-import { resolve, join } from 'node:path'
+import { resolve, join, basename } from 'node:path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { relative } from 'node:path'
-import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots, scanFile, detectIncludes } from '@florianbruniaux/ctxharness-core'
-import type { OutputFormat, AssertionResult, HeuristicResult } from '@florianbruniaux/ctxharness-core'
+import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots, scanFile, detectIncludes, appendTrendRecord } from '@florianbruniaux/ctxharness-core'
+import type { OutputFormat, AssertionResult, HeuristicResult, TrendRecord, RunResult } from '@florianbruniaux/ctxharness-core'
 
 // ─── Score helpers ────────────────────────────────────────────────────────────
 
@@ -31,6 +31,24 @@ function computeScore(assertions: AssertionResult[]): { score: number; grade: st
   return { score, grade }
 }
 
+function recordTrend(result: RunResult, root: string): void {
+  const { score, grade } = computeScore(result.assertions)
+  appendTrendRecord({
+    timestamp: new Date().toISOString(),
+    root,
+    projectName: basename(root),
+    score,
+    grade,
+    totalPass: result.totalPass,
+    totalFail: result.totalFail,
+    totalWarn: result.totalWarn,
+    totalError: result.totalError,
+    totalSkip: result.totalSkip,
+    assertionCount: result.assertions.length,
+    durationMs: result.durationMs,
+  } satisfies TrendRecord)
+}
+
 const program = new Command()
 
 program
@@ -47,7 +65,8 @@ program
   .option('-f, --format <fmt>', 'Output format: text | json | gha', 'text')
   .option('-r, --root <dir>', 'Project root directory', '')
   .option('-w, --watch', 'Re-run on file changes (fs.watch, recursive)')
-  .action(async (opts: { config: string; format: string; root: string; watch?: boolean }) => {
+  .option('--no-trend', 'Skip recording this run to trend history')
+  .action(async (opts: { config: string; format: string; root: string; watch?: boolean; trend: boolean }) => {
     try {
       const cwd = process.cwd()
       const configPath = resolve(cwd, opts.config)
@@ -93,6 +112,7 @@ program
       }
 
       const result = await doRun()
+      if (opts.trend !== false) recordTrend(result, root)
       process.exit(result.totalFail > 0 || result.totalError > 0 ? 1 : 0)
     } catch (e) {
       process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
@@ -107,7 +127,8 @@ program
   .description('Run assertions with text output (alias for run --format text)')
   .option('-c, --config <path>', 'Path to config file', '.ctxharness.yml')
   .option('-r, --root <dir>', 'Project root directory', '')
-  .action(async (opts: { config: string; root: string }) => {
+  .option('--no-trend', 'Skip recording to trend history')
+  .action(async (opts: { config: string; root: string; trend: boolean }) => {
     try {
       const cwd = process.cwd()
       const configPath = resolve(cwd, opts.config)
@@ -124,6 +145,7 @@ program
       const config = loadConfig(configPath)
       const result = await run(config, root)
       report(result, 'text')
+      if (opts.trend !== false) recordTrend(result, root)
 
       process.exit(result.totalFail > 0 || result.totalError > 0 ? 1 : 0)
     } catch (e) {
@@ -139,7 +161,8 @@ program
   .description('Run assertions and report a 0-100 context health score')
   .option('-c, --config <path>', 'Path to config file', '.ctxharness.yml')
   .option('-r, --root <dir>', 'Project root directory', '')
-  .action(async (opts: { config: string; root: string }) => {
+  .option('--no-trend', 'Skip recording to trend history')
+  .action(async (opts: { config: string; root: string; trend: boolean }) => {
     try {
       const cwd = process.cwd()
       const configPath = resolve(cwd, opts.config)
@@ -176,6 +199,7 @@ program
         chalk.dim(`  pass ${result.totalPass}  ·  warn ${result.totalWarn}  ·  fail ${result.totalFail}  ·  skip ${result.totalSkip}  ·  error ${result.totalError}`),
       )
       console.log('')
+      if (opts.trend !== false) recordTrend(result, root)
 
       process.exit(result.totalFail > 0 || result.totalError > 0 ? 1 : 0)
     } catch (e) {
