@@ -1,6 +1,6 @@
 import { mkdirSync, appendFileSync, readFileSync, existsSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, basename } from 'node:path'
+import { join } from 'node:path'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
