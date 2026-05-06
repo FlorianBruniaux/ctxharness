@@ -152,30 +152,3 @@ export function summarizeTrend(records: TrendRecord[]): TrendSummary | null {
   }
 }
 
-export function buildTrendRecord(
-  root: string,
-  score: number,
-  grade: string,
-  totalPass: number,
-  totalFail: number,
-  totalWarn: number,
-  totalError: number,
-  totalSkip: number,
-  assertionCount: number,
-  durationMs: number,
-): TrendRecord {
-  return {
-    timestamp: new Date().toISOString(),
-    root,
-    projectName: basename(root),
-    score,
-    grade,
-    totalPass,
-    totalFail,
-    totalWarn,
-    totalError,
-    totalSkip,
-    assertionCount,
-    durationMs,
-  }
-}
