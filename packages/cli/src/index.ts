@@ -199,6 +199,7 @@ program
         chalk.dim(`  pass ${result.totalPass}  ·  warn ${result.totalWarn}  ·  fail ${result.totalFail}  ·  skip ${result.totalSkip}  ·  error ${result.totalError}`),
       )
       console.log('')
+      console.log(chalk.dim(`  Run ${chalk.cyan('ctxharness trend')} to see history.\n`))
       if (opts.trend !== false) recordTrend(result, root)
 
       process.exit(result.totalFail > 0 || result.totalError > 0 ? 1 : 0)
@@ -345,7 +346,8 @@ program
   .description('Comprehensive health check of AI context assembly')
   .option('-c, --config <path>', 'Path to config file', '.ctxharness.yml')
   .option('-r, --root <dir>', 'Project root directory', '')
-  .action(async (opts: { config: string; root: string }) => {
+  .option('--no-trend', 'Skip recording to trend history')
+  .action(async (opts: { config: string; root: string; trend: boolean }) => {
     try {
       const cwd = process.cwd()
       const configPath = resolve(cwd, opts.config)
@@ -475,6 +477,8 @@ program
         }
         console.log('')
       }
+
+      if (opts.trend !== false) recordTrend(result, root)
 
       process.exit(result.totalFail > 0 || result.totalError > 0 ? 1 : 0)
     } catch (e) {
