@@ -259,6 +259,7 @@ ctxharness run       # run all assertions, exit 1 on drift
 ctxharness check     # alias for run --format text
 ctxharness scan      # scan a markdown file for verifiable claims without a config file
 ctxharness score     # run assertions and report a 0-100 health score with grade (S/A/B/C/D/F)
+ctxharness trend     # show cross-run drift score history — sparkline, direction, per-run table
 ctxharness snapshot  # save a quality snapshot to .ctxharness/snapshots/
 ctxharness diff      # compare against latest snapshot — exit 1 on score regression
 ctxharness fix       # auto-fix version drift — dry-run by default, --apply writes files
