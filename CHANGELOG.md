@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ---
 
+## [0.4.5] — 2026-05-06
+
+### Added
+
+- `init` now auto-scans existing AI doc files (CLAUDE.md, AGENTS.md, .cursorrules) and generates assertions from detected claims — no more editing a generic template by hand
+- `scan` shows a tip at the bottom suggesting `--suggest-config` or `ctxharness init` when no config file exists
+- `scan` shows a tip when `.ctxharness.yml` already exists, clarifying that `scan` is single-file discovery while `run` enforces all configured files
+
+---
+
 ## [0.4.4] — 2026-05-06
 
 ### Added

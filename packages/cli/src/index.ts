@@ -874,6 +874,12 @@ program
         process.exit(1)
       }
 
+      // Hint when a config already exists — scan is heuristic/single-file, run is config-based/multi-file
+      const configPath = join(cwd, '.ctxharness.yml')
+      if (existsSync(configPath)) {
+        process.stdout.write(`Tip: .ctxharness.yml found — \`ctxharness run\` enforces all configured files. \`scan\` is zero-config single-file discovery.\n\n`)
+      }
+
       process.stdout.write(`Scanning ${targetFile} for verifiable claims...\n\n`)
 
       let results: HeuristicResult[]
@@ -939,6 +945,8 @@ program
 
       if (opts.suggestConfig === true) {
         process.stdout.write(buildSuggestedConfig(targetFile, results) + '\n')
+      } else if (!existsSync(configPath)) {
+        process.stdout.write(chalk.dim(`\nTip: run \`ctxharness scan ${targetFile} --suggest-config\` to generate a .ctxharness.yml, or \`ctxharness init\` to auto-generate from all AI doc files.\n`))
       }
 
       process.exit(driftCount > 0 && opts.exitZero !== true ? 1 : 0)
