@@ -1112,9 +1112,12 @@ program
 
       try {
         loadConfig(configPath)
-      } catch {
+      } catch (err) {
         writeFileSync(configPath, existing, 'utf-8')
-        process.stderr.write(`Error: appended YAML produced an invalid config — reverted. Check that your config ends with the assertions block.\n`)
+        process.stderr.write(
+          `Error: appended YAML produced an invalid config — reverted.\n` +
+          `  Reason: ${err instanceof Error ? err.message : String(err)}\n`,
+        )
         process.exit(1)
       }
 
