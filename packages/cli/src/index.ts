@@ -1069,7 +1069,7 @@ program
 
       if (expandedFiles.length === 0) {
         console.log(chalk.yellow('\nNo files matched the include patterns in your config.\n'))
-        console.log(chalk.dim(`  files.include: ${config.files.include.join(', ')}\n`))
+        console.log(chalk.dim(`  files.include: ${config.files.include.length > 0 ? config.files.include.join(', ') : '(none)'}\n`))
         process.exit(0)
       }
 
@@ -1078,8 +1078,8 @@ program
         try {
           const results = scanFile(filePath, root)
           for (const r of results) allClaims.push(r.claim)
-        } catch {
-          // skip unreadable file
+        } catch (err) {
+          process.stderr.write(chalk.dim(`  warning: skipping ${relative(cwd, filePath)} — ${err instanceof Error ? err.message : String(err)}\n`))
         }
       }
 
@@ -1109,6 +1109,14 @@ program
       const existing = readFileSync(configPath, 'utf-8')
       const updated = existing.trimEnd() + '\n  # added by ctxharness populate\n' + yamlBlock + '\n'
       writeFileSync(configPath, updated, 'utf-8')
+
+      try {
+        loadConfig(configPath)
+      } catch {
+        writeFileSync(configPath, existing, 'utf-8')
+        process.stderr.write(`Error: appended YAML produced an invalid config — reverted. Check that your config ends with the assertions block.\n`)
+        process.exit(1)
+      }
 
       console.log(chalk.green(`\n✓ Appended ${suggested.length} assertion${suggested.length !== 1 ? 's' : ''} to ${opts.config}\n`))
       console.log(chalk.dim(`  Run \`ctxharness run\` to enforce them.\n`))
