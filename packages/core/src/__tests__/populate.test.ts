@@ -127,7 +127,7 @@ describe('assertionsToYaml', () => {
       makeClaim({ type: 'semver', tech: 'node', value: '22.0.0' }),
     ])
     const yaml = assertionsToYaml(suggested)
-    expect(yaml).toContain('id: node-version')
+    expect(yaml).toContain("id: 'node-version'")
     expect(yaml).toContain('extractor: nvmrc')
     expect(yaml).toContain('scanner: inlineRegex')
     expect(yaml).toContain('scannerArgs:')

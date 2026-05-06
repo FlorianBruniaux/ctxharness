@@ -6,16 +6,20 @@ export interface PopulateResult {
   skippedIds: string[]
 }
 
+function toSafeSlug(s: string): string {
+  return s.replace(/[^a-zA-Z0-9]/g, '-').replace(/^-|-$/g, '')
+}
+
 function claimId(claim: HeuristicClaim): string {
   if (claim.type === 'semver') {
     const tech = claim.tech === 'nodejs' ? 'node' : claim.tech
     return `${tech}-version`
   }
   if (claim.type === 'path') {
-    const safe = claim.value.replace(/[^a-zA-Z0-9]/g, '-').replace(/^-|-$/g, '')
+    const safe = toSafeSlug(claim.value)
     return `path-${safe}`
   }
-  const safe = claim.value.replace(/[^a-zA-Z0-9]/g, '-').replace(/^-|-$/g, '')
+  const safe = toSafeSlug(claim.value)
   return `script-${safe}`
 }
 
@@ -40,7 +44,7 @@ function claimToAssertion(claim: HeuristicClaim): Assertion {
   }
 
   if (claim.type === 'path') {
-    const safe = claim.value.replace(/[^a-zA-Z0-9]/g, '-').replace(/^-|-$/g, '')
+    const safe = toSafeSlug(claim.value)
     return {
       id: `path-${safe}`,
       extractor: 'fileExists',
@@ -50,7 +54,7 @@ function claimToAssertion(claim: HeuristicClaim): Assertion {
     }
   }
 
-  const safe = claim.value.replace(/[^a-zA-Z0-9]/g, '-').replace(/^-|-$/g, '')
+  const safe = toSafeSlug(claim.value)
   return {
     id: `script-${safe}`,
     extractor: 'packageScript',
@@ -68,11 +72,15 @@ export function populateFromConfig(
   const seenIds = new Set<string>(existingIds)
   const suggested: Assertion[] = []
   const skippedIds: string[] = []
+  const reportedSkips = new Set<string>()
 
   for (const claim of claims) {
     const id = claimId(claim)
-    if (existingIds.has(id) && !skippedIds.includes(id)) {
-      skippedIds.push(id)
+    if (existingIds.has(id)) {
+      if (!reportedSkips.has(id)) {
+        reportedSkips.add(id)
+        skippedIds.push(id)
+      }
       continue
     }
     if (seenIds.has(id)) continue
@@ -92,7 +100,7 @@ export function assertionsToYaml(assertions: Assertion[]): string {
 
   const lines: string[] = []
   for (const a of assertions) {
-    lines.push(`  - id: ${a.id}`)
+    lines.push(`  - id: ${yamlQ(a.id)}`)
     lines.push(`    extractor: ${a.extractor}`)
     if (a.extractorArgs !== undefined && Object.keys(a.extractorArgs).length > 0) {
       lines.push(`    extractorArgs:`)
