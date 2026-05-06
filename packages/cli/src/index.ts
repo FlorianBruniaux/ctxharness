@@ -3,7 +3,7 @@ import { Command } from 'commander'
 import { resolve, join } from 'node:path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { relative } from 'node:path'
-import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots, scanFile } from '@florianbruniaux/ctxharness-core'
+import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots, scanFile, detectIncludes } from '@florianbruniaux/ctxharness-core'
 import type { OutputFormat, AssertionResult, HeuristicResult } from '@florianbruniaux/ctxharness-core'
 
 // ─── Score helpers ────────────────────────────────────────────────────────────
@@ -802,7 +802,13 @@ program
       }
 
       if (results.length === 0) {
-        process.stdout.write(`No verifiable claims found in ${targetFile}.\n`)
+        const includes = detectIncludes(filePath)
+        if (includes.length > 0) {
+          process.stdout.write(`No verifiable claims found directly in ${targetFile}.\n`)
+          process.stdout.write(`Included files were also scanned: ${includes.join(', ')}\n`)
+        } else {
+          process.stdout.write(`No verifiable claims found in ${targetFile}.\n`)
+        }
         process.stdout.write(`Run \`ctxharness init\` to set up structured assertions.\n`)
         process.exit(0)
       }

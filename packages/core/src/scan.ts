@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { runExtractor } from './extractors/index.js'
 import { normalizeMatch } from './scanners/index.js'
 
@@ -298,11 +299,47 @@ function verifyScriptClaim(claim: HeuristicClaim, root: string): HeuristicResult
 
 // ─── Convenience function ─────────────────────────────────────────────────────
 
+const IMPORT_PATTERN = /@([\w./\-]+\.md)/g
+
 /**
  * Read a file, detect heuristic claims, verify each against extractors, return results.
+ * Follows @file.md includes (Claude/Gemini/Cursor convention) up to depth 3.
  */
-export function scanFile(filePath: string, root: string): HeuristicResult[] {
+export function scanFile(filePath: string, root: string, _visited?: Set<string>, _depth?: number): HeuristicResult[] {
+  const visited = _visited ?? new Set<string>()
+  const depth = _depth ?? 3
+
+  if (depth <= 0 || visited.has(filePath) || !existsSync(filePath)) return []
+  visited.add(filePath)
+
   const content = readFileSync(filePath, 'utf-8')
   const claims = detectClaims(content)
-  return claims.map((claim) => verifyClaim(claim, root))
+  const results = claims.map((claim) => verifyClaim(claim, root))
+
+  // Follow @file.md includes
+  const dir = dirname(filePath)
+  IMPORT_PATTERN.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = IMPORT_PATTERN.exec(content)) !== null) {
+    const included = resolve(dir, match[1]!)
+    results.push(...scanFile(included, root, visited, depth - 1))
+  }
+
+  return results
+}
+
+/**
+ * Returns the list of @file.md includes found directly in a file (non-recursive).
+ * Used by the CLI to produce informative messages when no claims are found.
+ */
+export function detectIncludes(filePath: string): string[] {
+  if (!existsSync(filePath)) return []
+  const content = readFileSync(filePath, 'utf-8')
+  const includes: string[] = []
+  IMPORT_PATTERN.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = IMPORT_PATTERN.exec(content)) !== null) {
+    includes.push(match[1]!)
+  }
+  return includes
 }

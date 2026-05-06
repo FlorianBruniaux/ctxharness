@@ -2,7 +2,9 @@
 
 **AI documentation drift detection for teams using Claude Code, Cursor, Copilot, and any agent-driven workflow.**
 
-Your `CLAUDE.md` says Prisma 7.5. Your `package.json` has `^7.7.0`. Your agent is reasoning against stale facts — silently, on every session.
+Your `CLAUDE.md` says the auth config lives at `src/config/auth.ts`. That file moved to `src/modules/auth/config.ts` six months ago. Your agent tries to import from a path that no longer exists, silently, on every session.
+
+Or: `CLAUDE.md` says `npm run typecheck`. The script was renamed to `npm run type-check` during a cleanup sprint. The agent runs a command that doesn't exist.
 
 ctxharness catches this before it reaches your agents.
 
@@ -13,9 +15,13 @@ npx ctxharness init              # scaffold .ctxharness.yml
 npx ctxharness run               # check all assertions
 ```
 
+## Why put facts in CLAUDE.md at all?
+
+Agents work from the context window. Pointing an agent to `package.json` works, but it means reading that file on every session, and many facts can't be read from a single source file: architectural patterns, team conventions, file locations, which ORM you're using and why. ctxharness is for facts you've already decided to state explicitly. It keeps those statements accurate.
+
 ## What it checks
 
-**L1 — Fact drift**: versions, file existence, counts, regex captures — any extractable fact from your codebase vs what your AI docs claim.
+**L1 — Fact drift**: file existence, npm scripts, versions, counts, regex captures — any extractable fact from your codebase vs what your AI docs claim.
 
 **L2 — Instruction quality**: vague language that degrades agent reliability ("be careful", "use your judgment"), positive/negative instruction ratio, multi-file coherence, token budget.
 
@@ -49,8 +55,8 @@ AI Context Test — 5 assertions
 
 fact                    expected       mentions  status
 ────────────────────────────────────────────────────────────────────────
-next-version            16.2.3                1  ✗ 1 mismatch
-prisma-version          7.7.0                 4  ✗ 1 mismatch
+auth-config-path        true                  1  ✗ 1 mismatch
+typecheck-script        true                  1  ✗ 1 mismatch
 node-version            22.14.0               1  ✓ 1/1 pass
 no-vague-language       check                 2  ✓ 2/2 pass
 instruction-balance     check                 2  ✓ 2/2 pass
@@ -58,8 +64,8 @@ instruction-balance     check                 2  ✓ 2/2 pass
 
 Mismatches
 ────────────────────────────────────────────────────────────────────────
-next-version            CLAUDE.md                                     13  16.2.3      16.2.0
-prisma-version          CLAUDE.md                                     13  7.7.0       7.5
+auth-config-path        CLAUDE.md:18   true        false
+typecheck-script        CLAUDE.md:34   true        false
 ────────────────────────────────────────────────────────────────────────
 ✗ 2 mismatch(es) — update the file(s) listed above
 ```
@@ -80,12 +86,19 @@ files:
     - 'node_modules/**'
 
 assertions:
-  # L1 — fact drift: node version in docs matches .nvmrc
-  - id: node-version
-    extractor: nvmrc
-    scanner: inlineRegex
-    scannerArgs:
-      pattern: 'Node(?:\.js)?\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
+  # L1 — fact drift: auth config path still exists
+  - id: auth-config-path
+    extractor: fileExists
+    extractorArgs:
+      path: src/modules/auth/config.ts
+    scanner: literalInMd
+
+  # L1 — fact drift: typecheck script matches package.json
+  - id: typecheck-script
+    extractor: packageScript
+    extractorArgs:
+      script: type-check
+    scanner: literalInMd
 
   # L2 — instruction quality: no vague language
   - id: no-vague-language
@@ -138,7 +151,7 @@ assertions:
 
 ## Extractors
 
-Read ground truth from your codebase. Common ones: `packageJson`, `nvmrc`, `gitStaleness`, `prismaModelList`, `goMod`, `cargoToml`.
+Read ground truth from your codebase. Common ones: `fileExists`, `packageScript`, `packageJson`, `nvmrc`, `gitStaleness`, `prismaModelList`, `goMod`, `cargoToml`.
 
 <details>
 <summary>Full extractor list (20)</summary>
@@ -172,7 +185,7 @@ Version normalization: `v22` matches `22.14.0` — partial mentions are valid.
 
 ## Scanners
 
-Find and validate content in your AI doc files. Common ones: `inlineRegex`, `vaguenessPattern`, `hookValidity`, `coverageRatio`, `freshnessScore`.
+Find and validate content in your AI doc files. Common ones: `inlineRegex`, `literalInMd`, `vaguenessPattern`, `hookValidity`, `coverageRatio`, `freshnessScore`.
 
 <details>
 <summary>Full scanner list (15)</summary>
@@ -194,7 +207,7 @@ Find and validate content in your AI doc files. Common ones: `inlineRegex`, `vag
 |------|----------------|------|
 | `vaguenessPattern` | Vague instructions ("be careful", "as needed", "use your judgment"…) | `patterns?: string[]` |
 | `negativeConstraintDensity` | Positive/negative instruction ratio below threshold | `minRatio?: number` (default 1.0) |
-| `contextBudget` | File token footprint — fails if estimated tokens exceed threshold | `maxTokens?: number` (default 3000), `followImports?: boolean` (follows `@file.md` chains, depth 3) |
+| `contextBudget` | File token footprint — fails if estimated tokens exceed threshold | `maxTokens?: number` (default 3000), `followImports?: boolean` (follows `@file.md` chains up to depth 3) |
 | `ruleGlobValidity` | Claude Code rules file — checks for YAML frontmatter and optional `paths:` field | `requirePaths?: boolean` (default false) |
 | `hookValidity` | **Standalone.** Resolves `.claude/settings.json` from project root and validates each hook entry | — |
 | `backtickEntityPresence` | Checks that `` `entity` `` appears as inline code in the doc | `entity: string` |
@@ -206,7 +219,7 @@ Find and validate content in your AI doc files. Common ones: `inlineRegex`, `vag
 
 `vaguenessPattern` accepts custom patterns via `scannerArgs.patterns` (array of regex strings).
 
-`contextBudget` estimates tokens as `chars ÷ 4`. Designed to run over `.claude/rules/**/*.md` or `CLAUDE.md` to catch bloated always-on context files. With `followImports: true`, it resolves `@file.md` references recursively (depth 3) and includes their sizes.
+`contextBudget` estimates tokens as `chars ÷ 4`. Designed to run over `.claude/rules/**/*.md` or `CLAUDE.md` to catch bloated always-on context files. With `followImports: true`, it resolves `@file.md` references recursively up to depth 3 and includes their token footprint in the total.
 
 `ruleGlobValidity` is designed to run over `.claude/rules/**/*.md`. By default it fails if a rules file has no YAML frontmatter (meaning it loads at every session with no scoping). Set `requirePaths: true` to also fail if the frontmatter lacks a `paths:` field.
 
@@ -282,7 +295,19 @@ Before setting up a full `.ctxharness.yml`, you can scan any AI instruction file
 npx ctxharness scan CLAUDE.md
 ```
 
-This detects version numbers, file paths, and npm scripts mentioned in the file and checks each against your codebase.
+This detects file paths, npm scripts, and version numbers mentioned in the file and checks each against your codebase. Paths and scripts first, because those are the claims most likely to silently break agent behavior when they drift.
+
+```
+Scanning CLAUDE.md...
+
+  src/config/auth     fileExists   ✗ path not found (moved to src/modules/auth/config.ts?)
+  npm run typecheck   packageScript  ✗ script not found in package.json
+  Node.js 22.14.0    version      ✓ matches .nvmrc
+
+2 issues found. Run with --suggest-config to generate .ctxharness.yml.
+```
+
+Since v0.4.2, `scan` follows `@file.md` includes (Claude/Gemini/Cursor convention) up to depth 3. Claims in included files are detected and verified — a drift in `@agents.md` referenced from `CLAUDE.md` is no longer invisible.
 
 ```bash
 npx ctxharness scan CLAUDE.md --suggest-config   # generate a starter .ctxharness.yml
@@ -417,7 +442,7 @@ Husky (post-merge, post-checkout): copy from `templates/husky/`.
                                 │
                                 │              ★ ctxharness
                                 │         "Are the claims still true?"
-                                │          versions · paths · scripts
+                                │          paths · scripts · versions
                                 │
   ──────────────────────────────┼──────────────────────────────────► RUNTIME
   [vigiles]                     │                                    VERIFICATION
@@ -439,7 +464,7 @@ ctxharness covers three layers of context engineering testing:
 
 | Layer | What |
 |-------|------|
-| **L1 Doc Drift** | Facts in AI docs vs code reality — versions, file existence, counts, regex captures |
+| **L1 Doc Drift** | Facts in AI docs vs code reality — file existence, npm scripts, versions, counts, regex captures |
 | **L2 Instruction Quality** | Vague language, positive/negative ratio, token budget, multi-file coherence |
 | **L3 Context Assembly** | Hook validation, skill loading, rule glob validity, coverage ratio |
 
@@ -459,7 +484,7 @@ The problem ctxharness addresses is well-documented. These are the sources worth
 
 **What stale context does to LLMs**
 
-- [Contextual Drag: How Errors in the Context Affect LLM Reasoning](https://arxiv.org/abs/2602.04288) — arXiv, Feb 2026. Wrong context causes 10–20% performance drops across 11 models and 8 reasoning tasks. Self-refinement makes it worse, not better.
+- [Contextual Drag: How Errors in the Context Affect LLM Reasoning](https://arxiv.org/abs/2602.04288) — arXiv, Feb 2026. Wrong context causes 10-20% performance drops across 11 models and 8 reasoning tasks. Self-refinement makes it worse, not better.
 - [Knowledge Conflicts for LLMs: A Survey](https://arxiv.org/abs/2403.08319) — EMNLP 2024. Temporal knowledge conflicts (outdated context vs. model knowledge) are a primary source of factually wrong outputs. LLMs may generate code using deprecated function signatures from older library versions.
 - [Lost in the Middle](https://arxiv.org/abs/2307.03172) — Stanford / ACL 2024. Relevant information placed in the middle of long contexts is systematically under-weighted by LLMs. Instruction files that accumulate stale content push critical facts into this dead zone.
 - [Your Agent's Context Is a Junk Drawer](https://www.augmentcode.com/blog/your-agents-context-is-a-junk-drawer) — Augment Code, Feb 2026. Documents "context collapse" — agents forget earlier constraints when context grows stale and unmanaged.

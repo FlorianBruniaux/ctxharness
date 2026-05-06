@@ -10,6 +10,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ---
 
+## [0.4.2] — 2026-05-06
+
+### Added
+
+- `scan` now follows `@file.md` includes (Claude/Gemini/Cursor convention) up to depth 3 — claims in included files are now detected and verified
+- `detectIncludes` exported from `@florianbruniaux/ctxharness-core` for programmatic access to include references
+
+### Fixed
+
+- "No verifiable claims found" message now clarifies which included files were also scanned when the target file only contains `@include` references — no longer looks like the scan stopped early
+
+---
+
 ## [0.4.1] — 2026-05-05
 
 ### Added
