@@ -15,3 +15,5 @@ export { buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnap
 export type { Snapshot, SnapshotDiff, SnapshotEntry, DiffEntry } from './snapshot.js'
 export { detectClaims, verifyClaim, scanFile, detectIncludes } from './scan.js'
 export type { HeuristicClaim, HeuristicResult, ClaimStatus, ClaimType } from './scan.js'
+export { appendTrendRecord, loadTrendHistory, summarizeTrend } from './trend.js'
+export type { TrendRecord, TrendSummary } from './trend.js'
