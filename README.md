@@ -434,6 +434,17 @@ Or copy `templates/ci/github-actions.yml` for a full workflow. GitLab CI and Cir
 
 Husky (post-merge, post-checkout): copy from `templates/husky/`.
 
+### `.claude/settings.json` vs `settings.local.json`
+
+Claude Code follows a two-file convention for project settings:
+
+- **`settings.json`** — committed to the repo. Contains config that should work for anyone who clones the project: hook definitions, permission rules, shared assertions. Use relative paths for hook commands (`.claude/hooks/my-hook.sh`, not `/Users/yourname/...`).
+- **`settings.local.json`** — gitignored. Contains machine-specific or personal overrides: your own keybindings, local path overrides, personal MCP servers.
+
+`hookValidity` validates `settings.json`. If a hook command contains an absolute path (e.g. `/Users/yourname/...`), it returns `status: warn` — those paths break for every other contributor.
+
+The same layering applies to `CLAUDE.md` files: project-level goes in the repo root (committed), personal goes in `~/.claude/CLAUDE.md` (your machine only). [Claude Code memory docs](https://docs.anthropic.com/en/docs/claude-code/memory).
+
 ## Ecosystem Positioning
 
 ```
