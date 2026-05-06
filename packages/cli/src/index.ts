@@ -3,8 +3,9 @@ import { Command } from 'commander'
 import { resolve, join, basename } from 'node:path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { relative } from 'node:path'
-import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots, scanFile, detectIncludes, appendTrendRecord } from '@florianbruniaux/ctxharness-core'
-import type { OutputFormat, AssertionResult, HeuristicResult, TrendRecord, RunResult } from '@florianbruniaux/ctxharness-core'
+import fg from 'fast-glob'
+import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots, scanFile, detectIncludes, appendTrendRecord, populateFromConfig, assertionsToYaml } from '@florianbruniaux/ctxharness-core'
+import type { OutputFormat, AssertionResult, HeuristicResult, HeuristicClaim, TrendRecord, RunResult } from '@florianbruniaux/ctxharness-core'
 
 // ─── Score helpers ────────────────────────────────────────────────────────────
 
@@ -1028,6 +1029,89 @@ program
       }
 
       console.log('')
+      process.exit(0)
+    } catch (e) {
+      process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
+      process.exit(1)
+    }
+  })
+
+// ─── populate command ─────────────────────────────────────────────────────────
+
+program
+  .command('populate')
+  .description('Scan declared files and suggest new assertions for uncovered claims')
+  .option('-c, --config <path>', 'Path to config file', '.ctxharness.yml')
+  .option('-r, --root <dir>', 'Project root directory', '')
+  .option('--apply', 'Append suggested assertions to the config file (default: dry-run)')
+  .action(async (opts: { config: string; root: string; apply?: boolean }) => {
+    try {
+      const { default: chalk } = await import('chalk')
+      const cwd = process.cwd()
+      const configPath = resolve(cwd, opts.config)
+      const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
+
+      if (!existsSync(configPath)) {
+        process.stderr.write(
+          `Error: config file not found: ${configPath}\n` +
+          `  Run \`ctxharness init\` to create one.\n`,
+        )
+        process.exit(1)
+      }
+
+      const config = loadConfig(configPath)
+
+      const expandedFiles = await fg(config.files.include, {
+        cwd: root,
+        ignore: config.files.exclude,
+        absolute: true,
+      })
+
+      if (expandedFiles.length === 0) {
+        console.log(chalk.yellow('\nNo files matched the include patterns in your config.\n'))
+        console.log(chalk.dim(`  files.include: ${config.files.include.join(', ')}\n`))
+        process.exit(0)
+      }
+
+      const allClaims: HeuristicClaim[] = []
+      for (const filePath of expandedFiles) {
+        try {
+          const results = scanFile(filePath, root)
+          for (const r of results) allClaims.push(r.claim)
+        } catch {
+          // skip unreadable file
+        }
+      }
+
+      const { suggested, skippedIds } = populateFromConfig(config, allClaims)
+
+      if (skippedIds.length > 0) {
+        console.log(chalk.dim(`\nAlready covered (${skippedIds.length}): ${skippedIds.join(', ')}`))
+      }
+
+      if (suggested.length === 0) {
+        console.log(chalk.green('\n✓ All detected claims are already covered — nothing to add.\n'))
+        process.exit(0)
+      }
+
+      const yamlBlock = assertionsToYaml(suggested)
+
+      if (opts.apply !== true) {
+        console.log(chalk.bold(`\n${suggested.length} new assertion${suggested.length !== 1 ? 's' : ''} suggested:\n`))
+        console.log(chalk.dim('─'.repeat(60)))
+        console.log(yamlBlock)
+        console.log(chalk.dim('─'.repeat(60)))
+        console.log('')
+        console.log(chalk.dim(`Run \`ctxharness populate --apply\` to append these to ${opts.config}.\n`))
+        process.exit(0)
+      }
+
+      const existing = readFileSync(configPath, 'utf-8')
+      const updated = existing.trimEnd() + '\n  # added by ctxharness populate\n' + yamlBlock + '\n'
+      writeFileSync(configPath, updated, 'utf-8')
+
+      console.log(chalk.green(`\n✓ Appended ${suggested.length} assertion${suggested.length !== 1 ? 's' : ''} to ${opts.config}\n`))
+      console.log(chalk.dim(`  Run \`ctxharness run\` to enforce them.\n`))
       process.exit(0)
     } catch (e) {
       process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)

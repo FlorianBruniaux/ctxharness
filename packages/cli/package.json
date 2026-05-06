@@ -9,7 +9,14 @@
     "type": "git",
     "url": "https://github.com/FlorianBruniaux/ctxharness"
   },
-  "keywords": ["claude", "ai", "documentation", "drift", "testing", "context-engineering"],
+  "keywords": [
+    "claude",
+    "ai",
+    "documentation",
+    "drift",
+    "testing",
+    "context-engineering"
+  ],
   "main": "./dist/index.js",
   "bin": {
     "ctxharness": "./dist/index.js"
@@ -28,6 +35,7 @@
     "@florianbruniaux/ctxharness-core": "workspace:*",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
+    "fast-glob": "^3.3.3",
     "ora": "^8.2.0"
   },
   "devDependencies": {
