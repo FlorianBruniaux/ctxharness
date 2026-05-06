@@ -14,6 +14,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ### Added
 
+- `populate` command: reads your existing `.ctxharness.yml`, scans the declared files for heuristic claims, and suggests (or appends with `--apply`) new assertions for claims not yet covered. Bridges the gap between `init` (creates config from scratch) and keeping the config current as your AI docs evolve.
 - `init` now auto-scans existing AI doc files (CLAUDE.md, AGENTS.md, .cursorrules) and generates assertions from detected claims — no more editing a generic template by hand
 - `scan` shows a tip at the bottom suggesting `--suggest-config` or `ctxharness init` when no config file exists
 - `scan` shows a tip when `.ctxharness.yml` already exists, clarifying that `scan` is single-file discovery while `run` enforces all configured files

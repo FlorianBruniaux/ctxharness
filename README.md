@@ -260,6 +260,7 @@ ctxharness check     # alias for run --format text
 ctxharness scan      # scan a markdown file for verifiable claims without a config file
 ctxharness score     # run assertions and report a 0-100 health score with grade (S/A/B/C/D/F)
 ctxharness trend     # show cross-run drift score history — sparkline, direction, per-run table
+ctxharness populate  # scan declared files and suggest new assertions for uncovered claims
 ctxharness snapshot  # save a quality snapshot to .ctxharness/snapshots/
 ctxharness diff      # compare against latest snapshot — exit 1 on score regression
 ctxharness fix       # auto-fix version drift — dry-run by default, --apply writes files
@@ -378,6 +379,20 @@ In CI, use `--no-trend` to skip recording — useful when you only want trend da
 ```bash
 ctxharness run --no-trend
 ```
+
+### populate
+
+Scan your already-declared files for verifiable claims (semver, paths, scripts) and suggest assertions for any claims not yet in your config.
+
+```bash
+# Dry-run (default): preview what would be added
+ctxharness populate
+
+# Write changes to .ctxharness.yml
+ctxharness populate --apply
+```
+
+Typical workflow: run `ctxharness init` once to bootstrap the config, then run `ctxharness populate --apply` any time you update your AI docs and want to capture new claims.
 
 ### warn status
 

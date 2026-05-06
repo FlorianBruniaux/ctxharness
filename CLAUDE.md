@@ -33,8 +33,9 @@ pnpm fmt             # prettier --write
 | `packages/core/src/reporter.ts` | text / json / gha output formats |
 | `packages/core/src/trend.ts` | Trend history — appendTrendRecord, loadTrendHistory, summarizeTrend |
 | `packages/core/src/snapshot.ts` | Snapshot save / load / diff for trend tracking |
+| `packages/core/src/populate.ts` | `populateFromConfig` + `assertionsToYaml` — claim→Assertion mapping |
 | `packages/core/src/plugin.ts` | Plugin API — register custom extractors/scanners |
-| `packages/cli/src/index.ts` | CLI entry point (run / check / scan / score / fix / doctor / init / snapshot / diff / trend) |
+| `packages/cli/src/index.ts` | CLI entry point (run / check / scan / score / fix / doctor / init / snapshot / diff / trend / populate) |
 | `packages/core/src/__tests__/fixtures/` | Test fixture files |
 
 ## Architecture rules
@@ -99,10 +100,11 @@ Semver. `CHANGELOG.md` updated before every release.
 
 - `scan` command — zero-config heuristic claim detection (semver, paths, npm scripts)
 - `trend` command — cross-run drift score history with sparkline and direction detection
+- `populate` command — suggest new assertions for claims detected in declared files but not yet covered
 - `init` auto-scans existing AI doc files and generates assertions from detected claims
 - `packageScript` extractor — validates npm script references in AI docs
-- 20 extractors, 15 scanners, 186 tests
-- 10 CLI commands: run / check / scan / score / fix / doctor / init / snapshot / diff / trend
+- 20 extractors, 15 scanners, 200 tests
+- 11 CLI commands: run / check / scan / score / fix / doctor / init / snapshot / diff / trend / populate
 - Plugin API, stack presets (T3, Next App Router), GitHub Action
 - `--no-trend` flag on run/check/score/doctor to skip history recording
 

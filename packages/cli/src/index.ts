@@ -55,7 +55,7 @@ const program = new Command()
 program
   .name('ctxharness')
   .description('Detect AI documentation drift — L1/L2/L3 context engineering testing')
-  .version('0.4.4')
+  .version('0.4.5')
 
 // ─── run command ──────────────────────────────────────────────────────────────
 
