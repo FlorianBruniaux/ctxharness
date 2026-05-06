@@ -31,6 +31,7 @@ pnpm fmt             # prettier --write
 | `packages/core/src/scanners/index.ts` | 15 scanners (find mentions in docs) |
 | `packages/core/src/runner.ts` | Orchestrates run, returns `RunResult` |
 | `packages/core/src/reporter.ts` | text / json / gha output formats |
+| `packages/core/src/trend.ts` | Trend history — appendTrendRecord, loadTrendHistory, summarizeTrend |
 | `packages/core/src/snapshot.ts` | Snapshot save / load / diff for trend tracking |
 | `packages/core/src/plugin.ts` | Plugin API — register custom extractors/scanners |
 | `packages/cli/src/index.ts` | CLI entry point (run / check / scan / score / fix / doctor / init / snapshot / diff / trend) |

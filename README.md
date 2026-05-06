@@ -344,6 +344,41 @@ ctxharness diff     # exit 1 if score dropped
 
 Snapshots are saved to `.ctxharness/snapshots/` with timestamp. Commit the latest snapshot file to use `diff` in CI.
 
+### Trend history
+
+Every `run`, `check`, `score`, and `doctor` execution auto-records a drift score to `~/.ctxharness/history.jsonl`. The `trend` command shows your score trajectory over time:
+
+```bash
+ctxharness trend
+
+Trend — myproject (8 runs)
+
+  Sparkline   ▃▅▆▇▇▇██
+  Direction   ↑ improving  (+14 pts over 8 runs)
+  Avg Score   91/100
+
+  Date                    Score      G      Pass   Fail   Time
+  ──────────────────────────────────────────────────────────────
+  May 06, 14:23:01       100/100    S      5      0      42ms
+  May 06, 11:45:22        98/100    S      5      0      38ms
+  May 05, 09:12:08        87/100    B      4      1      55ms
+  ...
+```
+
+Direction is computed by comparing the average of the first third of runs against the last third: `improving` (delta > 3 pts), `worsening` (delta < -3 pts), or `flat`.
+
+```bash
+ctxharness trend --all          # all projects
+ctxharness trend --limit 50     # last 50 runs (default: 20)
+ctxharness trend --project api  # specific project name
+```
+
+In CI, use `--no-trend` to skip recording — useful when you only want trend data from your main branch, not every PR run:
+
+```bash
+ctxharness run --no-trend
+```
+
 ### warn status
 
 Assertions can return three states: `pass`, `warn`, or `fail`. `warn` is counted as 0.5 in the score — useful for staleness checks where you want early signal without blocking CI:
