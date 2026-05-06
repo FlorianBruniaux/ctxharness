@@ -889,4 +889,83 @@ program
     }
   })
 
+// ─── trend command ────────────────────────────────────────────────────────────
+
+program
+  .command('trend')
+  .description('Show cross-run drift score history and direction')
+  .option('-p, --project <name>', 'Filter by project name (default: current directory name)')
+  .option('-n, --limit <n>', 'Max runs to show (default: 20)', '20')
+  .option('--all', 'Show all projects')
+  .action(async (opts: { project?: string; limit: string; all?: boolean }) => {
+    try {
+      const { default: chalk } = await import('chalk')
+      const { loadTrendHistory, summarizeTrend } = await import('@florianbruniaux/ctxharness-core')
+
+      const limit = Math.max(1, parseInt(opts.limit, 10) || 20)
+      const projectName = opts.all === true ? undefined : (opts.project ?? basename(process.cwd()))
+
+      const records = loadTrendHistory(projectName, limit)
+
+      if (records.length === 0) {
+        console.log(chalk.dim(`\nNo trend history for "${projectName ?? 'all projects'}".`))
+        console.log(chalk.dim('Run ctxharness run to start tracking.\n'))
+        process.exit(0)
+      }
+
+      const summary = summarizeTrend(records)!
+
+      const projectLabel = opts.all === true ? 'all projects' : (projectName ?? 'unknown')
+      console.log(chalk.bold(`\nTrend — ${projectLabel} (${records.length} run${records.length !== 1 ? 's' : ''})\n`))
+
+      const dirColor =
+        summary.direction === 'improving' ? 'green' :
+        summary.direction === 'worsening' ? 'red' : 'yellow'
+      const dirSymbol =
+        summary.direction === 'improving' ? '↑' :
+        summary.direction === 'worsening' ? '↓' : '→'
+      const deltaStr = summary.scoreDelta > 0 ? `+${summary.scoreDelta}` : String(summary.scoreDelta)
+
+      console.log(`  ${chalk.dim('Sparkline')}   ${summary.sparkline}`)
+      console.log(`  ${chalk.dim('Direction')}   ${chalk[dirColor](`${dirSymbol} ${summary.direction}`)}  ${chalk.dim(`(${deltaStr} pts over ${records.length} runs)`)}`)
+      console.log(`  ${chalk.dim('Avg Score')}   ${summary.avgScore}/100`)
+      console.log('')
+
+      const pad = (s: string, n: number) => s.padEnd(n)
+      console.log(
+        chalk.dim(
+          `  ${pad('Date', 22)}  ${pad('Score', 9)}  ${pad('G', 6)}  ` +
+          `${pad('Pass', 5)}  ${pad('Fail', 5)}  Time`
+        )
+      )
+      console.log(chalk.dim(`  ${'─'.repeat(62)}`))
+
+      for (const r of records) {
+        const gradeColor =
+          r.grade === 'S' || r.grade === 'A' ? 'green' :
+          r.grade === 'B' ? 'cyan' :
+          r.grade === 'C' ? 'yellow' : 'red'
+
+        const date = new Date(r.timestamp).toLocaleString('en-US', {
+          month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+        })
+
+        console.log(
+          `  ${pad(date, 22)}  ` +
+          `${chalk[gradeColor](pad(`${r.score}/100`, 9))}  ` +
+          `${chalk[gradeColor](pad(r.grade, 6))}  ` +
+          `${pad(String(r.totalPass), 5)}  ` +
+          `${pad(String(r.totalFail), 5)}  ` +
+          chalk.dim(`${Math.round(r.durationMs)}ms`)
+        )
+      }
+
+      console.log('')
+      process.exit(0)
+    } catch (e) {
+      process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
+      process.exit(1)
+    }
+  })
+
 program.parse()
