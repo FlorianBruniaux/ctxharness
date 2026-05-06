@@ -112,7 +112,7 @@ describe('populateFromConfig', () => {
     const result = populateFromConfig(makeConfig(), claims)
     expect(result.suggested).toHaveLength(3)
     expect(result.suggested.map((a) => a.id)).toEqual(
-      expect.arrayContaining(['node-version', 'path--src', 'script-test'])
+      expect.arrayContaining(['node-version', 'path-src', 'script-test'])
     )
   })
 })

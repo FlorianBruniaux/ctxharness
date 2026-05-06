@@ -7,7 +7,7 @@ export interface PopulateResult {
 }
 
 function toSafeSlug(s: string): string {
-  return s.replace(/[^a-zA-Z0-9]/g, '-').replace(/^-|-$/g, '')
+  return s.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
 }
 
 function claimId(claim: HeuristicClaim): string {
