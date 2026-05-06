@@ -58,6 +58,25 @@ export function appendTrendRecord(record: TrendRecord): void {
   }
 }
 
+function isTrendRecord(v: unknown): v is TrendRecord {
+  if (typeof v !== 'object' || v === null) return false
+  const o = v as Record<string, unknown>
+  return (
+    typeof o['timestamp'] === 'string' &&
+    typeof o['score'] === 'number' &&
+    typeof o['projectName'] === 'string' &&
+    typeof o['root'] === 'string' &&
+    typeof o['grade'] === 'string' &&
+    typeof o['totalPass'] === 'number' &&
+    typeof o['totalFail'] === 'number' &&
+    typeof o['totalWarn'] === 'number' &&
+    typeof o['totalError'] === 'number' &&
+    typeof o['totalSkip'] === 'number' &&
+    typeof o['assertionCount'] === 'number' &&
+    typeof o['durationMs'] === 'number'
+  )
+}
+
 export function loadTrendHistory(projectName?: string, limit = 50): TrendRecord[] {
   const path = historyPath()
   if (!existsSync(path)) return []
@@ -74,7 +93,8 @@ export function loadTrendHistory(projectName?: string, limit = 50): TrendRecord[
     const trimmed = line.trim()
     if (trimmed.length === 0) continue
     try {
-      const parsed = JSON.parse(trimmed) as TrendRecord
+      const parsed: unknown = JSON.parse(trimmed)
+      if (!isTrendRecord(parsed)) continue
       if (projectName === undefined || parsed.projectName === projectName) {
         records.push(parsed)
       }
@@ -88,6 +108,7 @@ export function loadTrendHistory(projectName?: string, limit = 50): TrendRecord[
   return records.slice(0, limit)
 }
 
+/** Summarizes a newest-first array of TrendRecords (as returned by loadTrendHistory). */
 export function summarizeTrend(records: TrendRecord[]): TrendSummary | null {
   if (records.length === 0) return null
 

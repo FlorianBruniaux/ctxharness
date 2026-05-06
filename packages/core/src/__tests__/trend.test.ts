@@ -77,8 +77,17 @@ describe('appendTrendRecord', () => {
   })
 
   it('silently ignores write errors (no throw on bad path)', () => {
-    process.env['CTXHARNESS_HISTORY_DIR'] = '/nonexistent/path/xyz/abc'
-    expect(() => appendTrendRecord(makeRecord())).not.toThrow()
+    const original = process.env['CTXHARNESS_HISTORY_DIR']
+    try {
+      process.env['CTXHARNESS_HISTORY_DIR'] = '/nonexistent/path/xyz/abc'
+      expect(() => appendTrendRecord(makeRecord())).not.toThrow()
+    } finally {
+      if (original !== undefined) {
+        process.env['CTXHARNESS_HISTORY_DIR'] = original
+      } else {
+        delete process.env['CTXHARNESS_HISTORY_DIR']
+      }
+    }
   })
 })
 
@@ -112,13 +121,19 @@ describe('loadTrendHistory', () => {
     expect(result.every((r) => r.projectName === 'alpha')).toBe(true)
   })
 
-  it('respects limit (10 records inserted, limit=3 → 3 returned)', () => {
+  it('respects limit and returns newest records first', () => {
+    // Insert 10 records with distinct timestamps (day 0 = oldest, day 9 = newest)
     for (let i = 0; i < 10; i++) {
-      appendTrendRecord(makeRecord({ score: i * 10 }))
+      const ts = new Date(Date.UTC(2026, 0, 1 + i)).toISOString()
+      appendTrendRecord(makeRecord({ score: 50 + i, timestamp: ts }))
     }
 
     const result = loadTrendHistory(undefined, 3)
     expect(result).toHaveLength(3)
+    // Should be the 3 newest: day 9, 8, 7 → scores 59, 58, 57
+    expect(result[0]!.score).toBe(59)
+    expect(result[1]!.score).toBe(58)
+    expect(result[2]!.score).toBe(57)
   })
 
   it('skips corrupt lines without throwing', () => {
