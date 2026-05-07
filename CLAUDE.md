@@ -96,7 +96,7 @@ Semver. `CHANGELOG.md` updated before every release.
 
 ## Roadmap
 
-### Current — v0.4.5
+### Current — v0.4.6
 
 - `scan` command — zero-config heuristic claim detection (semver, paths, npm scripts)
 - `trend` command — cross-run drift score history with sparkline and direction detection

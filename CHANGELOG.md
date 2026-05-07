@@ -10,7 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — semver.
 
 ---
 
-## [0.4.5] — 2026-05-06
+## [0.4.6] — 2026-05-06
 
 ### Added
 
