@@ -30,7 +30,7 @@ runs:
   steps:
     - name: Install ctxharness
       shell: bash
-      run: npm install -g ctxharness@latest
+      run: npm install -g ctxharness@0.4.6
 
     - name: Run ctxharness
       id: run
