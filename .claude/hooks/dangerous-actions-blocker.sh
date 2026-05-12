@@ -30,7 +30,7 @@ fi
 # ── Write / Edit ───────────────────────────────────────────────────────────────
 if [[ "$TOOL_NAME" == "Write" || "$TOOL_NAME" == "Edit" ]]; then
   FILE_PATH="$TOOL_INPUT"
-  CTXHARNESS_ROOT="/Users/florianbruniaux/Sites/perso/ctxharness"
+  CTXHARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && git rev-parse --show-toplevel)"
 
   # Block edits outside project dir
   if [[ "$FILE_PATH" != "$CTXHARNESS_ROOT"* ]]; then
