@@ -2,7 +2,7 @@
 # Injects current branch, last commit, and uncommitted file count as context.
 set -euo pipefail
 
-CTXHARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && git rev-parse --show-toplevel)"
+CTXHARNESS_ROOT="$(git rev-parse --show-toplevel)"
 cd "$CTXHARNESS_ROOT"
 
 BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")

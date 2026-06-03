@@ -3,7 +3,7 @@
 set -euo pipefail
 
 FILE_PATH="${CLAUDE_TOOL_INPUT:-}"
-CTXHARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && git rev-parse --show-toplevel)"
+CTXHARNESS_ROOT="$(git rev-parse --show-toplevel)"
 
 [[ -z "$FILE_PATH" ]] && exit 0
 [[ "$FILE_PATH" != "$CTXHARNESS_ROOT"* ]] && exit 0
