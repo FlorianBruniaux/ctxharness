@@ -19,7 +19,13 @@ export { appendTrendRecord, loadTrendHistory, summarizeTrend } from './trend.js'
 export type { TrendRecord, TrendSummary } from './trend.js'
 export { populateFromConfig, assertionsToYaml } from './populate.js'
 export type { PopulateResult } from './populate.js'
-export { inventoryAgentConfig, resolveProjectConfigRoots, resolveGlobalConfigRoots } from './agent-config/inventory.js'
+export {
+  inventoryAgentConfig,
+  isPathWithinBoundary,
+  resolveProjectConfigRoots,
+  resolveGlobalConfigRoots,
+} from './agent-config/inventory.js'
+export type { AgentConfigPathApi } from './agent-config/inventory.js'
 export { resolveClaudeRoots } from './agent-config/adapters/claude.js'
 export { resolveCodexRoots } from './agent-config/adapters/codex.js'
 export type {
@@ -31,6 +37,7 @@ export type {
   AgentConfigCapability,
   AgentConfigSkill,
   AgentConfigFindingStatus,
+  AgentConfigFindingReason,
   AgentConfigFinding,
   AgentConfigInventory,
   AgentConfigInventoryOptions,

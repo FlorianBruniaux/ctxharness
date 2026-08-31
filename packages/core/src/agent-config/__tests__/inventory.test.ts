@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, win32 } from 'node:path'
 import { inventoryAgentConfig } from '../inventory.js'
+import * as inventoryModule from '../inventory.js'
 
 const tempDirs: string[] = []
 
@@ -22,6 +23,15 @@ afterEach(() => {
 })
 
 describe('inventoryAgentConfig', () => {
+  it('rejects an absolute path returned by win32.relative across volumes', () => {
+    const boundaryCheck = (inventoryModule as unknown as {
+      isPathWithinBoundary?: (boundary: string, candidate: string, path: typeof win32) => boolean
+    }).isPathWithinBoundary
+
+    expect(boundaryCheck).toBeTypeOf('function')
+    expect(boundaryCheck!('C:\\project', 'D:\\outside', win32)).toBe(false)
+  })
+
   it('discovers Claude and Codex project configuration from the supplied root', () => {
     const project = makeTempDir()
     writeFile(join(project, 'CLAUDE.md'), '# project instructions')
@@ -70,6 +80,77 @@ describe('inventoryAgentConfig', () => {
       expect.objectContaining({ scope: 'project', path: join(project, '.claude', 'skills', 'review', 'SKILL.md') }),
       expect.objectContaining({ scope: 'global', path: join(home, '.claude', 'skills', 'review', 'SKILL.md') }),
     ])
+  })
+
+  it('reports every unavailable Claude project root as unknown evidence', () => {
+    const project = makeTempDir()
+
+    const inventory = inventoryAgentConfig({
+      root: project,
+      home: makeTempDir(),
+      hosts: ['claude'],
+      scopes: ['project'],
+    })
+
+    expect(inventory.findings).toHaveLength(7)
+    expect(inventory.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'configured-root-unavailable',
+          status: 'unknown',
+          reason: 'missing-evidence',
+          host: 'claude',
+          scope: 'project',
+          layer: 'instructions',
+          path: join(project, 'CLAUDE.md'),
+        }),
+        expect.objectContaining({
+          code: 'configured-root-unavailable',
+          status: 'unknown',
+          reason: 'missing-evidence',
+          host: 'claude',
+          scope: 'project',
+          layer: 'skills',
+          path: join(project, '.claude', 'skills'),
+        }),
+      ]),
+    )
+  })
+
+  it('reports every unavailable Claude global root from the injected home as unknown evidence', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+
+    const inventory = inventoryAgentConfig({
+      root: project,
+      home,
+      hosts: ['claude'],
+      scopes: ['global'],
+    })
+
+    expect(inventory.findings).toHaveLength(7)
+    expect(inventory.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'configured-root-unavailable',
+          status: 'unknown',
+          reason: 'missing-evidence',
+          host: 'claude',
+          scope: 'global',
+          layer: 'instructions',
+          path: join(home, '.claude', 'CLAUDE.md'),
+        }),
+        expect.objectContaining({
+          code: 'configured-root-unavailable',
+          status: 'unknown',
+          reason: 'missing-evidence',
+          host: 'claude',
+          scope: 'global',
+          layer: 'hooks',
+          path: join(home, '.claude', 'settings.json'),
+        }),
+      ]),
+    )
   })
 
   it('rejects a configured skill path that resolves outside the selected project boundary', () => {

@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, realpathSync, statSync } from 'node:fs'
-import { relative, resolve } from 'node:path'
+import { isAbsolute, relative, resolve, sep } from 'node:path'
 import { resolveClaudeRoots } from './adapters/claude.js'
 import { resolveCodexRoots } from './adapters/codex.js'
 import type {
@@ -17,16 +17,33 @@ const DEFAULT_HOSTS = ['claude', 'codex'] as const
 const DEFAULT_SCOPES = ['project', 'global'] as const
 const SKILL_MANIFEST = 'SKILL.md'
 
-function isWithinBoundary(boundary: string, candidate: string): boolean {
-  const relativePath = relative(boundary, candidate)
-  return relativePath === '' || (!relativePath.startsWith('..') && !relativePath.includes('/../'))
+export interface AgentConfigPathApi {
+  relative(from: string, to: string): string
+  isAbsolute(path: string): boolean
+  sep: string
+}
+
+const nativePath: AgentConfigPathApi = { relative, isAbsolute, sep }
+
+/** Returns whether a candidate remains under a boundary for the supplied path semantics. */
+export function isPathWithinBoundary(
+  boundary: string,
+  candidate: string,
+  path: AgentConfigPathApi = nativePath,
+): boolean {
+  const relativePath = path.relative(boundary, candidate)
+  return relativePath === '' || (
+    !path.isAbsolute(relativePath) &&
+    relativePath !== '..' &&
+    !relativePath.startsWith(`..${path.sep}`)
+  )
 }
 
 function resolveExistingPath(path: string, boundary: string): string | null {
   if (!existsSync(path)) return null
   const resolvedBoundary = realpathSync(boundary)
   const resolvedPath = realpathSync(path)
-  return isWithinBoundary(resolvedBoundary, resolvedPath) ? resolvedPath : null
+  return isPathWithinBoundary(resolvedBoundary, resolvedPath) ? resolvedPath : null
 }
 
 function evidenceFor(root: AgentConfigRoot, path: string): AgentConfigEvidence {
@@ -43,11 +60,25 @@ function pathEscapeFinding(root: AgentConfigRoot, path: string): AgentConfigFind
   return {
     code: 'path-outside-boundary',
     status: 'fail',
+    reason: 'outside-boundary',
     message: `Configuration path resolves outside the selected ${root.scope} boundary.`,
     host: root.host,
     scope: root.scope,
     layer: root.layer,
     path,
+  }
+}
+
+function unavailableRootFinding(root: AgentConfigRoot): AgentConfigFinding {
+  return {
+    code: 'configured-root-unavailable',
+    status: 'unknown',
+    reason: 'missing-evidence',
+    message: `Configured ${root.scope} ${root.layer} root is unavailable.`,
+    host: root.host,
+    scope: root.scope,
+    layer: root.layer,
+    path: root.path,
   }
 }
 
@@ -114,6 +145,11 @@ export function inventoryAgentConfig(options: AgentConfigInventoryOptions): Agen
   const findings: AgentConfigFinding[] = []
 
   for (const configRoot of roots) {
+    if (!existsSync(configRoot.path)) {
+      findings.push(unavailableRootFinding(configRoot))
+      continue
+    }
+
     if (configRoot.layer === 'skills') {
       for (const path of discoverSkillPaths(configRoot, findings)) {
         const evidence = evidenceFor(configRoot, path)
@@ -127,7 +163,7 @@ export function inventoryAgentConfig(options: AgentConfigInventoryOptions): Agen
 
     const resolvedPath = resolveExistingPath(configRoot.path, configRoot.boundary)
     if (resolvedPath === null) {
-      if (existsSync(configRoot.path)) findings.push(pathEscapeFinding(configRoot, configRoot.path))
+      findings.push(pathEscapeFinding(configRoot, configRoot.path))
       continue
     }
 

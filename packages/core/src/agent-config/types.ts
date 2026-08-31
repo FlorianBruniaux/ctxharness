@@ -43,10 +43,13 @@ export interface AgentConfigSkill {
 
 export type AgentConfigFindingStatus = 'pass' | 'warn' | 'fail' | 'unknown' | 'not-applicable'
 
+export type AgentConfigFindingReason = 'missing-evidence' | 'outside-boundary'
+
 /** A normalized result for scanners and later policy checks. */
 export interface AgentConfigFinding {
   code: string
   status: AgentConfigFindingStatus
+  reason: AgentConfigFindingReason
   message: string
   host?: AgentHost
   scope?: AgentConfigScope
