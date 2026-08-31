@@ -1,0 +1,24 @@
+packages/core/src/agent-config/__tests__/scanners.test.ts
+  s_aeebbf2fc2680c::t_0df8bf9b058f9c 424-435,438-442
+  s_aeebbf2fc2680c::t_c2c0642d9de070 423,436-437
+  s_aeebbf2fc2680c::t_b951fc99392803 443
+packages/core/src/agent-config/scanners/mcp.ts
+  s_aeebbf2fc2680c::t_0cf3dd0a67d6b7 9-18
+  s_aeebbf2fc2680c::t_745c39c059953c 86,99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "6f37c26f90c37f83249ed0df445d187b58e8e9e9",
+  "prompts": {},
+  "sessions": {
+    "s_aeebbf2fc2680c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03e20-0cfd-78b0-b1fa-bfb10ef6a72f",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
