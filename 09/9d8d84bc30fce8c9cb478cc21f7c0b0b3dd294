@@ -1,0 +1,74 @@
+packages/core/src/agent-config/__tests__/fixtures/scanner-project/.claude/settings.json
+  s_aeebbf2fc2680c::t_00912358dbcd04 10-12
+packages/core/src/agent-config/__tests__/scanners.test.ts
+  s_aeebbf2fc2680c::t_c2c0642d9de070 339-381,405-413
+  s_aeebbf2fc2680c::t_585aa72171b964 1-3,18-33,49-66
+  s_aeebbf2fc2680c::t_fe644bdc74a810 171-206,232-242
+  s_aeebbf2fc2680c::t_ecd9df8d3df3c6 67,243-244,420,441-457
+  s_aeebbf2fc2680c::t_3e86c414212ba4 245-248,414-418,421,458-480
+packages/core/src/agent-config/scanners/mcp.ts
+  s_aeebbf2fc2680c::t_dac53721a113cc 8,76,89
+packages/core/src/agent-config/__tests__/fixtures/scanner-project/.codex/config.toml
+  s_aeebbf2fc2680c::t_00912358dbcd04 8-11,20-22
+  s_d812a5cba40e21::t_e6327c9366b93c 23
+packages/core/src/agent-config/__tests__/fixtures/scanner-project/.claude/rules/malformed.md
+  s_aeebbf2fc2680c::t_ecd9df8d3df3c6 1-6
+packages/core/src/agent-config/scanners/rules.ts
+  s_aeebbf2fc2680c::t_98b6cdb40bc7f5 16-37,56,80-86,89-120
+packages/core/src/agent-config/scanners/instructions.ts
+  s_aeebbf2fc2680c::t_65dd51c652572e 14-29,48,53-70,83,97,99-108,129,133,135,138
+  s_aeebbf2fc2680c::t_2e601aee655454 118
+  s_aeebbf2fc2680c::t_97fa61c48ad06f 119-128,130-132,134,136-137,139-142
+packages/core/src/agent-config/scanners/hooks.ts
+  s_aeebbf2fc2680c::t_55270cd07ca027 1,4,7-8,12-17,26-31,88-99,101,103-104,131,145,147,164-175
+  s_aeebbf2fc2680c::t_bb0e9f34f9840e 105-114,120-130
+  s_aeebbf2fc2680c::t_42f85bdc451d80 139,144,176-177
+packages/core/src/agent-config/types.ts
+  s_aeebbf2fc2680c::t_4ba9f211ae2b5b 49,57-58,61-70
+  s_d812a5cba40e21::t_a026254bcdf397 71
+packages/core/src/agent-config/__tests__/fixtures/scanner-project/.mcp.json
+  s_aeebbf2fc2680c::t_00912358dbcd04 15-20
+packages/core/src/agent-config/scanners/skills.ts
+  s_aeebbf2fc2680c::t_744450ea1f4dcf 1,4,12-24,61,63-71,78,99-122,138-144,151
+  s_9cf259c16931e6::t_8688206282342b 145-150,152
+packages/core/src/agent-config/scanners/agents.ts
+  s_aeebbf2fc2680c::t_12b888e064e04c 66-73,76-107
+packages/core/src/agent-config/__tests__/fixtures/scanner-project/.claude/rules/embedded-traversal.md
+  s_aeebbf2fc2680c::t_ecd9df8d3df3c6 1-6
+packages/core/src/agent-config/__tests__/fixtures/scanner-project/.claude/skills/parent-reference/SKILL.md
+  s_aeebbf2fc2680c::t_ecd9df8d3df3c6 1-6
+packages/core/src/agent-config/__tests__/fixtures/scanner-project/.claude/skills/absolute-reference/SKILL.md
+  s_aeebbf2fc2680c::t_ecd9df8d3df3c6 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "099d8d84bc30fce8c9cb478cc21f7c0b0b3dd294",
+  "prompts": {},
+  "sessions": {
+    "s_9cf259c16931e6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03e6c-f9af-7811-b19d-91365bbf6d38",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_aeebbf2fc2680c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03e20-0cfd-78b0-b1fa-bfb10ef6a72f",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_d812a5cba40e21": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a033c4-cc98-74d2-adf5-63f175b8463b",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
