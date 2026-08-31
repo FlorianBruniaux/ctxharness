@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "fixture-revision",
+  "builderVersion": "fixture-builder-1",
+  "outputs": [
+    {
+      "id": "global-instructions",
+      "host": "claude",
+      "layer": "instructions",
+      "path": "claude/CLAUDE.md",
+      "livePath": ".claude/CLAUDE.md",
+      "sha256": "878fc82da40ac3504a373c1c2a842f89888a7c1c8ac43bbec7e90cd48ae58bd5"
+    },
+    {
+      "id": "global-instructions",
+      "host": "codex",
+      "layer": "instructions",
+      "path": "codex/AGENTS.md",
+      "livePath": ".codex/AGENTS.md",
+      "sha256": "878fc82da40ac3504a373c1c2a842f89888a7c1c8ac43bbec7e90cd48ae58bd5"
+    },
+    {
+      "id": "review-skill",
+      "host": "claude",
+      "layer": "skills",
+      "path": "claude/skills/review/SKILL.md",
+      "livePath": ".claude/skills/review/SKILL.md",
+      "sha256": "9f09112e783a1fbb874ccfb14a998844e0fc64c4f4e57850b0e0ae8cf72461ce"
+    },
+    {
+      "id": "review-skill",
+      "host": "codex",
+      "layer": "skills",
+      "path": "codex/skills/review/SKILL.md",
+      "livePath": ".codex/skills/review/SKILL.md",
+      "sha256": "9f09112e783a1fbb874ccfb14a998844e0fc64c4f4e57850b0e0ae8cf72461ce"
+    },
+    {
+      "id": "reviewer-agent",
+      "host": "claude",
+      "layer": "agents",
+      "path": "claude/agents/reviewer.md",
+      "livePath": ".claude/agents/reviewer.md",
+      "sha256": "6055397ffc24e2777167d630bff6d9e23d9ec5c023f87e555a77c65f6fa52173"
+    }
+  ],
+  "hostExceptions": [
+    {
+      "id": "reviewer-agent",
+      "host": "codex",
+      "reason": "The fixture models an unsupported host feature."
+    }
+  ]
+}

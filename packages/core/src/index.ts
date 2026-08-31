@@ -50,6 +50,17 @@ export {
   resolveGlobalConfigRoots,
 } from './agent-config/inventory.js'
 export type { AgentConfigPathApi } from './agent-config/inventory.js'
+export { validateAgentConfigRelease } from './agent-config/release.js'
+export type {
+  AgentConfigReleaseOutput,
+  AgentConfigHostException,
+  AgentConfigReleaseManifest,
+  ValidatedAgentConfigRelease,
+  AgentConfigReleaseResult,
+  AgentConfigReleaseOptions,
+} from './agent-config/release.js'
+export { checkAgentConfigParity } from './agent-config/parity.js'
+export type { AgentConfigParityPolicy, AgentConfigParityOptions } from './agent-config/parity.js'
 export { resolveClaudeRoots } from './agent-config/adapters/claude.js'
 export { resolveCodexRoots } from './agent-config/adapters/codex.js'
 export type {

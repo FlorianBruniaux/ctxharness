@@ -5,7 +5,14 @@ export type AgentHost = 'claude' | 'codex'
 export type AgentConfigScope = 'project' | 'global'
 
 /** The normalized configuration surface shared by supported hosts. */
-export type AgentConfigLayer = 'instructions' | 'skills' | 'rules' | 'agents' | 'hooks' | 'mcp'
+export type AgentConfigLayer =
+  | 'instructions'
+  | 'skills'
+  | 'rules'
+  | 'agents'
+  | 'hooks'
+  | 'mcp'
+  | 'release'
 
 /** A resolved configuration root, before filesystem discovery. */
 export interface AgentConfigRoot {
@@ -56,6 +63,12 @@ interface AgentConfigFindingBase {
   evidence?: AgentConfigEvidence[]
   /** A non-secret MCP server identifier, when a finding concerns one server. */
   server?: string
+  /** A validated, non-secret logical capability identifier. */
+  capability?: string
+  /** A digest or other non-secret expected value. */
+  expected?: string
+  /** A digest or other non-secret observed value. */
+  observed?: string
 }
 
 /** A normalized result for scanners and later policy checks. */
