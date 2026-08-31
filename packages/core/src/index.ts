@@ -19,3 +19,19 @@ export { appendTrendRecord, loadTrendHistory, summarizeTrend } from './trend.js'
 export type { TrendRecord, TrendSummary } from './trend.js'
 export { populateFromConfig, assertionsToYaml } from './populate.js'
 export type { PopulateResult } from './populate.js'
+export { inventoryAgentConfig, resolveProjectConfigRoots, resolveGlobalConfigRoots } from './agent-config/inventory.js'
+export { resolveClaudeRoots } from './agent-config/adapters/claude.js'
+export { resolveCodexRoots } from './agent-config/adapters/codex.js'
+export type {
+  AgentHost,
+  AgentConfigScope,
+  AgentConfigLayer,
+  AgentConfigRoot,
+  AgentConfigEvidence,
+  AgentConfigCapability,
+  AgentConfigSkill,
+  AgentConfigFindingStatus,
+  AgentConfigFinding,
+  AgentConfigInventory,
+  AgentConfigInventoryOptions,
+} from './agent-config/types.js'
