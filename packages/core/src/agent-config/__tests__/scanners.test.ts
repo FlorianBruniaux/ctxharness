@@ -420,6 +420,27 @@ describe('scanMcp', () => {
     expect(output).not.toContain('json-fallback-should-never-appear')
     expect(output).not.toContain('toml-fallback-should-never-appear')
   })
+
+  it('replaces a credential-like server key with a deterministic non-secret identifier', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const secretBearingKey = 'token-round2-sensitive-fragment'
+    writeFile(
+      join(project, '.mcp.json'),
+      JSON.stringify({ mcpServers: { [secretBearingKey]: { url: 'https://mcp.example.test' } } }),
+    )
+
+    const findings = scanMcp(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+    const output = JSON.stringify(findings)
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'mcp-config-valid', server: 'server-1' }),
+    )
+    expect(output).not.toContain(secretBearingKey)
+    expect(output).not.toContain('round2-sensitive-fragment')
+  })
 })
 
 describe('scanAgentConfig', () => {
