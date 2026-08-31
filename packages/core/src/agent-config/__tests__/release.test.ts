@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   copyFileSync,
-  cpSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   realpathSync,
   symlinkSync,
@@ -14,7 +14,7 @@ import { dirname, join } from 'node:path'
 import { validateAgentConfigRelease } from '../release.js'
 
 const FIXTURE = join(import.meta.dirname, 'fixtures', 'shared-release')
-const VALID_MANIFEST_HASH = '1bd9f57d5c5b5adfc155c505502e9afce5777cb5929044d9b7298012ca521173'
+const VALID_RELEASE_ID = 'b54b1551a232c578315e3580adc75b4bcbca27bba0ac6b2d36893f59b404de8b'
 const tempDirs: string[] = []
 
 function makeTempDir(): string {
@@ -28,12 +28,25 @@ function writeFile(path: string, contents: string): void {
   writeFileSync(path, contents, 'utf-8')
 }
 
-function installFixture(configRoot: string, manifestHash = VALID_MANIFEST_HASH): string {
-  const release = join(configRoot, 'releases', manifestHash)
+function writeRelease(release: string): void {
+  const manifestPath = join(FIXTURE, 'manifest-valid.json')
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as {
+    artifacts: Record<string, { type: 'file' | 'symlink'; linkTarget?: string }>
+  }
   mkdirSync(release, { recursive: true })
-  cpSync(join(FIXTURE, 'outputs'), release, { recursive: true })
-  copyFileSync(join(FIXTURE, 'manifest-valid.json'), join(release, 'manifest.json'))
-  symlinkSync(join('releases', manifestHash), join(configRoot, 'current'))
+  for (const [path, artifact] of Object.entries(manifest.artifacts)) {
+    const target = join(release, path)
+    mkdirSync(dirname(target), { recursive: true })
+    if (artifact.type === 'symlink') symlinkSync(artifact.linkTarget!, target)
+    else copyFileSync(join(FIXTURE, 'outputs', path), target)
+  }
+  copyFileSync(manifestPath, join(release, 'artifact-manifest.json'))
+}
+
+function installFixture(configRoot: string, releaseId = VALID_RELEASE_ID): string {
+  const release = join(configRoot, 'releases', releaseId)
+  writeRelease(release)
+  symlinkSync(join('releases', releaseId), join(configRoot, 'current'))
   return release
 }
 
@@ -51,18 +64,18 @@ describe('validateAgentConfigRelease', () => {
     expect(result.release).toEqual(
       expect.objectContaining({
         root: realpathSync(release),
-        manifestPath: join(realpathSync(release), 'manifest.json'),
-        manifestHash: VALID_MANIFEST_HASH,
+        manifestPath: join(realpathSync(release), 'artifact-manifest.json'),
+        manifest: expect.objectContaining({ releaseId: VALID_RELEASE_ID }),
       }),
     )
     expect(result.findings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'current-release-valid', status: 'pass' }),
         expect.objectContaining({
-          code: 'release-manifest-hash-valid',
+          code: 'release-identity-valid',
           status: 'pass',
-          expected: VALID_MANIFEST_HASH,
-          observed: VALID_MANIFEST_HASH,
+          expected: VALID_RELEASE_ID,
+          observed: VALID_RELEASE_ID,
         }),
         expect.objectContaining({
           code: 'release-output-hash-valid',
@@ -97,13 +110,11 @@ describe('validateAgentConfigRelease', () => {
   it('does not follow a releases directory symlink outside the selected configuration boundary', () => {
     const configRoot = makeTempDir()
     const outsideReleases = makeTempDir()
-    const release = join(outsideReleases, VALID_MANIFEST_HASH)
-    mkdirSync(release, { recursive: true })
-    cpSync(join(FIXTURE, 'outputs'), release, { recursive: true })
-    copyFileSync(join(FIXTURE, 'manifest-valid.json'), join(release, 'manifest.json'))
+    const release = join(outsideReleases, VALID_RELEASE_ID)
+    writeRelease(release)
     writeFile(join(release, 'unlisted.txt'), 'outside-release-secret-value')
     symlinkSync(outsideReleases, join(configRoot, 'releases'))
-    symlinkSync(join('releases', VALID_MANIFEST_HASH), join(configRoot, 'current'))
+    symlinkSync(join('releases', VALID_RELEASE_ID), join(configRoot, 'current'))
 
     const result = validateAgentConfigRelease({ configRoot })
     const serialized = JSON.stringify(result)
@@ -119,20 +130,20 @@ describe('validateAgentConfigRelease', () => {
     expect(serialized).not.toContain('outside-release-secret-value')
   })
 
-  it('rejects a release directory whose name is not the recomputed manifest hash', () => {
+  it('rejects a release directory whose name is not the recomputed canonical manifest identity', () => {
     const configRoot = makeTempDir()
-    const wrongHash = '0'.repeat(64)
-    installFixture(configRoot, wrongHash)
+    const wrongReleaseId = '0'.repeat(64)
+    installFixture(configRoot, wrongReleaseId)
 
     const result = validateAgentConfigRelease({ configRoot })
 
     expect(result.release).toBeUndefined()
     expect(result.findings).toContainEqual(
       expect.objectContaining({
-        code: 'release-manifest-hash-mismatch',
+        code: 'release-identity-mismatch',
         status: 'fail',
-        expected: wrongHash,
-        observed: VALID_MANIFEST_HASH,
+        expected: wrongReleaseId,
+        observed: VALID_RELEASE_ID,
       }),
     )
   })
@@ -182,7 +193,7 @@ describe('validateAgentConfigRelease', () => {
   it('keeps a missing current target unknown instead of treating it as success', () => {
     const configRoot = makeTempDir()
     mkdirSync(join(configRoot, 'releases'), { recursive: true })
-    symlinkSync(join('releases', VALID_MANIFEST_HASH), join(configRoot, 'current'))
+    symlinkSync(join('releases', VALID_RELEASE_ID), join(configRoot, 'current'))
 
     const result = validateAgentConfigRelease({ configRoot })
 
