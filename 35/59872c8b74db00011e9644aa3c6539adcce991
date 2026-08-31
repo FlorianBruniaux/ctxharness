@@ -1,0 +1,103 @@
+packages/core/src/agent-config/release.ts
+  s_aeebbf2fc2680c::t_4233610d9e743b 25,195-206
+packages/core/src/agent-config/__fixtures__/claude-project/.claude/skills/portable-demo/SKILL.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-6
+packages/core/src/agent-config/__fixtures__/global-home/.codex/AGENTS.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-3
+packages/core/src/agent-config/__fixtures__/global-home/runtime-evidence.json
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-20
+packages/core/src/agent-config/__fixtures__/shared-release/outputs/agents/codex/reviewer.toml
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-3
+packages/core/src/agent-config/__fixtures__/codex-project/AGENTS.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-3
+packages/core/src/agent-config/__fixtures__/claude-project/.claude/hooks/check.sh
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-2
+packages/core/src/agent-config/__fixtures__/codex-project/.codex/AGENTS.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-3
+packages/core/src/agent-config/__fixtures__/codex-project/.agents/skills/duplicate-review/SKILL.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-6
+packages/core/src/agent-config/__fixtures__/global-home/.agents/skills/duplicate-review/SKILL.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-6
+packages/core/src/agent-config/__fixtures__/codex-project/.agents/skills/portable-demo/SKILL.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-6
+packages/core/src/agent-config/__fixtures__/global-home/.claude/skills/duplicate-review/SKILL.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-6
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_aeebbf2fc2680c::t_c498bd58167c0c 10,20-22,52-119,349
+packages/core/src/agent-config/__fixtures__/codex-project/.codex/hooks.json
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-22
+packages/core/src/agent-config/__tests__/compatibility.test.ts
+  s_aeebbf2fc2680c::t_1c3b39295bafa8 49
+  s_aeebbf2fc2680c::t_c498bd58167c0c 1-48,50-109,115-150,156-166,175-204,206-244
+  s_aeebbf2fc2680c::t_cb25805c435e53 110-114,151-155,168-174
+  s_aeebbf2fc2680c::t_fffb75d6b996d7 167,205
+packages/core/src/agent-config/__fixtures__/shared-release/outputs/agents/claude/reviewer.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-7
+packages/core/src/agent-config/__fixtures__/claude-project/.claude/settings.json
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-22
+packages/core/src/agent-config/__fixtures__/shared-release/outputs/agents/claude-only/reviewer/permissionMode.json
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1
+packages/core/src/agent-config/__fixtures__/codex-project/.codex/config.toml
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-7
+packages/core/src/agent-config/__fixtures__/shared-release/mutations/changed-live-AGENTS.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1
+packages/core/src/agent-config/__fixtures__/global-home/.claude/CLAUDE.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-3
+packages/core/src/agent-config/__fixtures__/codex-project/.codex/agents/reviewer.toml
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-4
+packages/core/src/agent-config/adapters/codex.ts
+  s_aeebbf2fc2680c::t_4233610d9e743b 9-10
+  s_aeebbf2fc2680c::t_cb7f7e9b03ce55 18-24
+packages/core/src/agent-config/__fixtures__/codex-project/.codex/hooks/check.sh
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-2
+packages/core/src/agent-config/__fixtures__/shared-release/mutations/stale-release-CLAUDE.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1
+packages/core/src/agent-config/parity.ts
+  s_aeebbf2fc2680c::t_4233610d9e743b 13-14,71-86,91-94,219-221,229-231,243-250,252-255,257
+packages/core/src/agent-config/__fixtures__/claude-project/.claude/skills/duplicate-review/SKILL.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-6
+packages/core/src/agent-config/__fixtures__/shared-release/outputs/claude/CLAUDE.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1
+packages/core/src/agent-config/__fixtures__/shared-release/outputs/skills/common/portable-demo/SKILL.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-6
+packages/core/src/agent-config/__fixtures__/codex-project/.codex/skills/duplicate-review/SKILL.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-6
+packages/core/src/agent-config/__fixtures__/claude-project/.claude/rules/source.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-6
+packages/core/src/agent-config/__fixtures__/claude-project/.claude/CLAUDE.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-3
+packages/core/src/agent-config/__fixtures__/shared-release/artifact-manifest.json
+  s_aeebbf2fc2680c::t_1633248290645b 50
+  s_aeebbf2fc2680c::t_a876282e620466 10
+  s_aeebbf2fc2680c::t_f68fc60f3a2f6f 1-9,11-49,51
+packages/core/src/agent-config/__fixtures__/claude-project/CLAUDE.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-3
+packages/core/src/agent-config/__fixtures__/shared-release/outputs/codex/AGENTS.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1
+packages/core/src/agent-config/__fixtures__/claude-project/.claude/agents/reviewer.md
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-8
+package.json
+  s_aeebbf2fc2680c::t_4233610d9e743b 8
+packages/core/src/agent-config/__fixtures__/claude-project/.mcp.json
+  s_aeebbf2fc2680c::t_5e0edf6045b8c4 1-16
+packages/core/src/agent-config/__fixtures__/shared-release/outputs/skills/projections/claude/portable-demo
+  s_aeebbf2fc2680c::t_375870120f100f 1
+packages/core/src/agent-config/__fixtures__/shared-release/outputs/skills/projections/codex/portable-demo
+  s_aeebbf2fc2680c::t_c3512ac7a30248 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "3559872c8b74db00011e9644aa3c6539adcce991",
+  "prompts": {},
+  "sessions": {
+    "s_aeebbf2fc2680c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03e20-0cfd-78b0-b1fa-bfb10ef6a72f",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
