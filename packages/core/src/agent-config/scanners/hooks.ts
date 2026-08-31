@@ -1,11 +1,19 @@
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { parse as parseToml } from 'smol-toml'
+import { isPathWithinBoundary } from '../inventory.js'
 import type { AgentConfigEvidence, AgentConfigFinding, AgentConfigInventory } from '../types.js'
 
-interface HookCommand {
+interface ValidHookCommand {
+  valid: true
   command: string
 }
+
+interface InvalidHookCommand {
+  valid: false
+}
+
+type HookCommand = ValidHookCommand | InvalidHookCommand
 
 function collectCommands(value: unknown, commands: HookCommand[]): void {
   if (Array.isArray(value)) {
@@ -15,8 +23,12 @@ function collectCommands(value: unknown, commands: HookCommand[]): void {
   if (typeof value !== 'object' || value === null) return
 
   const fields = value as Record<string, unknown>
-  if (fields['type'] === 'command' && typeof fields['command'] === 'string') {
-    commands.push({ command: fields['command'] })
+  if (fields['type'] === 'command') {
+    if (typeof fields['command'] === 'string' && fields['command'].trim() !== '') {
+      commands.push({ valid: true, command: fields['command'] })
+    } else {
+      commands.push({ valid: false })
+    }
   }
   for (const child of Object.values(fields)) collectCommands(child, commands)
 }
@@ -73,45 +85,66 @@ function executable(path: string): boolean {
   }
 }
 
-function hookSources(inventory: AgentConfigInventory): AgentConfigEvidence[] {
-  const sources: AgentConfigEvidence[] = []
+function withinScopeBoundary(path: string, boundary: string): boolean {
+  try {
+    return isPathWithinBoundary(realpathSync(boundary), realpathSync(path))
+  } catch {
+    return false
+  }
+}
 
-  for (const root of inventory.roots.filter((candidate) => candidate.layer === 'hooks')) {
-    if (existsSync(root.path)) {
+function hookSources(inventory: AgentConfigInventory): {
+  sources: AgentConfigEvidence[]
+  findings: AgentConfigFinding[]
+} {
+  const sources: AgentConfigEvidence[] = []
+  const findings: AgentConfigFinding[] = []
+
+  for (const capability of inventory.capabilities.filter(
+    (candidate) => candidate.layer === 'hooks',
+  )) {
+    sources.push(capability.evidence)
+  }
+
+  for (const root of inventory.roots.filter(
+    (candidate) => candidate.host === 'codex' && candidate.layer === 'hooks',
+  )) {
+    const jsonPath = join(dirname(root.path), 'hooks.json')
+    if (!existsSync(jsonPath)) continue
+    if (withinScopeBoundary(jsonPath, root.boundary)) {
       sources.push({
         host: root.host,
         scope: root.scope,
         layer: 'hooks',
         root: root.path,
-        path: root.path,
+        path: jsonPath,
       })
-    }
-
-    if (root.host === 'codex') {
-      const jsonPath = join(dirname(root.path), 'hooks.json')
-      if (existsSync(jsonPath)) {
-        sources.push({
-          host: 'codex',
-          scope: root.scope,
-          layer: 'hooks',
-          root: jsonPath,
-          path: jsonPath,
-        })
-      }
+    } else {
+      findings.push({
+        code: 'hook-source-outside-boundary',
+        status: 'fail',
+        reason: 'outside-boundary',
+        message: 'Adjacent Codex hooks.json resolves outside the selected scope boundary.',
+        host: root.host,
+        scope: root.scope,
+        layer: 'hooks',
+        path: jsonPath,
+      })
     }
   }
 
   const unique = new Map(
     sources.map((source) => [`${source.host}:${source.scope}:${source.path}`, source]),
   )
-  return [...unique.values()]
+  return { sources: [...unique.values()], findings }
 }
 
 /** Parses native hook declarations and verifies referenced executable paths. */
 export function scanHooks(inventory: AgentConfigInventory): AgentConfigFinding[] {
-  const findings: AgentConfigFinding[] = []
+  const sourceResult = hookSources(inventory)
+  const findings = sourceResult.findings
 
-  for (const evidence of hookSources(inventory)) {
+  for (const evidence of sourceResult.sources) {
     const commands = parseHookCommands(evidence.path)
     if (commands === null) {
       findings.push({
@@ -128,6 +161,20 @@ export function scanHooks(inventory: AgentConfigInventory): AgentConfigFinding[]
     }
 
     for (const command of commands) {
+      if (!command.valid) {
+        findings.push({
+          code: 'hook-command-invalid',
+          status: 'fail',
+          message: 'Hook command declaration requires a non-empty string command.',
+          host: evidence.host,
+          scope: evidence.scope,
+          layer: 'hooks',
+          path: evidence.path,
+          evidence: [evidence],
+        })
+        continue
+      }
+
       const commandPath = resolveCommandPath(command.command, inventory, evidence)
       if (commandPath === null) {
         findings.push({

@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { inventoryAgentConfig } from '../inventory.js'
 import { scanInstructions } from '../scanners/instructions.js'
@@ -13,6 +15,22 @@ import type { AgentConfigFinding } from '../types.js'
 const FIXTURES = join(import.meta.dirname, 'fixtures')
 const PROJECT = join(FIXTURES, 'scanner-project')
 const HOME = join(FIXTURES, 'scanner-home')
+const tempDirs: string[] = []
+
+function makeTempDir(): string {
+  const path = mkdtempSync(join(tmpdir(), 'ctxharness-scanners-'))
+  tempDirs.push(path)
+  return path
+}
+
+function writeFile(path: string, content: string): void {
+  mkdirSync(join(path, '..'), { recursive: true })
+  writeFileSync(path, content, 'utf-8')
+}
+
+afterEach(() => {
+  for (const directory of tempDirs.splice(0)) rmSync(directory, { recursive: true, force: true })
+})
 
 function inventory() {
   return inventoryAgentConfig({ root: PROJECT, home: HOME })
@@ -27,6 +45,25 @@ describe('AgentConfigFinding', () => {
     }
 
     expect(finding.reason).toBeUndefined()
+  })
+
+  it('requires a reason for unknown findings', () => {
+    const finding: AgentConfigFinding = {
+      code: 'configured-root-unavailable',
+      status: 'unknown',
+      reason: 'missing-evidence',
+      message: 'Configured root is unavailable.',
+    }
+
+    expect(finding.reason).toBe('missing-evidence')
+
+    // @ts-expect-error Unknown findings must state why their evidence is unavailable.
+    const missingReason: AgentConfigFinding = {
+      code: 'configured-root-unavailable',
+      status: 'unknown',
+      message: 'Configured root is unavailable.',
+    }
+    expect(missingReason.status).toBe('unknown')
   })
 })
 
@@ -131,6 +168,42 @@ describe('scanSkills', () => {
       }),
     ])
   })
+
+  it('rejects references that escape the skill package lexically or through a symlink', () => {
+    const findings = scanSkills(inventory())
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'skill-reference-outside-boundary',
+          path: join(PROJECT, '.claude', 'skills', 'absolute-reference', 'SKILL.md'),
+        }),
+        expect.objectContaining({
+          code: 'skill-reference-outside-boundary',
+          path: join(PROJECT, '.claude', 'skills', 'parent-reference', 'SKILL.md'),
+        }),
+      ]),
+    )
+
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const packageDir = join(project, '.claude', 'skills', 'symlinked')
+    const outside = join(makeTempDir(), 'outside.md')
+    writeFile(
+      join(packageDir, 'SKILL.md'),
+      '---\nname: symlinked\ndescription: test\n---\n[escape](link.md)',
+    )
+    writeFile(outside, 'outside')
+    symlinkSync(outside, join(packageDir, 'link.md'))
+
+    expect(
+      scanSkills(inventoryAgentConfig({ root: project, home, hosts: ['claude'] })),
+    ).toContainEqual(
+      expect.objectContaining({
+        code: 'skill-reference-outside-boundary',
+        path: join(packageDir, 'SKILL.md'),
+      }),
+    )
+  })
 })
 
 describe('scanRules', () => {
@@ -155,6 +228,23 @@ describe('scanRules', () => {
     )
     expect(findings.every((finding) => finding.host === 'claude')).toBe(true)
     expect(findings.some((finding) => finding.path?.endsWith('AGENTS.override.md'))).toBe(false)
+  })
+
+  it('rejects embedded parent traversal and malformed globs', () => {
+    const findings = scanRules(inventory())
+
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'claude-rule-glob-invalid',
+          path: join(PROJECT, '.claude', 'rules', 'embedded-traversal.md'),
+        }),
+        expect.objectContaining({
+          code: 'claude-rule-glob-invalid',
+          path: join(PROJECT, '.claude', 'rules', 'malformed.md'),
+        }),
+      ]),
+    )
   })
 })
 
@@ -246,6 +336,49 @@ describe('scanHooks', () => {
       }),
     )
   })
+
+  it('rejects malformed command declarations in JSON and TOML', () => {
+    const findings = scanHooks(inventory())
+
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'hook-command-invalid',
+          status: 'fail',
+          host: 'claude',
+          path: join(PROJECT, '.claude', 'settings.json'),
+        }),
+        expect.objectContaining({
+          code: 'hook-command-invalid',
+          status: 'fail',
+          host: 'codex',
+          path: join(PROJECT, '.codex', 'config.toml'),
+        }),
+      ]),
+    )
+  })
+
+  it('does not parse an adjacent hooks.json symlink outside the selected boundary', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const externalHooks = join(makeTempDir(), 'hooks.json')
+    writeFile(join(project, '.codex', 'config.toml'), '')
+    writeFile(
+      externalHooks,
+      '{"hooks":{"SessionStart":[{"type":"command","command":"./outside.sh"}]}}',
+    )
+    symlinkSync(externalHooks, join(project, '.codex', 'hooks.json'))
+
+    const findings = scanHooks(inventoryAgentConfig({ root: project, home, hosts: ['codex'] }))
+    expect(findings).toContainEqual(
+      expect.objectContaining({
+        code: 'hook-source-outside-boundary',
+        status: 'fail',
+        path: join(project, '.codex', 'hooks.json'),
+      }),
+    )
+    expect(findings.some((finding) => finding.path === externalHooks)).toBe(false)
+  })
 })
 
 describe('scanMcp', () => {
@@ -269,7 +402,23 @@ describe('scanMcp', () => {
       findings.filter(
         (finding) => finding.host === 'codex' && finding.code === 'mcp-literal-secret',
       ),
+    ).toHaveLength(3)
+    expect(
+      findings.filter((finding) => finding.layer === 'mcp').map((finding) => finding.server),
+    ).toEqual(expect.arrayContaining(['safe', 'literal', 'fallback']))
+  })
+
+  it('rejects literal fallbacks in JSON and TOML environment substitutions without serializing them', () => {
+    const findings = scanMcp(inventory())
+    const output = JSON.stringify(findings)
+
+    expect(
+      findings.filter(
+        (finding) => finding.code === 'mcp-literal-secret' && finding.server === 'fallback',
+      ),
     ).toHaveLength(2)
+    expect(output).not.toContain('json-fallback-should-never-appear')
+    expect(output).not.toContain('toml-fallback-should-never-appear')
   })
 })
 
@@ -286,6 +435,46 @@ describe('scanAgentConfig', () => {
         expect.objectContaining({ code: 'agent-valid', layer: 'agents' }),
         expect.objectContaining({ code: 'hook-command-unresolved', layer: 'hooks' }),
         expect.objectContaining({ code: 'mcp-literal-secret', layer: 'mcp' }),
+      ]),
+    )
+  })
+
+  it('preserves aggregation when inventory evidence disappears before each post-inventory scanner reads it', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(join(project, 'CLAUDE.md'), '# instructions')
+    writeFile(
+      join(project, '.claude', 'skills', 'demo', 'SKILL.md'),
+      '---\nname: demo\ndescription: test\n---',
+    )
+    writeFile(join(project, '.claude', 'rules', 'demo.md'), '# rule')
+    writeFile(
+      join(project, '.claude', 'agents', 'demo.md'),
+      '---\nname: demo\ndescription: test\n---\nbody',
+    )
+    const beforeRemoval = inventoryAgentConfig({
+      root: project,
+      home,
+      hosts: ['claude'],
+      scopes: ['project'],
+    })
+
+    rmSync(join(project, 'CLAUDE.md'))
+    rmSync(join(project, '.claude', 'skills', 'demo', 'SKILL.md'))
+    rmSync(join(project, '.claude', 'rules'), { recursive: true })
+    rmSync(join(project, '.claude', 'agents'), { recursive: true })
+
+    const findings = scanAgentConfig(beforeRemoval)
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: 'unknown',
+          layer: 'instructions',
+          reason: 'missing-evidence',
+        }),
+        expect.objectContaining({ status: 'unknown', layer: 'skills', reason: 'missing-evidence' }),
+        expect.objectContaining({ status: 'unknown', layer: 'rules', reason: 'missing-evidence' }),
+        expect.objectContaining({ status: 'unknown', layer: 'agents', reason: 'missing-evidence' }),
       ]),
     )
   })

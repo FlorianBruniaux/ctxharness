@@ -11,7 +11,22 @@ const CODEX_INSTRUCTION_NAMES = new Set(['AGENTS.md', 'AGENTS.override.md'])
 const IGNORED_DIRECTORIES = new Set(['.git', 'node_modules'])
 
 function instructionFinding(evidence: AgentConfigEvidence): AgentConfigFinding {
-  const content = readFileSync(evidence.path, 'utf-8')
+  let content: string
+  try {
+    content = readFileSync(evidence.path, 'utf-8')
+  } catch {
+    return {
+      code: 'instruction-evidence-unavailable',
+      status: 'unknown',
+      reason: 'missing-evidence',
+      message: 'Instruction file became unavailable after inventory.',
+      host: evidence.host,
+      scope: evidence.scope,
+      layer: 'instructions',
+      path: evidence.path,
+      evidence: [evidence],
+    }
+  }
   const empty = content.trim().length === 0
   return {
     code: empty ? 'instruction-empty' : 'instruction-valid',
@@ -30,11 +45,29 @@ function discoverCodexInstructions(
   scope: AgentConfigScope,
   boundary: string,
   recursive: boolean,
+  findings: AgentConfigFinding[],
 ): AgentConfigEvidence[] {
   if (!existsSync(directory)) return []
   const evidence: AgentConfigEvidence[] = []
 
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+  let entries
+  try {
+    entries = readdirSync(directory, { withFileTypes: true })
+  } catch {
+    findings.push({
+      code: 'instruction-evidence-unavailable',
+      status: 'unknown',
+      reason: 'missing-evidence',
+      message: 'Instruction directory became unavailable after inventory.',
+      host: 'codex',
+      scope,
+      layer: 'instructions',
+      path: directory,
+    })
+    return evidence
+  }
+
+  for (const entry of entries) {
     if (entry.isFile() && CODEX_INSTRUCTION_NAMES.has(entry.name)) {
       evidence.push({
         host: 'codex',
@@ -47,7 +80,7 @@ function discoverCodexInstructions(
     }
     if (recursive && entry.isDirectory() && !IGNORED_DIRECTORIES.has(entry.name)) {
       evidence.push(
-        ...discoverCodexInstructions(join(directory, entry.name), scope, boundary, true),
+        ...discoverCodexInstructions(join(directory, entry.name), scope, boundary, true, findings),
       )
     }
   }
@@ -61,9 +94,18 @@ export function scanInstructions(inventory: AgentConfigInventory): AgentConfigFi
     .filter((capability) => capability.layer === 'instructions')
     .map((capability) => capability.evidence)
 
-  discovered.push(...discoverCodexInstructions(inventory.root, 'project', inventory.root, true))
+  const findings: AgentConfigFinding[] = []
   discovered.push(
-    ...discoverCodexInstructions(join(inventory.home, '.codex'), 'global', inventory.home, false),
+    ...discoverCodexInstructions(inventory.root, 'project', inventory.root, true, findings),
+  )
+  discovered.push(
+    ...discoverCodexInstructions(
+      join(inventory.home, '.codex'),
+      'global',
+      inventory.home,
+      false,
+      findings,
+    ),
   )
 
   const unique = new Map<string, AgentConfigEvidence>()
@@ -73,26 +115,29 @@ export function scanInstructions(inventory: AgentConfigInventory): AgentConfigFi
   }
 
   const evidence = [...unique.values()]
-  return evidence.map((item) => {
-    if (item.host !== 'codex' || basename(item.path) !== 'AGENTS.md')
-      return instructionFinding(item)
-    const override = evidence.find(
-      (candidate) =>
-        candidate.host === 'codex' &&
-        candidate.scope === item.scope &&
-        dirname(candidate.path) === dirname(item.path) &&
-        basename(candidate.path) === 'AGENTS.override.md',
-    )
-    if (override === undefined) return instructionFinding(item)
-    return {
-      code: 'instruction-shadowed',
-      status: 'warn',
-      message: 'AGENTS.md is shadowed by AGENTS.override.md in the same directory.',
-      host: 'codex',
-      scope: item.scope,
-      layer: 'instructions',
-      path: item.path,
-      evidence: [item, override],
-    }
-  })
+  return [
+    ...findings,
+    ...evidence.map((item): AgentConfigFinding => {
+      if (item.host !== 'codex' || basename(item.path) !== 'AGENTS.md')
+        return instructionFinding(item)
+      const override = evidence.find(
+        (candidate) =>
+          candidate.host === 'codex' &&
+          candidate.scope === item.scope &&
+          dirname(candidate.path) === dirname(item.path) &&
+          basename(candidate.path) === 'AGENTS.override.md',
+      )
+      if (override === undefined) return instructionFinding(item)
+      return {
+        code: 'instruction-shadowed',
+        status: 'warn',
+        message: 'AGENTS.md is shadowed by AGENTS.override.md in the same directory.',
+        host: 'codex',
+        scope: item.scope,
+        layer: 'instructions',
+        path: item.path,
+        evidence: [item, override],
+      }
+    }),
+  ]
 }

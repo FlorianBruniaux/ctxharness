@@ -5,7 +5,7 @@ import type { AgentConfigEvidence, AgentConfigFinding, AgentConfigInventory } fr
 const SECRET_FIELD = /(?:authorization|api[_-]?key|token|secret|password|credential)/i
 const LITERAL_SECRET =
   /(?:\bBearer\s+(?!\$\{)|\bsk-[A-Za-z0-9_-]{8,}|\bgh[pousr]_[A-Za-z0-9_]{8,}|[?&](?:token|key|secret|password)=)/i
-const ENV_REFERENCE = /^(?:Bearer\s+)?\$\{[A-Z_][A-Z0-9_]*(?::-[^}]*)?\}$/
+const ENV_REFERENCE = /^(?:Bearer\s+)?\$\{[A-Z_][A-Z0-9_]*\}$/
 
 function containsLiteralSecret(value: unknown, key = '', protectedEnvReference = false): boolean {
   if (typeof value === 'string') {
@@ -73,7 +73,7 @@ export function scanMcp(inventory: AgentConfigInventory): AgentConfigFinding[] {
       continue
     }
 
-    for (const server of Object.values(servers)) {
+    for (const [serverName, server] of Object.entries(servers)) {
       const literalSecret = containsLiteralSecret(server)
       findings.push({
         code: literalSecret ? 'mcp-literal-secret' : 'mcp-config-valid',
@@ -86,6 +86,7 @@ export function scanMcp(inventory: AgentConfigInventory): AgentConfigFinding[] {
         layer: 'mcp',
         path: evidence.path,
         evidence: [evidence],
+        server: serverName,
       })
     }
   }

@@ -46,18 +46,28 @@ export type AgentConfigFindingStatus = 'pass' | 'warn' | 'fail' | 'unknown' | 'n
 export type AgentConfigFindingReason = 'missing-evidence' | 'outside-boundary'
 
 /** A normalized result for scanners and later policy checks. */
-export interface AgentConfigFinding {
+interface AgentConfigFindingBase {
   code: string
-  status: AgentConfigFindingStatus
-  /** Present when a finding needs a machine-readable explanation for an unknown or failed state. */
-  reason?: AgentConfigFindingReason
   message: string
   host?: AgentHost
   scope?: AgentConfigScope
   layer?: AgentConfigLayer
   path?: string
   evidence?: AgentConfigEvidence[]
+  /** A non-secret MCP server identifier, when a finding concerns one server. */
+  server?: string
 }
+
+/** A normalized result for scanners and later policy checks. */
+export type AgentConfigFinding =
+  | (AgentConfigFindingBase & {
+      status: 'unknown'
+      reason: AgentConfigFindingReason
+    })
+  | (AgentConfigFindingBase & {
+      status: Exclude<AgentConfigFindingStatus, 'unknown'>
+      reason?: AgentConfigFindingReason
+    })
 
 export interface AgentConfigInventory {
   root: string

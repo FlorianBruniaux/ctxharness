@@ -5,6 +5,10 @@ matcher = "^startup$"
 type = "command"
 command = "./.codex/hooks/check.sh"
 
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = 42
+
 [mcp_servers.safe]
 url = "https://mcp.example.test"
 bearer_token_env_var = "SAFE_MCP_TOKEN"
@@ -12,6 +16,10 @@ bearer_token_env_var = "SAFE_MCP_TOKEN"
 [mcp_servers.literal]
 url = "https://mcp.example.test"
 http_headers = { Authorization = "Bearer codex-secret-should-never-appear" }
+
+[mcp_servers.fallback]
+url = "https://mcp.example.test"
+bearer_token_env_var = "${CODEX_TOKEN:-toml-fallback-should-never-appear}"
 
 [mcp_servers.invalid_env_header]
 url = "https://mcp.example.test"

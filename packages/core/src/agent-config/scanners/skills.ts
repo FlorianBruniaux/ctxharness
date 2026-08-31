@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { load } from 'js-yaml'
+import { isPathWithinBoundary } from '../inventory.js'
 import type { AgentConfigEvidence, AgentConfigFinding, AgentConfigInventory } from '../types.js'
 
 interface ParsedSkill {
@@ -8,6 +9,19 @@ interface ParsedSkill {
   name?: string | undefined
   valid: boolean
   missingReferences: string[]
+  outsideReferences: string[]
+}
+
+function isReferenceOutsideSkillPackage(reference: string, skillPackage: string): boolean {
+  const candidate = resolve(skillPackage, reference)
+  if (!isPathWithinBoundary(skillPackage, candidate)) return true
+  if (!existsSync(candidate)) return false
+
+  try {
+    return !isPathWithinBoundary(realpathSync(skillPackage), realpathSync(candidate))
+  } catch {
+    return false
+  }
 }
 
 function parseSkill(evidence: AgentConfigEvidence): ParsedSkill {
@@ -44,17 +58,24 @@ function parseSkill(evidence: AgentConfigEvidence): ParsedSkill {
     if (match[1]) referenced.add(match[1])
   }
 
-  const missingReferences = [...referenced]
+  const localReferences = [...referenced]
     .map((reference) => reference.split('#', 1)[0] ?? '')
-    .filter(
-      (reference) => reference !== '' && !existsSync(resolve(dirname(evidence.path), reference)),
-    )
+    .filter((reference) => reference !== '')
+  const skillPackage = dirname(evidence.path)
+  const outsideReferences = localReferences.filter((reference) =>
+    isReferenceOutsideSkillPackage(reference, skillPackage),
+  )
+  const missingReferences = localReferences.filter(
+    (reference) =>
+      !outsideReferences.includes(reference) && !existsSync(resolve(skillPackage, reference)),
+  )
 
   return {
     evidence,
     name,
     valid: name !== undefined && description !== undefined,
     missingReferences,
+    outsideReferences,
   }
 }
 
@@ -75,8 +96,30 @@ function skillFinding(skill: ParsedSkill): AgentConfigFinding {
 
 /** Validates skill manifests, local references, declared-name collisions, and provenance. */
 export function scanSkills(inventory: AgentConfigInventory): AgentConfigFinding[] {
-  const parsed = inventory.skills.flatMap((skill) => skill.evidence.map(parseSkill))
-  const findings = parsed.map(skillFinding)
+  const parsed: ParsedSkill[] = []
+  const findings: AgentConfigFinding[] = []
+
+  for (const skill of inventory.skills) {
+    for (const evidence of skill.evidence) {
+      try {
+        parsed.push(parseSkill(evidence))
+      } catch {
+        findings.push({
+          code: 'skill-evidence-unavailable',
+          status: 'unknown',
+          reason: 'missing-evidence',
+          message: 'Skill manifest became unavailable after inventory.',
+          host: evidence.host,
+          scope: evidence.scope,
+          layer: 'skills',
+          path: evidence.path,
+          evidence: [evidence],
+        })
+      }
+    }
+  }
+
+  findings.push(...parsed.map(skillFinding))
 
   for (const skill of parsed) {
     if (skill.missingReferences.length === 0) continue
@@ -84,6 +127,21 @@ export function scanSkills(inventory: AgentConfigInventory): AgentConfigFinding[
       code: 'skill-reference-missing',
       status: 'fail',
       message: `${skill.missingReferences.length} referenced skill resource(s) are unavailable.`,
+      host: skill.evidence.host,
+      scope: skill.evidence.scope,
+      layer: 'skills',
+      path: skill.evidence.path,
+      evidence: [skill.evidence],
+    })
+  }
+
+  for (const skill of parsed) {
+    if (skill.outsideReferences.length === 0) continue
+    findings.push({
+      code: 'skill-reference-outside-boundary',
+      status: 'fail',
+      reason: 'outside-boundary',
+      message: `${skill.outsideReferences.length} referenced skill resource(s) escape the skill package boundary.`,
       host: skill.evidence.host,
       scope: skill.evidence.scope,
       layer: 'skills',

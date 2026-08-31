@@ -63,15 +63,46 @@ function agentFinding(evidence: AgentConfigEvidence): AgentConfigFinding {
 
 /** Validates Claude Markdown and Codex TOML agents independently. */
 export function scanAgents(inventory: AgentConfigInventory): AgentConfigFinding[] {
-  return inventory.capabilities
-    .filter((capability) => capability.layer === 'agents')
-    .flatMap((capability) => {
-      const extension = capability.host === 'claude' ? ('.md' as const) : ('.toml' as const)
-      return agentFiles(capability.path, extension).map((path) =>
-        agentFinding({
+  const findings: AgentConfigFinding[] = []
+  for (const capability of inventory.capabilities.filter(
+    (candidate) => candidate.layer === 'agents',
+  )) {
+    const extension = capability.host === 'claude' ? ('.md' as const) : ('.toml' as const)
+    try {
+      for (const path of agentFiles(capability.path, extension)) {
+        const evidence = {
           ...capability.evidence,
           path,
-        }),
-      )
-    })
+        }
+        try {
+          findings.push(agentFinding(evidence))
+        } catch {
+          findings.push({
+            code: 'agent-evidence-unavailable',
+            status: 'unknown',
+            reason: 'missing-evidence',
+            message: 'Agent definition became unavailable after inventory.',
+            host: evidence.host,
+            scope: evidence.scope,
+            layer: 'agents',
+            path: evidence.path,
+            evidence: [evidence],
+          })
+        }
+      }
+    } catch {
+      findings.push({
+        code: 'agent-evidence-unavailable',
+        status: 'unknown',
+        reason: 'missing-evidence',
+        message: 'Agent directory became unavailable after inventory.',
+        host: capability.host,
+        scope: capability.scope,
+        layer: 'agents',
+        path: capability.path,
+        evidence: [capability.evidence],
+      })
+    }
+  }
+  return findings
 }

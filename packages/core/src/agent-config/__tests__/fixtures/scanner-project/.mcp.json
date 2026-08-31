@@ -12,6 +12,12 @@
       "env": {
         "API_KEY": "claude-secret-should-never-appear"
       }
+    },
+    "fallback": {
+      "url": "https://mcp.example.test",
+      "headers": {
+        "Authorization": "Bearer ${CLAUDE_TOKEN:-json-fallback-should-never-appear}"
+      }
     }
   }
 }

@@ -13,6 +13,28 @@ function markdownFiles(directory: string): string[] {
   return files
 }
 
+function malformedGlob(path: string): boolean {
+  if (path.includes('\u0000') || path.split(/[\\/]/).includes('..')) return true
+
+  const pairs: Record<string, string> = { '[': ']', '{': '}', '(': ')' }
+  const stack: string[] = []
+  let escaped = false
+  for (const character of path) {
+    if (escaped) {
+      escaped = false
+      continue
+    }
+    if (character === '\\') {
+      escaped = true
+      continue
+    }
+    if (character in pairs) stack.push(pairs[character]!)
+    else if (stack.at(-1) === character) stack.pop()
+    else if (character === ']' || character === '}' || character === ')') return true
+  }
+  return escaped || stack.length > 0
+}
+
 function validateRule(evidence: AgentConfigEvidence): AgentConfigFinding {
   const content = readFileSync(evidence.path, 'utf-8')
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content)
@@ -31,8 +53,7 @@ function validateRule(evidence: AgentConfigEvidence): AgentConfigFinding {
               typeof path !== 'string' ||
               path.trim() === '' ||
               isAbsolute(path) ||
-              path === '..' ||
-              path.startsWith('../'),
+              malformedGlob(path),
           )
       }
     } catch {
@@ -56,14 +77,45 @@ function validateRule(evidence: AgentConfigEvidence): AgentConfigFinding {
 
 /** Validates Claude path-scoped rules. Codex directory scope is handled by scanInstructions. */
 export function scanRules(inventory: AgentConfigInventory): AgentConfigFinding[] {
-  return inventory.capabilities
-    .filter((capability) => capability.host === 'claude' && capability.layer === 'rules')
-    .flatMap((capability) =>
-      markdownFiles(capability.path).map((path) =>
-        validateRule({
+  const findings: AgentConfigFinding[] = []
+  for (const capability of inventory.capabilities.filter(
+    (capability) => capability.host === 'claude' && capability.layer === 'rules',
+  )) {
+    try {
+      for (const path of markdownFiles(capability.path)) {
+        const evidence = {
           ...capability.evidence,
           path,
-        }),
-      ),
-    )
+        }
+        try {
+          findings.push(validateRule(evidence))
+        } catch {
+          findings.push({
+            code: 'rule-evidence-unavailable',
+            status: 'unknown',
+            reason: 'missing-evidence',
+            message: 'Claude rule became unavailable after inventory.',
+            host: evidence.host,
+            scope: evidence.scope,
+            layer: 'rules',
+            path: evidence.path,
+            evidence: [evidence],
+          })
+        }
+      }
+    } catch {
+      findings.push({
+        code: 'rule-evidence-unavailable',
+        status: 'unknown',
+        reason: 'missing-evidence',
+        message: 'Claude rule directory became unavailable after inventory.',
+        host: capability.host,
+        scope: capability.scope,
+        layer: 'rules',
+        path: capability.path,
+        evidence: [capability.evidence],
+      })
+    }
+  }
+  return findings
 }
