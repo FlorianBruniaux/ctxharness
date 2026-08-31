@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
 import { resolve, join, basename } from 'node:path'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { relative } from 'node:path'
 import { homedir } from 'node:os'
 import fg from 'fast-glob'
@@ -395,7 +395,6 @@ interface RuntimeEvidenceResult {
   capability: string
   status: AgentDoctorStatus
   message: string
-  mandatory: boolean
 }
 
 interface RuntimeEvidenceLoadResult {
@@ -469,7 +468,7 @@ function isValidTimestamp(value: unknown): value is string {
 
 function parseRuntimeResult(value: unknown): RuntimeEvidenceResult | null {
   if (!isRecord(value)) return null
-  const { host, scope, capability, status, message, mandatory } = value
+  const { host, scope, capability, status, message } = value
   if (host !== 'claude' && host !== 'codex') return null
   if (scope !== undefined && scope !== 'project' && scope !== 'global') return null
   if (typeof capability !== 'string' || capability.length === 0) return null
@@ -482,14 +481,12 @@ function parseRuntimeResult(value: unknown): RuntimeEvidenceResult | null {
   )
     return null
   if (typeof message !== 'string' || message.length === 0) return null
-  if (mandatory !== undefined && typeof mandatory !== 'boolean') return null
   return {
     host,
     ...(scope === undefined ? {} : { scope }),
     capability,
     status,
     message,
-    mandatory: mandatory === true && status === 'fail',
   }
 }
 
@@ -502,10 +499,10 @@ function loadRuntimeEvidence(
   const path = resolve(cwd, requestedPath)
   let parsed: unknown
   try {
-    const contents = readFileSync(path, 'utf8')
-    if (contents.length > 1_000_000) {
+    if (statSync(path).size > 1_000_000) {
       return runtimeEvidenceUnknown(path, 'Runtime evidence exceeds the 1 MB local input limit.')
     }
+    const contents = readFileSync(path, 'utf8')
     parsed = JSON.parse(contents)
   } catch {
     return runtimeEvidenceUnknown(path, 'Runtime evidence is missing, unreadable, or invalid JSON.')
@@ -560,7 +557,7 @@ function loadRuntimeEvidence(
         ...(result.scope === undefined ? {} : { scope: result.scope }),
         capability: result.capability,
         source: 'runtime',
-        mandatory: result.mandatory,
+        mandatory: false,
       }),
     )
 
@@ -731,7 +728,8 @@ program
         const format = parseAgentDoctorFormat(opts.format)
         const result = buildAgentDoctorReport(root, resolve(homedir()), hosts, scopes, opts.runtimeEvidence, cwd)
         reportAgentDoctor(result, format)
-        process.exit(result.summary.mandatoryFailures > 0 ? 1 : 0)
+        process.exitCode = result.summary.mandatoryFailures > 0 ? 1 : 0
+        return
       }
 
       const configPath = resolve(cwd, opts.config)

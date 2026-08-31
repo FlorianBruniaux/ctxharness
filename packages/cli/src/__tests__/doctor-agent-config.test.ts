@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -153,11 +153,11 @@ describe('doctor agent configuration mode', () => {
     )
   })
 
-  it('exits non-zero only for mandatory failures', () => {
+  it('does not let runtime evidence declare its own failure mandatory', () => {
     const root = makeTempDir('ctxharness-doctor-root-')
     const home = makeTempDir('ctxharness-doctor-home-')
     const optionalPath = join(root, 'optional.json')
-    const mandatoryPath = join(root, 'mandatory.json')
+    const selfDeclaredMandatoryPath = join(root, 'self-declared-mandatory.json')
     const base = {
       schemaVersion: 1,
       generatedAt: '2026-08-31T12:00:00.000Z',
@@ -179,7 +179,7 @@ describe('doctor agent configuration mode', () => {
       }),
     )
     write(
-      mandatoryPath,
+      selfDeclaredMandatoryPath,
       JSON.stringify({
         ...base,
         results: [
@@ -206,7 +206,7 @@ describe('doctor agent configuration mode', () => {
       '--runtime-evidence',
       optionalPath,
     ])
-    const mandatory = invoke(root, home, [
+    const selfDeclaredMandatory = invoke(root, home, [
       'doctor',
       '--host',
       'claude',
@@ -215,13 +215,105 @@ describe('doctor agent configuration mode', () => {
       '--format',
       'json',
       '--runtime-evidence',
-      mandatoryPath,
+      selfDeclaredMandatoryPath,
     ])
 
     expect(optional.status).toBe(0)
     expect(JSON.parse(optional.stdout).summary.mandatoryFailures).toBe(0)
-    expect(mandatory.status).toBe(1)
-    expect(JSON.parse(mandatory.stdout).summary.mandatoryFailures).toBe(1)
+    expect(selfDeclaredMandatory.status).toBe(0)
+    const payload = JSON.parse(selfDeclaredMandatory.stdout) as {
+      summary: { mandatoryFailures: number }
+      findings: Array<{ source: string; capability?: string; mandatory: boolean }>
+    }
+    expect(payload.summary.mandatoryFailures).toBe(0)
+    expect(payload.findings).toContainEqual(
+      expect.objectContaining({
+        source: 'runtime',
+        capability: 'mandatory-canary',
+        mandatory: false,
+      }),
+    )
+  })
+
+  it('flushes a large JSON report before returning a mandatory failure', () => {
+    const root = makeTempDir('ctxharness-doctor-root-')
+    const home = makeTempDir('ctxharness-doctor-home-')
+    const evidencePath = join(root, 'runtime-evidence.json')
+    const results = Array.from({ length: 3_000 }, (_, index) => ({
+      host: 'claude',
+      scope: 'project',
+      capability: `canary-${index}`,
+      status: 'pass',
+      message: `Observed canary ${index}: ${'x'.repeat(80)}`,
+    }))
+    write(
+      evidencePath,
+      JSON.stringify({
+        schemaVersion: 1,
+        generatedAt: '2026-08-31T12:00:00.000Z',
+        results,
+      }),
+    )
+    write(join(root, '.claude', 'skills', 'invalid', 'SKILL.md'), '# missing frontmatter')
+
+    const result = invoke(root, home, [
+      'doctor',
+      '--host',
+      'claude',
+      '--scope',
+      'project',
+      '--format',
+      'json',
+      '--runtime-evidence',
+      evidencePath,
+    ])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe('')
+    const payload = JSON.parse(result.stdout) as {
+      summary: { mandatoryFailures: number }
+      findings: Array<{ capability?: string }>
+    }
+    expect(payload.summary.mandatoryFailures).toBeGreaterThan(0)
+    expect(payload.findings).toContainEqual(
+      expect.objectContaining({ capability: 'canary-2999' }),
+    )
+  })
+
+  it('rejects oversized runtime evidence from file metadata before reading it', () => {
+    const root = makeTempDir('ctxharness-doctor-root-')
+    const home = makeTempDir('ctxharness-doctor-home-')
+    const evidencePath = join(root, 'runtime-evidence.json')
+    try {
+      write(evidencePath, '')
+      truncateSync(evidencePath, 2 ** 32)
+
+      const result = invoke(root, home, [
+        'doctor',
+        '--host',
+        'claude',
+        '--scope',
+        'project',
+        '--format',
+        'json',
+        '--runtime-evidence',
+        evidencePath,
+      ])
+
+      expect(result.status).toBe(0)
+      const payload = JSON.parse(result.stdout) as {
+        findings: Array<{ code: string; message: string }>
+      }
+      expect(payload.findings).toContainEqual(
+        expect.objectContaining({
+          code: 'runtime-evidence-unavailable',
+          message: 'Runtime evidence exceeds the 1 MB local input limit.',
+        }),
+      )
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+      rmSync(home, { recursive: true, force: true })
+    }
   })
 
   it('treats a static configuration failure as mandatory', () => {
