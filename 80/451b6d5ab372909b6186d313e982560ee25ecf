@@ -1,0 +1,37 @@
+packages/core/src/agent-config/__tests__/scanners.test.ts
+  s_aeebbf2fc2680c::t_97f633ebffe6b3 2,505-553,568,572,578
+  s_aeebbf2fc2680c::t_37ae6efb0c5002 72-100
+  s_aeebbf2fc2680c::t_80d82e12e64393 373-406
+  s_aeebbf2fc2680c::t_2ed95f0d0a40e3 407-418,420-504,554-567,569-571,573-577
+  s_aeebbf2fc2680c::t_9162d7700e40f3 5,313-372,419
+  s_aeebbf2fc2680c::t_e0f6157cfe08f9 681-710
+packages/core/src/agent-config/__tests__/release.test.ts
+  s_aeebbf2fc2680c::t_3e055a1eec2e83 3,59-64,66-74,76-80
+  s_aeebbf2fc2680c::t_f861f73837a7e9 65,75
+packages/core/src/agent-config/scanners/hooks.ts
+  s_aeebbf2fc2680c::t_0f94adcbc5e04d 24,86,90-92,110,123,126,128-151,153-154,158-160
+  s_aeebbf2fc2680c::t_0355825efe7f36 2,18-23,25,59,63-65,70-71,73-79,84-85,87-89,93,119-122,124-125,127,152,155-157,173-182,273-274,289,291
+  s_aeebbf2fc2680c::t_33019912cab832 94-109,111-118,290
+packages/core/src/agent-config/scanners/instructions.ts
+  s_aeebbf2fc2680c::t_0c4748d6eefda9 98-101,103-118
+packages/core/src/agent-config/scanners/mcp.ts
+  s_aeebbf2fc2680c::t_77ddf6d0bc6cc0 23-27
+packages/core/src/agent-config/release.ts
+  s_aeebbf2fc2680c::t_38d3745b29fd7d 334
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "80451b6d5ab372909b6186d313e982560ee25ecf",
+  "prompts": {},
+  "sessions": {
+    "s_aeebbf2fc2680c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03e20-0cfd-78b0-b1fa-bfb10ef6a72f",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
