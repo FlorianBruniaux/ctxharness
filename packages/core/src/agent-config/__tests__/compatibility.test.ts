@@ -182,6 +182,7 @@ describe('agent configuration compatibility fixtures', () => {
       expect.objectContaining({
         code: 'host-exception-declared',
         status: 'not-applicable',
+        message: 'The release namespace declares this capability unsupported for the host.',
         host: 'codex',
         layer: 'agents',
         capability: 'reviewer.permissionMode',

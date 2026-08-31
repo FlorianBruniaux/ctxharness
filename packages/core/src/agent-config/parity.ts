@@ -233,7 +233,7 @@ export function checkAgentConfigParity(options: AgentConfigParityOptions): Agent
     findings.push({
       code: 'host-exception-declared',
       status: 'not-applicable',
-      message: 'The release namespace declares this skill unsupported for the host.',
+      message: 'The release namespace declares this capability unsupported for the host.',
       host: exception.host,
       layer: exception.layer,
       capability: exception.id,

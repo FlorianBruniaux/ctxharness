@@ -49,29 +49,68 @@ function invoke(
 }
 
 describe('doctor agent configuration mode', () => {
-  it('preserves every existing CLI command in top-level help', () => {
-    const root = makeTempDir('ctxharness-doctor-root-')
-    const home = makeTempDir('ctxharness-doctor-home-')
+  it.each([
+    { command: 'run', args: ['run', '--no-trend'], output: /All 1 assertion passed/u },
+    { command: 'check', args: ['check', '--no-trend'], output: /All 1 assertion passed/u },
+    { command: 'score', args: ['score', '--no-trend'], output: /Context Health Score/u },
+    { command: 'fix', args: ['fix'], output: /Nothing to fix/u },
+    {
+      command: 'doctor',
+      args: ['doctor', '--host', 'claude', '--scope', 'project', '--format', 'json'],
+      output: /"mode": "agent-config"/u,
+    },
+    { command: 'init', args: ['init'], output: /Created \.ctxharness\.yml/u, withoutConfig: true },
+    { command: 'snapshot', args: ['snapshot'], output: /Snapshot saved:/u },
+    { command: 'diff', args: ['diff'], output: /Snapshot diff/u, needsSnapshot: true },
+    {
+      command: 'scan',
+      args: ['scan', 'AGENTS.md', '--exit-zero'],
+      output: /Scanning AGENTS\.md for verifiable claims/u,
+    },
+    { command: 'trend', args: ['trend', '--project', 'fixture'], output: /No trend history/u },
+    { command: 'populate', args: ['populate'], output: /already covered/u },
+  ])(
+    'runs the existing $command command against a safe local fixture',
+    ({ args, output, withoutConfig, needsSnapshot }) => {
+      const root = makeTempDir('ctxharness-command-root-')
+      const home = makeTempDir('ctxharness-command-home-')
+      write(join(root, 'AGENTS.md'), 'This fixture records stable behavior.\n')
 
-    const result = invoke(root, home, ['--help'])
+      if (withoutConfig !== true) {
+        write(
+          join(root, '.ctxharness.yml'),
+          [
+            'version: 1',
+            'files:',
+            "  include: ['AGENTS.md']",
+            'assertions:',
+            '  - id: stable-fixture',
+            '    extractor: constant',
+            '    extractorArgs:',
+            '      value: stable',
+            '    scanner: literalInMd',
+            '    scannerArgs:',
+            '      literal: stable',
+            '',
+          ].join('\n'),
+        )
+      }
+      if (needsSnapshot === true) {
+        const snapshot = invoke(root, home, ['snapshot'])
+        expect(snapshot.status).toBe(0)
+        expect(snapshot.stderr).toBe('')
+      }
 
-    expect(result.status).toBe(0)
-    for (const command of [
-      'run',
-      'check',
-      'score',
-      'fix',
-      'doctor',
-      'init',
-      'snapshot',
-      'diff',
-      'scan',
-      'trend',
-      'populate',
-    ]) {
-      expect(result.stdout).toMatch(new RegExp(`^  ${command}(?: | \\[)`, 'mu'))
-    }
-  })
+      const result = invoke(root, home, args)
+
+      expect(result.status).toBe(0)
+      expect(result.stderr).toBe('')
+      expect(result.stdout).toMatch(output)
+      expect(`${result.stdout}${result.stderr}`).not.toMatch(
+        /(?:TypeError|ReferenceError|UnhandledPromiseRejection)/u,
+      )
+    },
+  )
 
   it('keeps untrusted hooks and unresolved placeholders UNKNOWN from fixture evidence', () => {
     const root = makeTempDir('ctxharness-doctor-root-')
