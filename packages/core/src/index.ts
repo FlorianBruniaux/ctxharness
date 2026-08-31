@@ -1,9 +1,27 @@
 // @ctxharness/core — exports added incrementally
-export type { CtxharnessConfig, Assertion, ExtractorName, ScannerName, FilesConfig } from './config.js'
+export type {
+  CtxharnessConfig,
+  Assertion,
+  ExtractorName,
+  ScannerName,
+  FilesConfig,
+} from './config.js'
 export { loadConfig } from './config.js'
 export { runExtractor, registerExtractor } from './extractors/index.js'
 export type { ExtractorFn, ExtractorArgs } from './extractors/index.js'
-export { runScanner, registerScanner, normalizeMatch, STANDALONE_SCANNERS } from './scanners/index.js'
+export {
+  runScanner,
+  registerScanner,
+  normalizeMatch,
+  STANDALONE_SCANNERS,
+  scanAgentConfig,
+  scanInstructions,
+  scanSkills,
+  scanRules,
+  scanAgents,
+  scanHooks,
+  scanMcp,
+} from './scanners/index.js'
 export type { ScanResult, ScannerFn } from './scanners/index.js'
 export { run, detectGeneratedFile } from './runner.js'
 export type { RunResult, AssertionResult } from './runner.js'
@@ -11,7 +29,13 @@ export { report } from './reporter.js'
 export type { OutputFormat } from './reporter.js'
 export { definePlugin, loadPlugin } from './plugin.js'
 export type { CtxharnessPlugin, CtxharnessExtractor, CtxharnessScanner } from './plugin.js'
-export { buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots } from './snapshot.js'
+export {
+  buildSnapshot,
+  saveSnapshot,
+  loadSnapshot,
+  findLatestSnapshot,
+  diffSnapshots,
+} from './snapshot.js'
 export type { Snapshot, SnapshotDiff, SnapshotEntry, DiffEntry } from './snapshot.js'
 export { detectClaims, verifyClaim, scanFile, detectIncludes } from './scan.js'
 export type { HeuristicClaim, HeuristicResult, ClaimStatus, ClaimType } from './scan.js'

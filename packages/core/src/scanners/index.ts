@@ -2,6 +2,15 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { dirname, resolve, join, basename } from 'node:path'
 import { load } from 'js-yaml'
 import type { ScannerName } from '../config.js'
+import type { AgentConfigFinding, AgentConfigInventory } from '../agent-config/types.js'
+import { scanInstructions } from '../agent-config/scanners/instructions.js'
+import { scanSkills } from '../agent-config/scanners/skills.js'
+import { scanRules } from '../agent-config/scanners/rules.js'
+import { scanAgents } from '../agent-config/scanners/agents.js'
+import { scanHooks } from '../agent-config/scanners/hooks.js'
+import { scanMcp } from '../agent-config/scanners/mcp.js'
+
+export { scanInstructions, scanSkills, scanRules, scanAgents, scanHooks, scanMcp }
 
 // ─── Public types ────────────────────────────────────────────────────────────
 
@@ -1006,4 +1015,17 @@ export function runScanner(
   const fn = SCANNERS[name]
   if (fn === undefined) throw new Error(`Unknown scanner: "${name}"`)
   return fn(filePath, expected, args)
+}
+
+/** Runs every native agent-configuration scanner while retaining inventory evidence. */
+export function scanAgentConfig(inventory: AgentConfigInventory): AgentConfigFinding[] {
+  return [
+    ...inventory.findings,
+    ...scanInstructions(inventory),
+    ...scanSkills(inventory),
+    ...scanRules(inventory),
+    ...scanAgents(inventory),
+    ...scanHooks(inventory),
+    ...scanMcp(inventory),
+  ]
 }

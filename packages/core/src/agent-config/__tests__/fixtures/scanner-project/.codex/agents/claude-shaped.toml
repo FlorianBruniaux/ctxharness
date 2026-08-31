@@ -1,0 +1,3 @@
+name = "claude_shaped"
+description = "This fixture uses a non-native prompt field."
+prompt = "Do not treat this as developer_instructions."

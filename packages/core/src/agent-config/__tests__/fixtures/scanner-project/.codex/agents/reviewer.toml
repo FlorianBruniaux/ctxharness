@@ -1,0 +1,4 @@
+name = "reviewer"
+description = "Review code for correctness and missing tests."
+developer_instructions = "Inspect the change and return concrete findings."
+sandbox_mode = "read-only"

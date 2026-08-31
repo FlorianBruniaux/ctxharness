@@ -49,7 +49,8 @@ export type AgentConfigFindingReason = 'missing-evidence' | 'outside-boundary'
 export interface AgentConfigFinding {
   code: string
   status: AgentConfigFindingStatus
-  reason: AgentConfigFindingReason
+  /** Present when a finding needs a machine-readable explanation for an unknown or failed state. */
+  reason?: AgentConfigFindingReason
   message: string
   host?: AgentHost
   scope?: AgentConfigScope

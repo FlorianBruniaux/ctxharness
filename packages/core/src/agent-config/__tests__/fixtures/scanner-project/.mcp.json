@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "safe": {
+      "url": "https://mcp.example.test",
+      "headers": {
+        "Authorization": "Bearer ${SAFE_MCP_TOKEN}"
+      }
+    },
+    "literal": {
+      "command": "npx",
+      "args": ["-y", "example-mcp"],
+      "env": {
+        "API_KEY": "claude-secret-should-never-appear"
+      }
+    }
+  }
+}
