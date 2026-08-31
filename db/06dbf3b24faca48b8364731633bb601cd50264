@@ -1,0 +1,54 @@
+packages/core/src/agent-config/__tests__/fixtures/shared-release/outputs/hooks/router.js
+  s_aeebbf2fc2680c::t_b0553e1a4c95ac 1
+packages/core/src/agent-config/__tests__/fixtures/shared-release/outputs/skills/common/review/SKILL.md
+  s_aeebbf2fc2680c::t_b0553e1a4c95ac 5
+packages/core/src/agent-config/__tests__/fixtures/shared-release/manifest-valid.json
+  s_aeebbf2fc2680c::t_6a24702b8535a6 3-48,50-53
+  s_aeebbf2fc2680c::t_ffce0a22bd0595 54
+packages/core/src/agent-config/__tests__/parity.test.ts
+  s_aeebbf2fc2680c::t_66d6b8cf775e17 6,17-18,32,34-38,40-47,53-56,59-60,71,79,85-86,97,122,136-137,167,188-212
+  s_aeebbf2fc2680c::t_3489f87279a5b0 219,222
+  s_9cf259c16931e6::t_9c52b5cb7844b5 213-214
+packages/core/src/agent-config/__tests__/fixtures/shared-release/outputs/skills/claude-only/claude-helper/SKILL.md
+  s_aeebbf2fc2680c::t_b0553e1a4c95ac 2-3,5-8
+packages/core/src/agent-config/__tests__/fixtures/shared-release/outputs/agents/claude/reviewer.md
+  s_aeebbf2fc2680c::t_b0553e1a4c95ac 2-3
+packages/core/src/agent-config/release.ts
+  s_aeebbf2fc2680c::t_ad8e723462137d 2-3,8-11,16,19,25,30-34,54,62-63,68-100,113-122,126-132,134,138-142,146-157,180-197,201-202,204-208,210-237,239-244,246-296,310-312,314-328,330-358,360-396,398-405,410-452,454-455,538,585,618-620,622,624,630-631,633,635,638-639,643-651,653-655
+  s_aeebbf2fc2680c::t_3489f87279a5b0 198-200,203,209
+  s_aeebbf2fc2680c::t_6a14b91276bc81 238,245,297-309,313,329,359,397
+  s_aeebbf2fc2680c::t_06e092178b7381 661
+packages/core/src/agent-config/__tests__/fixtures/shared-release/manifest-undeclared.json
+  s_aeebbf2fc2680c::t_6a24702b8535a6 3-11,13-16,18-21,23-26,28-35,37-40
+  s_aeebbf2fc2680c::t_ffce0a22bd0595 41
+packages/core/src/agent-config/__tests__/release.test.ts
+  s_aeebbf2fc2680c::t_3da9085a311551 133
+  s_aeebbf2fc2680c::t_03b60b324de1aa 6,17,31-35,37-49,67-68,75,77-78,113-114,117,135-136,143,145-146,196
+packages/core/src/agent-config/parity.ts
+  s_aeebbf2fc2680c::t_6a14b91276bc81 166
+  s_aeebbf2fc2680c::t_e6aef81c33baed 2,5-10,29-78,80,83,86,91-99,101-109,111-119,130-137,139-144,147-149,154-155,159-165,167-168,170-172,178-179,185-186,196-197,201,205-207,210,217,219,226-228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "db06dbf3b24faca48b8364731633bb601cd50264",
+  "prompts": {},
+  "sessions": {
+    "s_9cf259c16931e6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03e6c-f9af-7811-b19d-91365bbf6d38",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_aeebbf2fc2680c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03e20-0cfd-78b0-b1fa-bfb10ef6a72f",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
