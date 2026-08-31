@@ -1,0 +1,19 @@
+README.md
+  s_d4f030609e9388::t_51dfe9822ddc2b 3-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "d007f9bfeeb9e8df4f5b1b1a0b826a937c59efd0",
+  "prompts": {},
+  "sessions": {
+    "s_d4f030609e9388": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a05a1b-1ee5-7be1-95df-9bb5078a588d",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
