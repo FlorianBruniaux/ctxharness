@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "fixture-revision",
+  "sources": {
+    "shared-config": "fixture-source"
+  },
+  "artifacts": {
+    "agents/claude-only/reviewer/permissionMode.json": {
+      "type": "file",
+      "hash": "a1d72ef8c2aa0b1eb1a643d72e7ff10d03e50097c7d57a36902261612b4cb21e",
+      "mode": 420
+    },
+    "agents/claude/reviewer.md": {
+      "type": "file",
+      "hash": "fe4c101fba91e388b6ea3e967b9caec462269d3e25ba2b958c857647e036d6a1",
+      "mode": 420
+    },
+    "agents/codex/reviewer.toml": {
+      "type": "file",
+      "hash": "ded2aaef0c1f926cc0652af6fd452bad949316799e890c8ba4f7b5c4e2a9f2e7",
+      "mode": 420
+    },
+    "claude/CLAUDE.md": {
+      "type": "file",
+      "hash": "f0d9a63c8bb47ce88a9e9366ba857ac13a3c7972110ff9a24e40291dc9d6baa9",
+      "mode": 420
+    },
+    "codex/AGENTS.md": {
+      "type": "file",
+      "hash": "f0d9a63c8bb47ce88a9e9366ba857ac13a3c7972110ff9a24e40291dc9d6baa9",
+      "mode": 420
+    },
+    "skills/common/portable-demo/SKILL.md": {
+      "type": "file",
+      "hash": "11fe6621d1aa88b37aa933def5d0af93d5673caa2e07f4486bb9b122f0f3e81b",
+      "mode": 420
+    },
+    "skills/projections/claude/portable-demo": {
+      "type": "symlink",
+      "linkTarget": "../../common/portable-demo"
+    },
+    "skills/projections/codex/portable-demo": {
+      "type": "symlink",
+      "linkTarget": "../../common/portable-demo"
+    }
+  },
+  "requirements": {
+    "node": ">=22"
+  },
+  "releaseId": "c22d5ce60aecbe39cdedb6f50293daee6eeec84712796abd7e5c7d58c0dc604a"
+}

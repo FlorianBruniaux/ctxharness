@@ -1,0 +1,1 @@
+# Stale immutable release fixture

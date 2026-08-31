@@ -1,0 +1,7 @@
+[mcp_servers.placeholder]
+url = "https://mcp.example.test"
+bearer_token_env_var = "FIXTURE_UNRESOLVED_MCP_TOKEN"
+
+[mcp_servers.literal]
+url = "https://mcp.example.test"
+bearer_token = "codex-fixture-literal-secret"

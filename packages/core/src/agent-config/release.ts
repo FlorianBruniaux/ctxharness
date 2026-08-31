@@ -22,7 +22,7 @@ export interface AgentConfigReleaseOutput {
 export interface AgentConfigHostException {
   id: string
   host: AgentHost
-  layer: 'skills'
+  layer: 'skills' | 'agents'
 }
 
 export interface AgentConfigReleaseManifest {
@@ -190,6 +190,18 @@ function artifactContext(path: string): Partial<AgentConfigFinding> {
       host: segments[1],
       layer: 'agents',
       capability: basename(path).replace(/\.(md|toml)$/u, ''),
+    }
+  }
+  if (
+    segments[0] === 'agents' &&
+    (segments[1] === 'claude-only' || segments[1] === 'codex-only') &&
+    segments[2] !== undefined &&
+    segments[3] !== undefined
+  ) {
+    return {
+      host: segments[1] === 'claude-only' ? 'claude' : 'codex',
+      layer: 'agents',
+      capability: `${segments[2]}.${basename(segments[3]).replace(/\.(json|md|toml)$/u, '')}`,
     }
   }
   if (segments[0] === 'hooks') {

@@ -10,6 +10,8 @@ import {
 } from './release.js'
 import type { AgentConfigFinding, AgentHost } from './types.js'
 
+const SAFE_CAPABILITY_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/
+
 export interface AgentConfigParityPolicy {
   /** Severity for known, undeclared differences. */
   undeclaredDivergence: 'warn' | 'fail'
@@ -66,13 +68,28 @@ function releaseOutputs(release: ValidatedAgentConfigRelease): AgentConfigReleas
 function releaseExceptions(release: ValidatedAgentConfigRelease): AgentConfigHostException[] {
   const exceptions = new Map<string, AgentConfigHostException>()
   for (const path of Object.keys(release.manifest.artifacts)) {
-    const match = path.match(/^skills\/(claude-only|codex-only)\/([^/]+)\//u)
-    if (match === null) continue
-    const host = match[1] === 'claude-only' ? 'codex' : 'claude'
-    const id = match[2]!
-    exceptions.set(`${id}:${host}`, { id, host, layer: 'skills' })
+    const skill = path.match(/^skills\/(claude-only|codex-only)\/([^/]+)\//u)
+    if (skill !== null && SAFE_CAPABILITY_IDENTIFIER.test(skill[2]!)) {
+      const host = skill[1] === 'claude-only' ? 'codex' : 'claude'
+      const id = skill[2]!
+      exceptions.set(`skills:${id}:${host}`, { id, host, layer: 'skills' })
+      continue
+    }
+
+    const agentField = path.match(
+      /^agents\/(claude-only|codex-only)\/([^/]+)\/([^/]+)\.(?:json|md|toml)$/u,
+    )
+    if (agentField === null) continue
+    const id = `${agentField[2]}.${agentField[3]}`
+    if (!SAFE_CAPABILITY_IDENTIFIER.test(id)) continue
+    const host = agentField[1] === 'claude-only' ? 'codex' : 'claude'
+    exceptions.set(`agents:${id}:${host}`, { id, host, layer: 'agents' })
   }
   return [...exceptions.values()]
+}
+
+function capabilityKey(layer: 'instructions' | 'skills' | 'agents', id: string): string {
+  return `${layer}:${id}`
 }
 
 function unavailable(output: AgentConfigReleaseOutput, path: string): AgentConfigFinding {
@@ -199,8 +216,9 @@ export function checkAgentConfigParity(options: AgentConfigParityOptions): Agent
   const exceptions = new Map<string, Set<AgentHost>>()
 
   for (const output of outputs) {
-    const current = byId.get(output.id)
-    if (current === undefined) byId.set(output.id, [output])
+    const key = capabilityKey(output.layer, output.id)
+    const current = byId.get(key)
+    if (current === undefined) byId.set(key, [output])
     else current.push(output)
     findings.push(
       checkLiveOutput(options.release, home, output, options.policy.undeclaredDivergence),
@@ -208,8 +226,9 @@ export function checkAgentConfigParity(options: AgentConfigParityOptions): Agent
   }
 
   for (const exception of hostExceptions) {
-    const current = exceptions.get(exception.id)
-    if (current === undefined) exceptions.set(exception.id, new Set([exception.host]))
+    const key = capabilityKey(exception.layer, exception.id)
+    const current = exceptions.get(key)
+    if (current === undefined) exceptions.set(key, new Set([exception.host]))
     else current.add(exception.host)
     findings.push({
       code: 'host-exception-declared',
@@ -221,12 +240,21 @@ export function checkAgentConfigParity(options: AgentConfigParityOptions): Agent
     })
   }
 
-  const ids = new Set([...byId.keys(), ...exceptions.keys()])
-  for (const id of ids) {
-    const capabilityOutputs = byId.get(id) ?? []
+  const parityKeys = new Set([
+    ...byId.keys(),
+    ...hostExceptions
+      .filter((exception) => exception.layer === 'skills')
+      .map((exception) => capabilityKey(exception.layer, exception.id)),
+  ])
+  for (const key of parityKeys) {
+    const capabilityOutputs = byId.get(key) ?? []
     const layer = capabilityOutputs[0]?.layer
+    const id =
+      capabilityOutputs[0]?.id ??
+      hostExceptions.find((exception) => capabilityKey(exception.layer, exception.id) === key)?.id
+    if (id === undefined) continue
     const outputHosts = new Set(capabilityOutputs.map((output) => output.host))
-    const exceptionHosts = exceptions.get(id) ?? new Set<AgentHost>()
+    const exceptionHosts = exceptions.get(key) ?? new Set<AgentHost>()
     for (const host of ['claude', 'codex'] as const) {
       if (outputHosts.has(host) || exceptionHosts.has(host)) continue
       findings.push({

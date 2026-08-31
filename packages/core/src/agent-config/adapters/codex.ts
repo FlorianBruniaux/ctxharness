@@ -6,6 +6,8 @@ export function resolveCodexRoots(scope: AgentConfigScope, boundary: string): Ag
   const codexDir = join(boundary, '.codex')
   const roots: AgentConfigRoot[] = [
     { host: 'codex', scope, layer: 'instructions', path: join(codexDir, 'AGENTS.md'), boundary },
+    { host: 'codex', scope, layer: 'skills', path: join(boundary, '.agents', 'skills'), boundary },
+    // Keep the former Codex-specific root visible for migration audits.
     { host: 'codex', scope, layer: 'skills', path: join(codexDir, 'skills'), boundary },
     { host: 'codex', scope, layer: 'agents', path: join(codexDir, 'agents'), boundary },
     { host: 'codex', scope, layer: 'hooks', path: join(codexDir, 'config.toml'), boundary },
@@ -13,7 +15,13 @@ export function resolveCodexRoots(scope: AgentConfigScope, boundary: string): Ag
   ]
 
   if (scope === 'project') {
-    roots.unshift({ host: 'codex', scope, layer: 'instructions', path: join(boundary, 'AGENTS.md'), boundary })
+    roots.unshift({
+      host: 'codex',
+      scope,
+      layer: 'instructions',
+      path: join(boundary, 'AGENTS.md'),
+      boundary,
+    })
   }
 
   return roots

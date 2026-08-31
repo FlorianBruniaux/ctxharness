@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-31T12:00:00.000Z",
+  "results": [
+    {
+      "host": "claude",
+      "scope": "project",
+      "capability": "hook-trust",
+      "status": "unknown",
+      "message": "The fixture does not include a trusted-client invocation record."
+    },
+    {
+      "host": "codex",
+      "scope": "global",
+      "capability": "mcp-placeholder-resolution",
+      "status": "unknown",
+      "message": "The fixture names an environment variable but does not prove it is set."
+    }
+  ]
+}

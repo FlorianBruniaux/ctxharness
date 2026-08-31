@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.claude/hooks/check.sh"
+          },
+          {
+            "type": "command",
+            "command": "./.claude/hooks/missing.sh"
+          },
+          {
+            "type": "command",
+            "command": "fixture-hook-from-path"
+          }
+        ]
+      }
+    ]
+  }
+}

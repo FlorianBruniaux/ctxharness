@@ -7,6 +7,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 const cliPath = fileURLToPath(new URL('../../dist/index.js', import.meta.url))
 const repositoryRoot = fileURLToPath(new URL('../../../../', import.meta.url))
+const compatibilityFixtures = join(repositoryRoot, 'packages/core/src/agent-config/__fixtures__')
 
 beforeAll(() => {
   const compiler = join(repositoryRoot, 'node_modules', '.bin', 'tsc')
@@ -16,7 +17,9 @@ beforeAll(() => {
       encoding: 'utf8',
     })
     if (result.status !== 0) {
-      throw new Error(`CLI integration build failed for ${project}:\n${result.stdout}${result.stderr}`)
+      throw new Error(
+        `CLI integration build failed for ${project}:\n${result.stdout}${result.stderr}`,
+      )
     }
   }
 })
@@ -46,6 +49,74 @@ function invoke(
 }
 
 describe('doctor agent configuration mode', () => {
+  it('preserves every existing CLI command in top-level help', () => {
+    const root = makeTempDir('ctxharness-doctor-root-')
+    const home = makeTempDir('ctxharness-doctor-home-')
+
+    const result = invoke(root, home, ['--help'])
+
+    expect(result.status).toBe(0)
+    for (const command of [
+      'run',
+      'check',
+      'score',
+      'fix',
+      'doctor',
+      'init',
+      'snapshot',
+      'diff',
+      'scan',
+      'trend',
+      'populate',
+    ]) {
+      expect(result.stdout).toMatch(new RegExp(`^  ${command}(?: | \\[)`, 'mu'))
+    }
+  })
+
+  it('keeps untrusted hooks and unresolved placeholders UNKNOWN from fixture evidence', () => {
+    const root = makeTempDir('ctxharness-doctor-root-')
+    const home = makeTempDir('ctxharness-doctor-home-')
+    const evidencePath = join(compatibilityFixtures, 'global-home', 'runtime-evidence.json')
+
+    const result = invoke(root, home, [
+      'doctor',
+      '--host',
+      'both',
+      '--scope',
+      'both',
+      '--format',
+      'json',
+      '--runtime-evidence',
+      evidencePath,
+    ])
+
+    expect(result.status).toBe(0)
+    const payload = JSON.parse(result.stdout) as {
+      findings: Array<{
+        source: string
+        capability?: string
+        status: string
+        reason?: string
+      }>
+    }
+    expect(payload.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'runtime',
+          capability: 'hook-trust',
+          status: 'unknown',
+          reason: 'missing-evidence',
+        }),
+        expect.objectContaining({
+          source: 'runtime',
+          capability: 'mcp-placeholder-resolution',
+          status: 'unknown',
+          reason: 'missing-evidence',
+        }),
+      ]),
+    )
+  })
+
   it('selects hosts and scopes and keeps UNKNOWN visible in JSON', () => {
     const root = makeTempDir('ctxharness-doctor-root-')
     const home = makeTempDir('ctxharness-doctor-home-')
@@ -275,9 +346,7 @@ describe('doctor agent configuration mode', () => {
       findings: Array<{ capability?: string }>
     }
     expect(payload.summary.mandatoryFailures).toBeGreaterThan(0)
-    expect(payload.findings).toContainEqual(
-      expect.objectContaining({ capability: 'canary-2999' }),
-    )
+    expect(payload.findings).toContainEqual(expect.objectContaining({ capability: 'canary-2999' }))
   })
 
   it('rejects oversized runtime evidence from file metadata before reading it', () => {

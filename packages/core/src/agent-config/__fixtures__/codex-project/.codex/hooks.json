@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.codex/hooks/check.sh"
+          },
+          {
+            "type": "command",
+            "command": "./.codex/hooks/missing.sh"
+          },
+          {
+            "type": "command",
+            "command": "fixture-hook-from-path"
+          }
+        ]
+      }
+    ]
+  }
+}

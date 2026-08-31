@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "placeholder": {
+      "command": "node",
+      "env": {
+        "MCP_TOKEN": "${FIXTURE_UNRESOLVED_MCP_TOKEN}"
+      }
+    },
+    "literal": {
+      "command": "node",
+      "env": {
+        "API_KEY": "claude-fixture-literal-secret"
+      }
+    }
+  }
+}

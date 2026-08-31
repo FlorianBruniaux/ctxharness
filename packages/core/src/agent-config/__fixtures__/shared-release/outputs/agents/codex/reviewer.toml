@@ -1,0 +1,3 @@
+name = "reviewer"
+description = "Shared Codex reviewer fixture."
+developer_instructions = "Return evidence and explicit uncertainty."
