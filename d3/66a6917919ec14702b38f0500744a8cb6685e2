@@ -1,0 +1,22 @@
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_aeebbf2fc2680c::t_01f46d394e06d7 1,287-315
+  s_aeebbf2fc2680c::t_9f18131df52c8f 156,160,182,209,218,223-286,316
+packages/cli/src/index.ts
+  s_aeebbf2fc2680c::t_04be17b041846a 4,471,502,505,560,731-732
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "d366a6917919ec14702b38f0500744a8cb6685e2",
+  "prompts": {},
+  "sessions": {
+    "s_aeebbf2fc2680c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03e20-0cfd-78b0-b1fa-bfb10ef6a72f",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
