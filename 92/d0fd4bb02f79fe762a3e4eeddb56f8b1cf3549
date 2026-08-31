@@ -1,0 +1,24 @@
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_aeebbf2fc2680c::t_d35c0e1fa366ac 52,55-77,79-102,104-113
+  s_aeebbf2fc2680c::t_6bf76fae2c7e75 53-54
+packages/core/src/agent-config/__tests__/compatibility.test.ts
+  s_aeebbf2fc2680c::t_d35c0e1fa366ac 185
+packages/core/src/agent-config/parity.ts
+  s_aeebbf2fc2680c::t_6bf76fae2c7e75 236
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "92d0fd4bb02f79fe762a3e4eeddb56f8b1cf3549",
+  "prompts": {},
+  "sessions": {
+    "s_aeebbf2fc2680c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03e20-0cfd-78b0-b1fa-bfb10ef6a72f",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
