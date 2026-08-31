@@ -3,9 +3,38 @@ import { Command } from 'commander'
 import { resolve, join, basename } from 'node:path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { relative } from 'node:path'
+import { homedir } from 'node:os'
 import fg from 'fast-glob'
-import { loadConfig, run, report, buildSnapshot, saveSnapshot, loadSnapshot, findLatestSnapshot, diffSnapshots, scanFile, detectIncludes, appendTrendRecord, populateFromConfig, assertionsToYaml } from '@florianbruniaux/ctxharness-core'
-import type { OutputFormat, AssertionResult, HeuristicResult, HeuristicClaim, TrendRecord, RunResult } from '@florianbruniaux/ctxharness-core'
+import {
+  loadConfig,
+  run,
+  report,
+  buildSnapshot,
+  saveSnapshot,
+  loadSnapshot,
+  findLatestSnapshot,
+  diffSnapshots,
+  scanFile,
+  detectIncludes,
+  appendTrendRecord,
+  populateFromConfig,
+  assertionsToYaml,
+  inventoryAgentConfig,
+  scanAgentConfig,
+  validateAgentConfigRelease,
+  checkAgentConfigParity,
+} from '@florianbruniaux/ctxharness-core'
+import type {
+  OutputFormat,
+  AssertionResult,
+  HeuristicResult,
+  HeuristicClaim,
+  TrendRecord,
+  RunResult,
+  AgentConfigFinding,
+  AgentHost,
+  AgentConfigScope,
+} from '@florianbruniaux/ctxharness-core'
 
 // ─── Score helpers ────────────────────────────────────────────────────────────
 
@@ -342,18 +371,370 @@ function getLayer(scanner: string): string {
   return '??'
 }
 
+type AgentDoctorFormat = 'human' | 'json' | 'gha'
+type AgentDoctorStatus = AgentConfigFinding['status']
+
+type AgentDoctorFinding = AgentConfigFinding & {
+  source: 'static' | 'runtime'
+  mandatory: boolean
+}
+
+interface RuntimeEvidenceMetadata {
+  path: string
+  kind: 'timestamped' | 'declared-signature'
+  generatedAt?: string
+  signature?: {
+    algorithm: string
+    keyId: string
+  }
+}
+
+interface RuntimeEvidenceResult {
+  host: AgentHost
+  scope?: AgentConfigScope
+  capability: string
+  status: AgentDoctorStatus
+  message: string
+  mandatory: boolean
+}
+
+interface RuntimeEvidenceLoadResult {
+  metadata?: RuntimeEvidenceMetadata
+  findings: AgentDoctorFinding[]
+}
+
+interface AgentDoctorReport {
+  schemaVersion: 1
+  command: 'doctor'
+  mode: 'agent-config'
+  generatedAt: string
+  root: string
+  selection: {
+    hosts: AgentHost[]
+    scopes: AgentConfigScope[]
+  }
+  runtimeEvidence: RuntimeEvidenceMetadata | null
+  summary: {
+    pass: number
+    warn: number
+    fail: number
+    unknown: number
+    notApplicable: number
+    mandatoryFailures: number
+  }
+  findings: AgentDoctorFinding[]
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function parseHosts(value: string | undefined): AgentHost[] {
+  if (value === undefined || value === 'both') return ['claude', 'codex']
+  if (value === 'claude' || value === 'codex') return [value]
+  throw new Error(`Invalid --host value: ${value}. Expected claude, codex, or both.`)
+}
+
+function parseScopes(value: string | undefined): AgentConfigScope[] {
+  if (value === undefined || value === 'both') return ['project', 'global']
+  if (value === 'project' || value === 'global') return [value]
+  throw new Error(`Invalid --scope value: ${value}. Expected project, global, or both.`)
+}
+
+function parseAgentDoctorFormat(value: string | undefined): AgentDoctorFormat {
+  if (value === undefined || value === 'human') return 'human'
+  if (value === 'json' || value === 'gha') return value
+  throw new Error(`Invalid --format value: ${value}. Expected human, json, or gha.`)
+}
+
+function runtimeEvidenceUnknown(path: string, message: string): RuntimeEvidenceLoadResult {
+  return {
+    findings: [
+      {
+        code: 'runtime-evidence-unavailable',
+        status: 'unknown',
+        reason: 'missing-evidence',
+        message,
+        path,
+        source: 'runtime',
+        mandatory: false,
+      },
+    ],
+  }
+}
+
+function isValidTimestamp(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && Number.isFinite(Date.parse(value))
+}
+
+function parseRuntimeResult(value: unknown): RuntimeEvidenceResult | null {
+  if (!isRecord(value)) return null
+  const { host, scope, capability, status, message, mandatory } = value
+  if (host !== 'claude' && host !== 'codex') return null
+  if (scope !== undefined && scope !== 'project' && scope !== 'global') return null
+  if (typeof capability !== 'string' || capability.length === 0) return null
+  if (
+    status !== 'pass' &&
+    status !== 'warn' &&
+    status !== 'fail' &&
+    status !== 'unknown' &&
+    status !== 'not-applicable'
+  )
+    return null
+  if (typeof message !== 'string' || message.length === 0) return null
+  if (mandatory !== undefined && typeof mandatory !== 'boolean') return null
+  return {
+    host,
+    ...(scope === undefined ? {} : { scope }),
+    capability,
+    status,
+    message,
+    mandatory: mandatory === true && status === 'fail',
+  }
+}
+
+function loadRuntimeEvidence(
+  requestedPath: string,
+  cwd: string,
+  hosts: AgentHost[],
+  scopes: AgentConfigScope[],
+): RuntimeEvidenceLoadResult {
+  const path = resolve(cwd, requestedPath)
+  let parsed: unknown
+  try {
+    const contents = readFileSync(path, 'utf8')
+    if (contents.length > 1_000_000) {
+      return runtimeEvidenceUnknown(path, 'Runtime evidence exceeds the 1 MB local input limit.')
+    }
+    parsed = JSON.parse(contents)
+  } catch {
+    return runtimeEvidenceUnknown(path, 'Runtime evidence is missing, unreadable, or invalid JSON.')
+  }
+
+  if (!isRecord(parsed) || parsed.schemaVersion !== 1 || !Array.isArray(parsed.results)) {
+    return runtimeEvidenceUnknown(path, 'Runtime evidence does not match schema version 1.')
+  }
+
+  let metadata: RuntimeEvidenceMetadata
+  if (isValidTimestamp(parsed.generatedAt)) {
+    metadata = { path, kind: 'timestamped', generatedAt: parsed.generatedAt }
+  } else if (
+    isRecord(parsed.signature) &&
+    typeof parsed.signature.algorithm === 'string' &&
+    parsed.signature.algorithm.length > 0 &&
+    typeof parsed.signature.keyId === 'string' &&
+    parsed.signature.keyId.length > 0 &&
+    typeof parsed.signature.value === 'string' &&
+    parsed.signature.value.length > 0
+  ) {
+    metadata = {
+      path,
+      kind: 'declared-signature',
+      signature: {
+        algorithm: parsed.signature.algorithm,
+        keyId: parsed.signature.keyId,
+      },
+    }
+  } else {
+    return runtimeEvidenceUnknown(
+      path,
+      'Runtime evidence must declare a valid generatedAt timestamp or signature metadata.',
+    )
+  }
+
+  const results = parsed.results.map(parseRuntimeResult)
+  if (results.some((result) => result === null)) {
+    return runtimeEvidenceUnknown(path, 'Runtime evidence contains an invalid canary result.')
+  }
+
+  const findings = (results as RuntimeEvidenceResult[])
+    .filter((result) => hosts.includes(result.host))
+    .filter((result) => result.scope === undefined || scopes.includes(result.scope))
+    .map(
+      (result): AgentDoctorFinding => ({
+        code: 'runtime-canary-result',
+        status: result.status,
+        ...(result.status === 'unknown' ? { reason: 'missing-evidence' as const } : {}),
+        message: result.message,
+        host: result.host,
+        ...(result.scope === undefined ? {} : { scope: result.scope }),
+        capability: result.capability,
+        source: 'runtime',
+        mandatory: result.mandatory,
+      }),
+    )
+
+  return { metadata, findings }
+}
+
+function includeSelectedFinding(
+  finding: AgentConfigFinding,
+  hosts: AgentHost[],
+  scopes: AgentConfigScope[],
+): boolean {
+  if (finding.host !== undefined && !hosts.includes(finding.host)) return false
+  if (finding.scope !== undefined && !scopes.includes(finding.scope)) return false
+  return true
+}
+
+function staticFinding(finding: AgentConfigFinding): AgentDoctorFinding {
+  return {
+    ...finding,
+    source: 'static',
+    mandatory: finding.status === 'fail',
+  }
+}
+
+function buildAgentDoctorReport(
+  root: string,
+  home: string,
+  hosts: AgentHost[],
+  scopes: AgentConfigScope[],
+  runtimeEvidencePath: string | undefined,
+  cwd: string,
+): AgentDoctorReport {
+  const inventory = inventoryAgentConfig({ root, home, hosts, scopes })
+  const findings = scanAgentConfig(inventory)
+    .filter((finding) => includeSelectedFinding(finding, hosts, scopes))
+    .map(staticFinding)
+
+  if (scopes.includes('global')) {
+    const releaseResult = validateAgentConfigRelease({
+      configRoot: join(home, '.config', 'ai-agents'),
+    })
+    findings.push(
+      ...releaseResult.findings
+        .filter((finding) => includeSelectedFinding(finding, hosts, scopes))
+        .map(staticFinding),
+    )
+    if (releaseResult.release !== undefined) {
+      findings.push(
+        ...checkAgentConfigParity({
+          release: releaseResult.release,
+          home,
+          policy: { undeclaredDivergence: 'fail' },
+        })
+          .filter((finding) => includeSelectedFinding(finding, hosts, scopes))
+          .map(staticFinding),
+      )
+    }
+  }
+
+  let runtimeEvidence: RuntimeEvidenceMetadata | null = null
+  if (runtimeEvidencePath !== undefined) {
+    const loaded = loadRuntimeEvidence(runtimeEvidencePath, cwd, hosts, scopes)
+    runtimeEvidence = loaded.metadata ?? null
+    findings.push(...loaded.findings)
+  }
+
+  const count = (status: AgentDoctorStatus): number =>
+    findings.filter((finding) => finding.status === status).length
+  return {
+    schemaVersion: 1,
+    command: 'doctor',
+    mode: 'agent-config',
+    generatedAt: new Date().toISOString(),
+    root,
+    selection: { hosts, scopes },
+    runtimeEvidence,
+    summary: {
+      pass: count('pass'),
+      warn: count('warn'),
+      fail: count('fail'),
+      unknown: count('unknown'),
+      notApplicable: count('not-applicable'),
+      mandatoryFailures: findings.filter(
+        (finding) => finding.status === 'fail' && finding.mandatory,
+      ).length,
+    },
+    findings,
+  }
+}
+
+function statusLabel(status: AgentDoctorStatus): string {
+  if (status === 'not-applicable') return 'N/A'
+  return status.toUpperCase()
+}
+
+function findingLocation(finding: AgentDoctorFinding): string {
+  const parts = [finding.host, finding.scope, finding.layer, finding.capability].filter(
+    (value): value is string => value !== undefined,
+  )
+  return parts.length === 0 ? finding.code : `${parts.join('/')} (${finding.code})`
+}
+
+function escapeGha(value: string): string {
+  return value.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')
+}
+
+function reportAgentDoctor(result: AgentDoctorReport, format: AgentDoctorFormat): void {
+  if (format === 'json') {
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    return
+  }
+
+  if (format === 'gha') {
+    for (const finding of result.findings) {
+      const level =
+        finding.status === 'fail'
+          ? 'error'
+          : finding.status === 'warn' || finding.status === 'unknown'
+            ? 'warning'
+            : 'notice'
+      process.stdout.write(
+        `::${level} title=${statusLabel(finding.status)}::${escapeGha(`${findingLocation(finding)}: ${finding.message}`)}\n`,
+      )
+    }
+    process.stdout.write(
+      `::notice title=ctxharness doctor::${result.summary.mandatoryFailures} mandatory failure(s), ${result.summary.unknown} UNKNOWN, ${result.summary.notApplicable} N/A\n`,
+    )
+    return
+  }
+
+  process.stdout.write('\nAgent Configuration Report\n\n')
+  process.stdout.write(`Hosts       ${result.selection.hosts.join(', ')}\n`)
+  process.stdout.write(`Scopes      ${result.selection.scopes.join(', ')}\n`)
+  process.stdout.write(`Root        ${result.root}\n`)
+  if (result.runtimeEvidence !== null) {
+    process.stdout.write(`Runtime     ${result.runtimeEvidence.kind} evidence loaded separately\n`)
+  }
+  process.stdout.write('\nFindings\n')
+  for (const finding of result.findings) {
+    process.stdout.write(
+      `  [${statusLabel(finding.status)}] [${finding.source}] ${findingLocation(finding)}: ${finding.message}\n`,
+    )
+  }
+  process.stdout.write(
+    `\nSummary     ${result.summary.pass} PASS, ${result.summary.warn} WARN, ${result.summary.fail} FAIL, ${result.summary.unknown} UNKNOWN, ${result.summary.notApplicable} N/A\n`,
+  )
+}
+
 program
   .command('doctor')
   .description('Comprehensive health check of AI context assembly')
   .option('-c, --config <path>', 'Path to config file', '.ctxharness.yml')
   .option('-r, --root <dir>', 'Project root directory', '')
+  .option('--host <host>', 'Agent host: claude | codex | both')
+  .option('--scope <scope>', 'Configuration scope: project | global | both')
+  .option('--format <format>', 'Agent configuration output: human | json | gha')
+  .option('--runtime-evidence <path>', 'Signed or timestamped runtime canary results')
   .option('--no-trend', 'Skip recording to trend history')
-  .action(async (opts: { config: string; root: string; trend: boolean }) => {
+  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string }) => {
     try {
       const cwd = process.cwd()
-      const configPath = resolve(cwd, opts.config)
       const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
+      const agentConfigMode = opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
 
+      if (agentConfigMode) {
+        const hosts = parseHosts(opts.host)
+        const scopes = parseScopes(opts.scope)
+        const format = parseAgentDoctorFormat(opts.format)
+        const result = buildAgentDoctorReport(root, resolve(homedir()), hosts, scopes, opts.runtimeEvidence, cwd)
+        reportAgentDoctor(result, format)
+        process.exit(result.summary.mandatoryFailures > 0 ? 1 : 0)
+      }
+
+      const configPath = resolve(cwd, opts.config)
       if (!existsSync(configPath)) {
         process.stderr.write(`Error: config file not found: ${configPath}\n`)
         process.exit(1)
