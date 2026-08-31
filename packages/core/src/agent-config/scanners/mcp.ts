@@ -20,6 +20,11 @@ function findingServerIdentifier(serverName: string, index: number): string {
 function containsLiteralSecret(value: unknown, key = '', protectedEnvReference = false): boolean {
   if (typeof value === 'string') {
     if (protectedEnvReference) return !/^[A-Z_][A-Z0-9_]*$/.test(value)
+    const inlineAssignment = /^((?:--)?[A-Za-z_][A-Za-z0-9_.-]*)=(.*)$/u.exec(value.trim())
+    if (inlineAssignment !== null && SECRET_FIELD.test(inlineAssignment[1] ?? '')) {
+      const assignedValue = inlineAssignment[2] ?? ''
+      return assignedValue !== '' && !ENV_REFERENCE.test(assignedValue)
+    }
     if (SECRET_FIELD.test(key)) return value.trim() !== '' && !ENV_REFERENCE.test(value)
     return LITERAL_SECRET.test(value)
   }

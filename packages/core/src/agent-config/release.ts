@@ -331,7 +331,7 @@ function validateArtifacts(
           continue
         }
         const observed = hash(readFileSync(outputPath))
-        const observedMode = (state.mode & 0o111) === 0 ? 0o644 : 0o755
+        const observedMode = state.mode & 0o777
         if (observed !== artifact.hash || observedMode !== artifact.mode) {
           findings.push(
             options.stale

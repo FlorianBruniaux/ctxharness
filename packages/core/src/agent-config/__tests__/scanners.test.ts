@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { execPath } from 'node:process'
 import { inventoryAgentConfig } from '../inventory.js'
 import { scanInstructions } from '../scanners/instructions.js'
 import { scanSkills } from '../scanners/skills.js'
@@ -68,6 +69,35 @@ describe('AgentConfigFinding', () => {
 })
 
 describe('scanInstructions', () => {
+  it.each([
+    { label: 'Claude-only', hosts: ['claude'] as const, scopes: ['project', 'global'] as const },
+    { label: 'Codex-only', hosts: ['codex'] as const, scopes: ['project', 'global'] as const },
+  ])('honors the $label host selection from inventory', ({ hosts, scopes }) => {
+    const findings = scanInstructions(
+      inventoryAgentConfig({ root: PROJECT, home: HOME, hosts: [...hosts], scopes: [...scopes] }),
+    )
+
+    expect(findings.length).toBeGreaterThan(0)
+    expect(findings.every((finding) => finding.host === hosts[0])).toBe(true)
+  })
+
+  it.each([
+    { label: 'project-only', scopes: ['project'] as const },
+    { label: 'global-only', scopes: ['global'] as const },
+  ])('honors the $label scope selection from inventory', ({ scopes }) => {
+    const findings = scanInstructions(
+      inventoryAgentConfig({
+        root: PROJECT,
+        home: HOME,
+        hosts: ['claude', 'codex'],
+        scopes: [...scopes],
+      }),
+    )
+
+    expect(findings.length).toBeGreaterThan(0)
+    expect(findings.every((finding) => finding.scope === scopes[0])).toBe(true)
+  })
+
   it('discovers Claude project instructions and Codex project, nested, and global instructions', () => {
     const findings = scanInstructions(inventory())
 
@@ -280,6 +310,272 @@ describe('scanAgents', () => {
 })
 
 describe('scanHooks', () => {
+  it('rejects a missing bare relative script after env and a recognized interpreter', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(
+      join(project, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: '/usr/bin/env node missing.mjs',
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    )
+
+    const findings = scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'hook-command-unresolved', status: 'fail' }),
+    )
+  })
+
+  it('rejects a missing bare relative script after an absolute recognized interpreter', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(
+      join(project, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: `"${execPath}" missing.mjs`,
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    )
+
+    const findings = scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'hook-command-unresolved', status: 'fail' }),
+    )
+  })
+
+  it('keeps a recognized interpreter without a script candidate UNKNOWN', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(
+      join(project, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: '/usr/bin/env node',
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    )
+
+    const findings = scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({
+        code: 'hook-command-unverified',
+        status: 'unknown',
+        reason: 'missing-evidence',
+      }),
+    )
+  })
+
+  it('resolves the interpreter after env -u and rejects its missing script', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(
+      join(project, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: '/usr/bin/env -u NODE_OPTIONS node "./.claude/hooks/missing.mjs"',
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    )
+
+    const findings = scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'hook-command-unresolved', status: 'fail' }),
+    )
+  })
+
+  it('keeps a grouped env -S command UNKNOWN instead of validating env alone', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(
+      join(project, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: '/usr/bin/env -S "node ./.claude/hooks/missing.mjs"',
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    )
+
+    const findings = scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({
+        code: 'hook-command-unverified',
+        status: 'unknown',
+        reason: 'missing-evidence',
+      }),
+    )
+  })
+
+  it('rejects a missing interpreter script after a readable path-valued option', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const loader = join(project, '.claude', 'hooks', 'loader.mjs')
+    writeFile(loader, '# fixture loader\n')
+    chmodSync(loader, 0o644)
+    writeFile(
+      join(project, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command:
+                    'node --require "./.claude/hooks/loader.mjs" "./.claude/hooks/missing.mjs"',
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    )
+
+    const findings = scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'hook-command-unresolved', status: 'fail' }),
+    )
+  })
+
+  it.each([
+    {
+      label: 'missing script after /usr/bin/env node',
+      command: '/usr/bin/env node "./.claude/hooks/missing.mjs"',
+      script: undefined,
+      mode: undefined,
+      expectedCode: 'hook-command-unresolved',
+      expectedStatus: 'fail',
+    },
+    {
+      label: 'readable node script',
+      command: 'node "./.claude/hooks/readable.mjs"',
+      script: '.claude/hooks/readable.mjs',
+      mode: 0o644,
+      expectedCode: 'hook-command-resolved',
+      expectedStatus: 'pass',
+    },
+    {
+      label: 'readable bash script',
+      command: "bash './.claude/hooks/readable.sh'",
+      script: '.claude/hooks/readable.sh',
+      mode: 0o644,
+      expectedCode: 'hook-command-resolved',
+      expectedStatus: 'pass',
+    },
+    {
+      label: 'quoted script path after /usr/bin/env',
+      command: '/usr/bin/env node "./.claude/hooks/quoted script.mjs"',
+      script: '.claude/hooks/quoted script.mjs',
+      mode: 0o644,
+      expectedCode: 'hook-command-resolved',
+      expectedStatus: 'pass',
+    },
+    {
+      label: 'executable direct hook',
+      command: './.claude/hooks/direct.sh',
+      script: '.claude/hooks/direct.sh',
+      mode: 0o755,
+      expectedCode: 'hook-command-resolved',
+      expectedStatus: 'pass',
+    },
+    {
+      label: 'non-executable direct hook',
+      command: './.claude/hooks/direct.sh',
+      script: '.claude/hooks/direct.sh',
+      mode: 0o644,
+      expectedCode: 'hook-command-unresolved',
+      expectedStatus: 'fail',
+    },
+  ])(
+    'validates the $label with launcher-aware semantics',
+    ({ command, script, mode, expectedCode, expectedStatus }) => {
+      const project = makeTempDir()
+      const home = makeTempDir()
+      writeFile(
+        join(project, '.claude', 'settings.json'),
+        JSON.stringify({ hooks: { PostToolUse: [{ hooks: [{ type: 'command', command }] }] } }),
+      )
+      if (script !== undefined && mode !== undefined) {
+        const scriptPath = join(project, script)
+        writeFile(scriptPath, '# fixture hook\n')
+        chmodSync(scriptPath, mode)
+      }
+
+      const findings = scanHooks(
+        inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+      )
+
+      expect(findings).toContainEqual(
+        expect.objectContaining({ code: expectedCode, status: expectedStatus }),
+      )
+    },
+  )
+
   it('parses Claude JSON plus Codex JSON and inline TOML declarations and reports unresolved command paths', () => {
     const findings = scanHooks(inventory())
 
@@ -382,6 +678,36 @@ describe('scanHooks', () => {
 })
 
 describe('scanMcp', () => {
+  it('rejects inline option and environment-assignment secrets without serializing values', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const inlineSecret = 'inline-sensitive-fragment'
+    const assignmentSecret = 'assignment-sensitive-fragment'
+    writeFile(
+      join(project, '.mcp.json'),
+      JSON.stringify({
+        mcpServers: {
+          inline: { command: 'example-mcp', args: [`--api-key=${inlineSecret}`] },
+          assignment: { command: 'example-mcp', args: [`API_TOKEN=${assignmentSecret}`] },
+        },
+      }),
+    )
+
+    const findings = scanMcp(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+    const output = JSON.stringify(findings)
+
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'mcp-literal-secret', server: 'inline' }),
+        expect.objectContaining({ code: 'mcp-literal-secret', server: 'assignment' }),
+      ]),
+    )
+    expect(output).not.toContain(inlineSecret)
+    expect(output).not.toContain(assignmentSecret)
+  })
+
   it('parses Claude JSON and Codex TOML while redacting every literal secret value from findings', () => {
     const findings = scanMcp(inventory())
 

@@ -95,18 +95,27 @@ export function scanInstructions(inventory: AgentConfigInventory): AgentConfigFi
     .map((capability) => capability.evidence)
 
   const findings: AgentConfigFinding[] = []
-  discovered.push(
-    ...discoverCodexInstructions(inventory.root, 'project', inventory.root, true, findings),
+  const selectedCodexScopes = new Set(
+    inventory.roots
+      .filter((root) => root.host === 'codex' && root.layer === 'instructions')
+      .map((root) => root.scope),
   )
-  discovered.push(
-    ...discoverCodexInstructions(
-      join(inventory.home, '.codex'),
-      'global',
-      inventory.home,
-      false,
-      findings,
-    ),
-  )
+  if (selectedCodexScopes.has('project')) {
+    discovered.push(
+      ...discoverCodexInstructions(inventory.root, 'project', inventory.root, true, findings),
+    )
+  }
+  if (selectedCodexScopes.has('global')) {
+    discovered.push(
+      ...discoverCodexInstructions(
+        join(inventory.home, '.codex'),
+        'global',
+        inventory.home,
+        false,
+        findings,
+      ),
+    )
+  }
 
   const unique = new Map<string, AgentConfigEvidence>()
   for (const evidence of discovered) {

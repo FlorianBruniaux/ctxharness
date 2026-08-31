@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { parse as parseToml } from 'smol-toml'
 import { isPathWithinBoundary } from '../inventory.js'
 import type { AgentConfigEvidence, AgentConfigFinding, AgentConfigInventory } from '../types.js'
@@ -14,6 +14,14 @@ interface InvalidHookCommand {
 }
 
 type HookCommand = ValidHookCommand | InvalidHookCommand
+
+interface HookCommandPath {
+  path: string
+  access: 'executable' | 'readable'
+}
+
+const SCRIPT_INTERPRETERS = new Set(['bash', 'node', 'nodejs', 'sh', 'zsh'])
+const INTERPRETER_PATH_OPTIONS = new Set(['--require', '-r'])
 
 function collectCommands(value: unknown, commands: HookCommand[]): void {
   if (Array.isArray(value)) {
@@ -48,31 +56,108 @@ function parseHookCommands(path: string): HookCommand[] | null {
   }
 }
 
-function resolveCommandPath(
+function resolveCommandPaths(
   command: string,
   inventory: AgentConfigInventory,
   evidence: AgentConfigEvidence,
-): string | null {
-  const tokens = command.match(/"[^"]+"|'[^']+'|\S+/g) ?? []
-  for (const rawToken of tokens) {
+): HookCommandPath[] | null {
+  const rawTokens = command.match(/"[^"]+"|'[^']+'|\S+/g) ?? []
+  const tokens = rawTokens.map((rawToken) => {
     let token = rawToken.replace(/^['"]|['"]$/g, '')
     token = token.replace(/^\$\{CLAUDE_PROJECT_DIR\}/, inventory.root)
     token = token.replace(/^\$CLAUDE_PROJECT_DIR/, inventory.root)
     if (token.startsWith('~/')) token = join(inventory.home, token.slice(2))
+    return token
+  })
 
-    const pathLike =
-      isAbsolute(token) ||
-      token.startsWith('./') ||
-      token.startsWith('../') ||
-      token.startsWith('.claude/') ||
-      token.startsWith('.codex/')
-    if (!pathLike) continue
-
+  const isPathLike = (token: string): boolean =>
+    isAbsolute(token) ||
+    token.startsWith('./') ||
+    token.startsWith('../') ||
+    token.startsWith('.claude/') ||
+    token.startsWith('.codex/')
+  const resolveToken = (token: string): string => {
     if (isAbsolute(token)) return token
     const boundary = evidence.scope === 'project' ? inventory.root : inventory.home
     return resolve(boundary, token)
   }
-  return null
+
+  let launcherIndex = 0
+  const launcherPaths: HookCommandPath[] = []
+  const first = tokens[0]
+  if (first === undefined) return null
+  if (basename(first) === 'env') {
+    if (isPathLike(first)) {
+      launcherPaths.push({ path: resolveToken(first), access: 'executable' })
+    }
+    launcherIndex = 1
+    while (launcherIndex < tokens.length) {
+      const token = tokens[launcherIndex]
+      if (token === undefined) break
+      if (/^[A-Za-z_][A-Za-z0-9_]*=/u.test(token)) {
+        launcherIndex++
+        continue
+      }
+      if (token === '-u' || token === '--unset') {
+        if (tokens[launcherIndex + 1] === undefined) return null
+        launcherIndex += 2
+        continue
+      }
+      if (token.startsWith('--unset=')) {
+        launcherIndex++
+        continue
+      }
+      if (token === '-S' || token === '--split-string' || token.startsWith('--split-string=')) {
+        return null
+      }
+      if (token === '--') {
+        launcherIndex++
+        break
+      }
+      if (token.startsWith('-')) return null
+      break
+    }
+  }
+
+  const launcher = tokens[launcherIndex]
+  if (launcher === undefined) return null
+  if (SCRIPT_INTERPRETERS.has(basename(launcher))) {
+    if (isPathLike(launcher)) {
+      launcherPaths.push({ path: resolveToken(launcher), access: 'executable' })
+    }
+
+    const optionPaths: HookCommandPath[] = []
+    let scriptPath: HookCommandPath | null = null
+    for (let index = launcherIndex + 1; index < tokens.length; index++) {
+      const token = tokens[index]
+      if (token === undefined) break
+      if (token === '--') {
+        const script = tokens[index + 1]
+        if (script === undefined) return null
+        scriptPath = { path: resolveToken(script), access: 'readable' }
+        break
+      }
+      const optionSeparator = token.indexOf('=')
+      const option = optionSeparator === -1 ? token : token.slice(0, optionSeparator)
+      if (INTERPRETER_PATH_OPTIONS.has(option)) {
+        const optionValue =
+          optionSeparator === -1 ? tokens[++index] : token.slice(optionSeparator + 1)
+        if (optionValue === undefined || !isPathLike(optionValue)) return null
+        optionPaths.push({ path: resolveToken(optionValue), access: 'readable' })
+        continue
+      }
+      if (token.startsWith('-')) return null
+      scriptPath = { path: resolveToken(token), access: 'readable' }
+      break
+    }
+    if (scriptPath === null) return null
+    return [...launcherPaths, ...optionPaths, scriptPath]
+  }
+
+  if (isPathLike(launcher)) {
+    launcherPaths.push({ path: resolveToken(launcher), access: 'executable' })
+  }
+  return launcherPaths.length === 0 ? null : launcherPaths
 }
 
 function executable(path: string): boolean {
@@ -80,6 +165,16 @@ function executable(path: string): boolean {
   try {
     const stats = statSync(path)
     return stats.isFile() && (stats.mode & 0o111) !== 0
+  } catch {
+    return false
+  }
+}
+
+function readable(path: string): boolean {
+  if (!existsSync(path)) return false
+  try {
+    const stats = statSync(path)
+    return stats.isFile() && (stats.mode & 0o444) !== 0
   } catch {
     return false
   }
@@ -175,8 +270,8 @@ export function scanHooks(inventory: AgentConfigInventory): AgentConfigFinding[]
         continue
       }
 
-      const commandPath = resolveCommandPath(command.command, inventory, evidence)
-      if (commandPath === null) {
+      const commandPaths = resolveCommandPaths(command.command, inventory, evidence)
+      if (commandPaths === null) {
         findings.push({
           code: 'hook-command-unverified',
           status: 'unknown',
@@ -191,7 +286,9 @@ export function scanHooks(inventory: AgentConfigInventory): AgentConfigFinding[]
         continue
       }
 
-      const resolved = executable(commandPath)
+      const resolved = commandPaths.every((candidate) =>
+        candidate.access === 'executable' ? executable(candidate.path) : readable(candidate.path),
+      )
       findings.push({
         code: resolved ? 'hook-command-resolved' : 'hook-command-unresolved',
         status: resolved ? 'pass' : 'fail',

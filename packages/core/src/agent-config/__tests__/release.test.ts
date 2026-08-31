@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+  chmodSync,
   copyFileSync,
   mkdirSync,
   mkdtempSync,
@@ -55,6 +56,28 @@ afterEach(() => {
 })
 
 describe('validateAgentConfigRelease', () => {
+  it.each([0o600, 0o666, 0o777])(
+    'rejects artifact mode %s when the manifest declares 0644',
+    (mode) => {
+      const configRoot = makeTempDir()
+      const release = installFixture(configRoot)
+      const output = join(release, 'claude', 'CLAUDE.md')
+      const expectedOutput = join(realpathSync(release), 'claude', 'CLAUDE.md')
+      chmodSync(output, mode)
+
+      const result = validateAgentConfigRelease({ configRoot })
+
+      expect(result.release).toBeUndefined()
+      expect(result.findings).toContainEqual(
+        expect.objectContaining({
+          code: 'release-output-hash-mismatch',
+          status: 'fail',
+          path: expectedOutput,
+        }),
+      )
+    },
+  )
+
   it('selects a contained immutable release and recomputes its manifest and output hashes', () => {
     const configRoot = makeTempDir()
     const release = installFixture(configRoot)
