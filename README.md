@@ -569,6 +569,19 @@ The problem ctxharness addresses is well-documented. These are the sources worth
 - [New Research Reassesses the Value of AGENTS.md Files](https://www.infoq.com/news/2026/03/agents-context-file-value-review/) — InfoQ, March 2026. ETH Zurich study: LLM-generated context files reduce task success by 3% on average and increase inference costs by 20%+. Authors recommend limiting instructions to non-inferable details — exactly the facts ctxharness verifies.
 - [When AGENTS.md Backfires](https://notchrisgroves.com/when-agents-md-backfires/) — Feb 2026. Only 14.5% of agent context files include security instructions. LLM-generated files reduced task success in 5 of 8 evaluation settings.
 
+<!-- BEGIN GENERATED RELATED PROJECTS -->
+<!-- Source: https://github.com/FlorianBruniaux/FlorianBruniaux/blob/main/ecosystem/projects.json; project: ctxharness -->
+## Explore the ecosystem
+
+These projects extend the workflow without duplicating this tool:
+
+- **Learn with [Claude Code Ultimate Guide](https://github.com/FlorianBruniaux/claude-code-ultimate-guide)**: connect the checks to the guide's context-engineering and harness practices.
+- **Use with [claude-code-plugins](https://github.com/FlorianBruniaux/claude-code-plugins)**: validate contexts and rules installed through the plugin collection.
+- **Secure with [agentsec-triage](https://github.com/FlorianBruniaux/agentsec-triage)**: combine documentation integrity with checks for documented campaigns and risky configuration.
+
+[Browse the complete open-source galaxy](https://github.com/FlorianBruniaux#open-source-galaxy)
+<!-- END GENERATED RELATED PROJECTS -->
+
 ## License
 
 MIT
