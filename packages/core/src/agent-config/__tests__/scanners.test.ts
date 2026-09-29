@@ -875,6 +875,22 @@ describe('scanHooks', () => {
       expectedStatus: 'pass',
     },
     {
+      label: 'quoted project variable joined to the script path',
+      command: 'bash "$CLAUDE_PROJECT_DIR"/.claude/hooks/joined.sh',
+      script: '.claude/hooks/joined.sh',
+      mode: 0o644,
+      expectedCode: 'hook-command-resolved',
+      expectedStatus: 'pass',
+    },
+    {
+      label: 'missing script after a quoted project variable',
+      command: 'bash "$CLAUDE_PROJECT_DIR"/.claude/hooks/missing.sh',
+      script: undefined,
+      mode: undefined,
+      expectedCode: 'hook-command-unresolved',
+      expectedStatus: 'fail',
+    },
+    {
       label: 'executable direct hook',
       command: './.claude/hooks/direct.sh',
       script: '.claude/hooks/direct.sh',

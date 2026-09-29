@@ -214,9 +214,13 @@ function resolveCommandPaths(
 ): HookCommandPath[] | null {
   // Exec form spawns `command` directly as one executable, without a shell
   // (code.claude.com/docs/en/hooks, "Exec form and shell form").
-  const rawTokens = exec ? [command] : (command.match(/"[^"]+"|'[^']+'|\S+/g) ?? [])
+  // Shell form: a word joins adjacent quoted and unquoted segments, so
+  // `"$CLAUDE_PROJECT_DIR"/.claude/hooks/x.sh` is one path, not two tokens.
+  const rawTokens = exec ? [command] : (command.match(/(?:"[^"]*"|'[^']*'|[^\s"']+)+/g) ?? [])
   const tokens = rawTokens.map((rawToken) => {
-    let token = rawToken.replace(/^['"]|['"]$/g, '')
+    let token = exec
+      ? rawToken
+      : rawToken.replace(/"([^"]*)"|'([^']*)'/g, (_, double, single) => double ?? single)
     token = token.replace(/^\$\{CLAUDE_PROJECT_DIR\}/, inventory.root)
     token = token.replace(/^\$CLAUDE_PROJECT_DIR/, inventory.root)
     if (token.startsWith('~/')) token = join(inventory.home, token.slice(2))

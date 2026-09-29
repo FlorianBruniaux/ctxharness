@@ -18,6 +18,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 - `doctor` skills layer: `name` is optional for Claude Code skills (the folder name applies) and required for Codex; name collisions use the effective name; a Claude skill without `description` reports `skill-description-missing` as `warn`.
 - `doctor` agents layer: an empty body is accepted, Markdown without `name` reports `agent-documentation` as `not-applicable`, and frontmatter that strict YAML rejects but that still exposes `name` and `description` lines reports `agent-frontmatter-nonstrict` as `warn` instead of a mandatory failure.
 - `doctor` hooks layer: exec-form handlers (`args`) resolve `command` as a single executable, and the Codex `[hooks.state]` trust registry is no longer read as an event.
+- `doctor` hooks layer: a shell word that joins a quoted variable and a path, such as `bash "$CLAUDE_PROJECT_DIR"/.claude/hooks/x.sh`, now resolves as one path instead of reporting a false `hook-command-unresolved`.
 
 ---
 
