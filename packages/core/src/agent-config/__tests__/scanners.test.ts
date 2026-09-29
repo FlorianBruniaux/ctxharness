@@ -236,6 +236,345 @@ describe('scanSkills', () => {
   })
 })
 
+describe('scanSkills native name requirements', () => {
+  it('accepts a Claude skill without name because the directory name supplies it', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const manifest = join(project, '.claude', 'skills', 'unnamed', 'SKILL.md')
+    writeFile(manifest, '---\ndescription: test\n---\nbody')
+
+    const findings = scanSkills(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'skill-valid', status: 'pass', path: manifest }),
+    )
+    expect(findings.some((finding) => finding.code === 'skill-invalid')).toBe(false)
+  })
+
+  it('warns instead of failing when a Claude skill has no description', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const manifest = join(project, '.claude', 'skills', 'bare', 'SKILL.md')
+    writeFile(manifest, '---\nname: bare\n---\nFirst line used as description.')
+
+    const findings = scanSkills(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({
+        code: 'skill-description-missing',
+        status: 'warn',
+        path: manifest,
+      }),
+    )
+    expect(findings.some((finding) => finding.status === 'fail')).toBe(false)
+  })
+
+  it('rejects a Codex skill without name because Codex requires it', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const manifest = join(project, '.agents', 'skills', 'unnamed', 'SKILL.md')
+    writeFile(manifest, '---\ndescription: test\n---\nbody')
+
+    const findings = scanSkills(
+      inventoryAgentConfig({ root: project, home, hosts: ['codex'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'skill-invalid', status: 'fail', path: manifest }),
+    )
+  })
+
+  it('detects Claude collisions on the effective name when one skill omits name', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(
+      join(project, '.claude', 'skills', 'deploy', 'SKILL.md'),
+      '---\ndescription: a\n---\n',
+    )
+    writeFile(
+      join(project, '.claude', 'skills', 'other', 'SKILL.md'),
+      '---\nname: deploy\ndescription: b\n---\n',
+    )
+
+    const findings = scanSkills(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'skill-name-collision', host: 'claude' }),
+    )
+  })
+})
+
+describe('scanRules native frontmatter', () => {
+  it('accepts paths written as a comma-separated string', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const rule = join(project, '.claude', 'rules', 'comma.md')
+    writeFile(rule, '---\npaths: "src/**/*.ts, lib/**/*.ts"\n---\n# Rule')
+
+    const findings = scanRules(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'claude-rule-valid', status: 'pass', path: rule }),
+    )
+  })
+
+  it('still rejects a comma-separated string containing a malformed glob', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const rule = join(project, '.claude', 'rules', 'comma-bad.md')
+    writeFile(rule, '---\npaths: "src/**/*.ts, lib/[oops"\n---\n# Rule')
+
+    const findings = scanRules(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'claude-rule-glob-invalid', status: 'fail', path: rule }),
+    )
+  })
+
+  it('warns instead of failing when the frontmatter YAML does not parse', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const rule = join(project, '.claude', 'rules', 'broken.md')
+    writeFile(rule, '---\npaths: [unclosed\n---\n# Rule')
+
+    const findings = scanRules(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({
+        code: 'claude-rule-frontmatter-invalid',
+        status: 'warn',
+        path: rule,
+      }),
+    )
+    expect(findings.some((finding) => finding.status === 'fail')).toBe(false)
+  })
+})
+
+describe('scanAgents native frontmatter', () => {
+  it('accepts a Claude agent with name and description and an empty body', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const agent = join(project, '.claude', 'agents', 'empty-body.md')
+    writeFile(agent, '---\nname: empty-body\ndescription: test\n---\n')
+
+    const findings = scanAgents(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'agent-valid', status: 'pass', path: agent }),
+    )
+  })
+
+  it('warns when strict YAML fails but top-level name and description lines exist', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const agent = join(project, '.claude', 'agents', 'lenient.md')
+    writeFile(
+      agent,
+      '---\nname: lenient\ndescription: Use this agent when X. Examples: <example>user: "hi" assistant: "ok"</example>\nmodel: sonnet\n---\nbody',
+    )
+
+    const findings = scanAgents(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'agent-frontmatter-nonstrict', status: 'warn', path: agent }),
+    )
+    expect(findings.some((finding) => finding.status === 'fail')).toBe(false)
+  })
+
+  it('treats a Claude Markdown file without name as documentation, not a failure', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const readme = join(project, '.claude', 'agents', 'README.md')
+    writeFile(readme, '# Agents\n\nNotes for maintainers.')
+
+    const findings = scanAgents(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({
+        code: 'agent-documentation',
+        status: 'not-applicable',
+        path: readme,
+      }),
+    )
+    expect(findings.some((finding) => finding.status === 'fail')).toBe(false)
+  })
+
+  it('still rejects a Claude agent with name but no description', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const agent = join(project, '.claude', 'agents', 'nodesc.md')
+    writeFile(agent, '---\nname: nodesc\n---\nbody')
+
+    const findings = scanAgents(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'agent-invalid', status: 'fail', path: agent }),
+    )
+  })
+})
+
+describe('scanHooks native event semantics', () => {
+  function claudeHooks(hooks: unknown) {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(join(project, '.claude', 'settings.json'), JSON.stringify({ hooks }))
+    return scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+  }
+
+  function codexHooks(hooks: unknown) {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(join(project, '.codex', 'config.toml'), '')
+    writeFile(join(project, '.codex', 'hooks.json'), JSON.stringify({ hooks }))
+    return scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['codex'], scopes: ['project'] }),
+    )
+  }
+
+  const echo = { type: 'command', command: '/bin/echo' }
+
+  it('accepts the recently documented Claude events', () => {
+    const findings = claudeHooks({
+      DirectoryAdded: [{ hooks: [echo] }],
+      PreModelSwitch: [{ hooks: [echo] }],
+      PostModelSwitch: [{ hooks: [echo] }],
+    })
+
+    expect(findings.some((finding) => finding.code === 'hook-event-unknown')).toBe(false)
+  })
+
+  it('warns on an unknown Claude event name', () => {
+    expect(claudeHooks({ PreToolCall: [{ hooks: [echo] }] })).toContainEqual(
+      expect.objectContaining({ code: 'hook-event-unknown', status: 'warn', host: 'claude' }),
+    )
+  })
+
+  it('warns on a Claude-only event configured for Codex', () => {
+    expect(codexHooks({ PostToolBatch: [{ hooks: [echo] }] })).toContainEqual(
+      expect.objectContaining({ code: 'hook-event-unknown', status: 'warn', host: 'codex' }),
+    )
+  })
+
+  it('does not treat the Codex hooks.state trust registry as an event', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    writeFile(
+      join(project, '.codex', 'config.toml'),
+      '[hooks.state."abc"]\nenabled = true\ntrusted_hash = "sha256:0"\n',
+    )
+
+    const findings = scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['codex'], scopes: ['project'] }),
+    )
+
+    expect(findings.some((finding) => finding.code === 'hook-event-unknown')).toBe(false)
+  })
+
+  it('accepts the Codex Interrupt event', () => {
+    expect(
+      codexHooks({ Interrupt: [{ hooks: [echo] }] }).some(
+        (finding) => finding.code === 'hook-event-unknown',
+      ),
+    ).toBe(false)
+  })
+
+  it('warns on a matcher configured for an event without matcher support', () => {
+    expect(claudeHooks({ UserPromptSubmit: [{ matcher: 'Bash', hooks: [echo] }] })).toContainEqual(
+      expect.objectContaining({ code: 'hook-matcher-ignored', status: 'warn' }),
+    )
+    expect(codexHooks({ Stop: [{ matcher: 'x', hooks: [echo] }] })).toContainEqual(
+      expect.objectContaining({ code: 'hook-matcher-ignored', status: 'warn' }),
+    )
+  })
+
+  it('warns on handler types the event does not run', () => {
+    expect(
+      claudeHooks({ PermissionRequest: [{ hooks: [{ type: 'agent', prompt: 'check' }] }] }),
+    ).toContainEqual(expect.objectContaining({ code: 'hook-handler-unsupported', status: 'warn' }))
+    expect(
+      claudeHooks({ SessionStart: [{ hooks: [{ type: 'http', url: 'https://x.test' }] }] }),
+    ).toContainEqual(expect.objectContaining({ code: 'hook-handler-unsupported', status: 'warn' }))
+    expect(codexHooks({ Stop: [{ hooks: [{ type: 'prompt', prompt: 'check' }] }] })).toContainEqual(
+      expect.objectContaining({ code: 'hook-handler-unsupported', status: 'warn' }),
+    )
+  })
+
+  it('does not report supported http and mcp_tool handlers as invalid commands', () => {
+    const findings = claudeHooks({
+      PreToolUse: [
+        {
+          matcher: 'Bash',
+          hooks: [
+            { type: 'http', url: 'https://x.test' },
+            { type: 'mcp_tool', server: 'memory', tool: 'check' },
+          ],
+        },
+      ],
+    })
+
+    expect(findings.some((finding) => finding.status === 'fail')).toBe(false)
+    expect(findings.some((finding) => finding.code === 'hook-handler-unsupported')).toBe(false)
+  })
+
+  it('resolves an exec-form command as one executable token, not a shell string', () => {
+    const project = makeTempDir()
+    const home = makeTempDir()
+    const script = join(project, '.claude', 'hooks', 'with space.sh')
+    writeFile(script, '#!/bin/sh\n')
+    chmodSync(script, 0o755)
+    writeFile(
+      join(project, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            { hooks: [{ type: 'command', command: script, args: ['--flag', 'value'] }] },
+          ],
+        },
+      }),
+    )
+
+    const findings = scanHooks(
+      inventoryAgentConfig({ root: project, home, hosts: ['claude'], scopes: ['project'] }),
+    )
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({ code: 'hook-command-resolved', status: 'pass' }),
+    )
+  })
+
+  it('keeps a bare exec-form executable unverified because it resolves on PATH', () => {
+    expect(
+      claudeHooks({
+        PostToolUse: [{ hooks: [{ type: 'command', command: 'node', args: ['x.mjs'] }] }],
+      }),
+    ).toContainEqual(
+      expect.objectContaining({ code: 'hook-command-unverified', status: 'unknown' }),
+    )
+  })
+})
+
 describe('scanRules', () => {
   it('validates Claude project-relative path globs without treating Codex nested instructions as rules', () => {
     const findings = scanRules(inventory())

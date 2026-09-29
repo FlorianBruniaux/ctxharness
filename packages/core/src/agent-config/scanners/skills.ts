@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { load } from 'js-yaml'
 import { isPathWithinBoundary } from '../inventory.js'
 import type { AgentConfigEvidence, AgentConfigFinding, AgentConfigInventory } from '../types.js'
@@ -8,6 +8,7 @@ interface ParsedSkill {
   evidence: AgentConfigEvidence
   name?: string | undefined
   valid: boolean
+  hasDescription: boolean
   missingReferences: string[]
   outsideReferences: string[]
 }
@@ -70,22 +71,47 @@ function parseSkill(evidence: AgentConfigEvidence): ParsedSkill {
       !outsideReferences.includes(reference) && !existsSync(resolve(skillPackage, reference)),
   )
 
+  // Claude Code defaults a skill's name to its directory name
+  // (code.claude.com/docs/en/skills, frontmatter reference); Codex requires
+  // both `name` and `description` in SKILL.md (Codex "Build skills" docs).
+  const effectiveName =
+    name ?? (evidence.host === 'claude' ? basename(dirname(evidence.path)) : undefined)
+  // Claude Code only recommends `description` (it falls back to the first
+  // body line), so its absence is a routing risk rather than a load failure.
+  const valid = evidence.host === 'claude' || (name !== undefined && description !== undefined)
+
   return {
     evidence,
-    name,
-    valid: name !== undefined && description !== undefined,
+    name: effectiveName,
+    valid,
+    hasDescription: description !== undefined,
     missingReferences,
     outsideReferences,
   }
 }
 
 function skillFinding(skill: ParsedSkill): AgentConfigFinding {
+  if (skill.valid && !skill.hasDescription) {
+    return {
+      code: 'skill-description-missing',
+      status: 'warn',
+      message:
+        'Skill has no description; Claude Code falls back to the first body line for routing.',
+      host: skill.evidence.host,
+      scope: skill.evidence.scope,
+      layer: 'skills',
+      path: skill.evidence.path,
+      evidence: [skill.evidence],
+    }
+  }
   return {
     code: skill.valid ? 'skill-valid' : 'skill-invalid',
     status: skill.valid ? 'pass' : 'fail',
     message: skill.valid
-      ? 'Skill package has required name and description metadata.'
-      : 'Skill package requires non-empty name and description metadata.',
+      ? 'Skill package has the metadata its host requires.'
+      : skill.evidence.host === 'claude'
+        ? 'Claude skill package metadata is invalid.'
+        : 'Codex skill package requires non-empty name and description metadata.',
     host: skill.evidence.host,
     scope: skill.evidence.scope,
     layer: 'skills',

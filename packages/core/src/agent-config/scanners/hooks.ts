@@ -7,6 +7,8 @@ import type { AgentConfigEvidence, AgentConfigFinding, AgentConfigInventory } fr
 interface ValidHookCommand {
   valid: true
   command: string
+  /** Exec form: `command` is one executable and `args` its argument vector. */
+  exec: boolean
 }
 
 interface InvalidHookCommand {
@@ -33,7 +35,11 @@ function collectCommands(value: unknown, commands: HookCommand[]): void {
   const fields = value as Record<string, unknown>
   if (fields['type'] === 'command') {
     if (typeof fields['command'] === 'string' && fields['command'].trim() !== '') {
-      commands.push({ valid: true, command: fields['command'] })
+      commands.push({
+        valid: true,
+        command: fields['command'],
+        exec: Array.isArray(fields['args']),
+      })
     } else {
       commands.push({ valid: false })
     }
@@ -41,27 +47,174 @@ function collectCommands(value: unknown, commands: HookCommand[]): void {
   for (const child of Object.values(fields)) collectCommands(child, commands)
 }
 
-function parseHookCommands(path: string): HookCommand[] | null {
+interface ParsedHooks {
+  hooks: unknown
+  commands: HookCommand[]
+}
+
+function parseHookCommands(path: string): ParsedHooks | null {
   try {
     const content = readFileSync(path, 'utf-8')
     const parsed = path.endsWith('.toml') ? parseToml(content) : JSON.parse(content)
     if (typeof parsed !== 'object' || parsed === null) return null
     const hooks = (parsed as Record<string, unknown>)['hooks']
-    if (hooks === undefined) return []
+    if (hooks === undefined) return { hooks: undefined, commands: [] }
     const commands: HookCommand[] = []
     collectCommands(hooks, commands)
-    return commands
+    return { hooks, commands }
   } catch {
     return null
   }
+}
+
+type HandlerType = 'command' | 'http' | 'mcp_tool' | 'prompt' | 'agent'
+
+interface EventSpec {
+  matcher: boolean
+  handlers: readonly HandlerType[]
+}
+
+const ALL: readonly HandlerType[] = ['command', 'http', 'mcp_tool', 'prompt', 'agent']
+const NO_LLM: readonly HandlerType[] = ['command', 'http', 'mcp_tool']
+const COMMAND_MCP: readonly HandlerType[] = ['command', 'mcp_tool']
+
+/**
+ * Claude Code hook events, matcher support and handler-type support, from
+ * code.claude.com/docs/en/hooks ("Hook lifecycle", "Matcher patterns",
+ * "Prompt-based hooks").
+ */
+const CLAUDE_EVENTS: Record<string, EventSpec> = {
+  SessionStart: { matcher: true, handlers: COMMAND_MCP },
+  Setup: { matcher: true, handlers: COMMAND_MCP },
+  UserPromptSubmit: { matcher: false, handlers: ALL },
+  UserPromptExpansion: { matcher: true, handlers: ALL },
+  PreToolUse: { matcher: true, handlers: ALL },
+  PermissionRequest: { matcher: true, handlers: ['command', 'http', 'mcp_tool', 'prompt'] },
+  PermissionDenied: { matcher: true, handlers: ALL },
+  PostToolUse: { matcher: true, handlers: ALL },
+  PostToolUseFailure: { matcher: true, handlers: ALL },
+  PostToolBatch: { matcher: false, handlers: ALL },
+  Notification: { matcher: true, handlers: NO_LLM },
+  MessageDisplay: { matcher: false, handlers: NO_LLM },
+  SubagentStart: { matcher: true, handlers: NO_LLM },
+  SubagentStop: { matcher: true, handlers: ALL },
+  TaskCreated: { matcher: false, handlers: ALL },
+  TaskCompleted: { matcher: false, handlers: ALL },
+  Stop: { matcher: false, handlers: ALL },
+  StopFailure: { matcher: true, handlers: NO_LLM },
+  TeammateIdle: { matcher: false, handlers: ALL },
+  InstructionsLoaded: { matcher: true, handlers: NO_LLM },
+  ConfigChange: { matcher: true, handlers: NO_LLM },
+  CwdChanged: { matcher: false, handlers: NO_LLM },
+  DirectoryAdded: { matcher: true, handlers: NO_LLM },
+  FileChanged: { matcher: true, handlers: NO_LLM },
+  WorktreeCreate: { matcher: false, handlers: NO_LLM },
+  WorktreeRemove: { matcher: false, handlers: NO_LLM },
+  PreCompact: { matcher: true, handlers: NO_LLM },
+  PostCompact: { matcher: true, handlers: NO_LLM },
+  PreModelSwitch: { matcher: true, handlers: NO_LLM },
+  PostModelSwitch: { matcher: true, handlers: NO_LLM },
+  Elicitation: { matcher: true, handlers: NO_LLM },
+  ElicitationResult: { matcher: true, handlers: NO_LLM },
+  SessionEnd: { matcher: true, handlers: NO_LLM },
+}
+
+/**
+ * Codex hook events from the Codex "Hooks" documentation. Codex parses but
+ * skips `prompt` and `agent` handlers and supports `command` and `mcp_tool`.
+ */
+const CODEX_EVENTS: Record<string, EventSpec> = {
+  SessionStart: { matcher: true, handlers: COMMAND_MCP },
+  SessionEnd: { matcher: true, handlers: COMMAND_MCP },
+  SubagentStart: { matcher: true, handlers: COMMAND_MCP },
+  SubagentStop: { matcher: true, handlers: COMMAND_MCP },
+  PreToolUse: { matcher: true, handlers: COMMAND_MCP },
+  PermissionRequest: { matcher: true, handlers: COMMAND_MCP },
+  PostToolUse: { matcher: true, handlers: COMMAND_MCP },
+  PreCompact: { matcher: true, handlers: COMMAND_MCP },
+  PostCompact: { matcher: true, handlers: COMMAND_MCP },
+  UserPromptSubmit: { matcher: false, handlers: COMMAND_MCP },
+  Stop: { matcher: false, handlers: COMMAND_MCP },
+  Interrupt: { matcher: false, handlers: COMMAND_MCP },
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+/** Checks event names, ignored matchers and unsupported handler types. */
+function semanticFindings(hooks: unknown, evidence: AgentConfigEvidence): AgentConfigFinding[] {
+  const events = asRecord(hooks)
+  if (events === null) return []
+  const table = evidence.host === 'claude' ? CLAUDE_EVENTS : CODEX_EVENTS
+  const base = {
+    host: evidence.host,
+    scope: evidence.scope,
+    layer: 'hooks' as const,
+    path: evidence.path,
+    evidence: [evidence],
+  }
+  const findings: AgentConfigFinding[] = []
+
+  for (const [event, groups] of Object.entries(events)) {
+    // Codex persists per-hook trust (`enabled`, `trusted_hash`) under
+    // `[hooks.state]` in config.toml; it is not a lifecycle event.
+    if (evidence.host === 'codex' && event === 'state') continue
+    const spec = table[event]
+    if (spec === undefined) {
+      findings.push({
+        ...base,
+        code: 'hook-event-unknown',
+        status: 'warn',
+        message: `Hook event is not documented for ${evidence.host}; it never fires there.`,
+      })
+      continue
+    }
+    for (const group of Array.isArray(groups) ? groups : [groups]) {
+      const fields = asRecord(group)
+      if (fields === null) continue
+      const matcher = fields['matcher']
+      if (!spec.matcher && typeof matcher === 'string' && matcher !== '' && matcher !== '*') {
+        findings.push({
+          ...base,
+          code: 'hook-matcher-ignored',
+          status: 'warn',
+          message: 'Matcher is set on an event without matcher support and is silently ignored.',
+        })
+      }
+      const handlers = Array.isArray(fields['hooks'])
+        ? (fields['hooks'] as unknown[])
+        : fields['type'] !== undefined
+          ? [fields]
+          : []
+      for (const handler of handlers) {
+        const type = asRecord(handler)?.['type']
+        if (typeof type !== 'string') continue
+        if (!spec.handlers.includes(type as HandlerType)) {
+          findings.push({
+            ...base,
+            code: 'hook-handler-unsupported',
+            status: 'warn',
+            message: `Handler type is not run for this event on ${evidence.host}; it is skipped.`,
+          })
+        }
+      }
+    }
+  }
+  return findings
 }
 
 function resolveCommandPaths(
   command: string,
   inventory: AgentConfigInventory,
   evidence: AgentConfigEvidence,
+  exec = false,
 ): HookCommandPath[] | null {
-  const rawTokens = command.match(/"[^"]+"|'[^']+'|\S+/g) ?? []
+  // Exec form spawns `command` directly as one executable, without a shell
+  // (code.claude.com/docs/en/hooks, "Exec form and shell form").
+  const rawTokens = exec ? [command] : (command.match(/"[^"]+"|'[^']+'|\S+/g) ?? [])
   const tokens = rawTokens.map((rawToken) => {
     let token = rawToken.replace(/^['"]|['"]$/g, '')
     token = token.replace(/^\$\{CLAUDE_PROJECT_DIR\}/, inventory.root)
@@ -86,6 +239,10 @@ function resolveCommandPaths(
   const launcherPaths: HookCommandPath[] = []
   const first = tokens[0]
   if (first === undefined) return null
+  if (exec) {
+    const isPath = isAbsolute(first) || first.startsWith('./') || first.startsWith('../')
+    return isPath ? [{ path: resolveToken(first), access: 'executable' }] : null
+  }
   if (basename(first) === 'env') {
     if (isPathLike(first)) {
       launcherPaths.push({ path: resolveToken(first), access: 'executable' })
@@ -240,8 +397,8 @@ export function scanHooks(inventory: AgentConfigInventory): AgentConfigFinding[]
   const findings = sourceResult.findings
 
   for (const evidence of sourceResult.sources) {
-    const commands = parseHookCommands(evidence.path)
-    if (commands === null) {
+    const parsed = parseHookCommands(evidence.path)
+    if (parsed === null) {
       findings.push({
         code: 'hook-config-invalid',
         status: 'fail',
@@ -255,7 +412,9 @@ export function scanHooks(inventory: AgentConfigInventory): AgentConfigFinding[]
       continue
     }
 
-    for (const command of commands) {
+    findings.push(...semanticFindings(parsed.hooks, evidence))
+
+    for (const command of parsed.commands) {
       if (!command.valid) {
         findings.push({
           code: 'hook-command-invalid',
@@ -270,7 +429,7 @@ export function scanHooks(inventory: AgentConfigInventory): AgentConfigFinding[]
         continue
       }
 
-      const commandPaths = resolveCommandPaths(command.command, inventory, evidence)
+      const commandPaths = resolveCommandPaths(command.command, inventory, evidence, command.exec)
       if (commandPaths === null) {
         findings.push({
           code: 'hook-command-unverified',

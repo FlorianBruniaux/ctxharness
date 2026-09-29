@@ -35,29 +35,51 @@ function malformedGlob(path: string): boolean {
   return escaped || stack.length > 0
 }
 
+/**
+ * Claude Code accepts `paths` as a YAML list or a comma-separated string
+ * (code.claude.com/docs/en/memory, rule frontmatter reference).
+ */
+function pathPatterns(value: unknown): unknown[] | null {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') return value.split(',').map((pattern) => pattern.trim())
+  return null
+}
+
 function validateRule(evidence: AgentConfigEvidence): AgentConfigFinding {
   const content = readFileSync(evidence.path, 'utf-8')
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content)
   let invalid = false
 
   if (frontmatter !== null) {
+    let parsed: unknown
     try {
-      const parsed = load(frontmatter[1] ?? '')
-      if (typeof parsed === 'object' && parsed !== null && 'paths' in parsed) {
-        const paths = (parsed as Record<string, unknown>)['paths']
-        invalid =
-          !Array.isArray(paths) ||
-          paths.length === 0 ||
-          paths.some(
-            (path) =>
-              typeof path !== 'string' ||
-              path.trim() === '' ||
-              isAbsolute(path) ||
-              malformedGlob(path),
-          )
-      }
+      parsed = load(frontmatter[1] ?? '')
     } catch {
-      invalid = true
+      // Claude Code ignores unparsable rule frontmatter and loads the rule
+      // unconditionally, so the rule still loads but its intended scope is lost.
+      return {
+        code: 'claude-rule-frontmatter-invalid',
+        status: 'warn',
+        message: 'Claude rule frontmatter does not parse; the rule loads without path scope.',
+        host: 'claude',
+        scope: evidence.scope,
+        layer: 'rules',
+        path: evidence.path,
+        evidence: [evidence],
+      }
+    }
+    if (typeof parsed === 'object' && parsed !== null && 'paths' in parsed) {
+      const paths = pathPatterns((parsed as Record<string, unknown>)['paths'])
+      invalid =
+        paths === null ||
+        paths.length === 0 ||
+        paths.some(
+          (path) =>
+            typeof path !== 'string' ||
+            path.trim() === '' ||
+            isAbsolute(path) ||
+            malformedGlob(path),
+        )
     }
   }
 

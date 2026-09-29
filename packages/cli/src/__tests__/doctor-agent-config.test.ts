@@ -364,7 +364,8 @@ describe('doctor agent configuration mode', () => {
         results,
       }),
     )
-    write(join(root, '.claude', 'skills', 'invalid', 'SKILL.md'), '# missing frontmatter')
+    // Claude skips an agent that declares a name without a description.
+    write(join(root, '.claude', 'agents', 'invalid.md'), '---\nname: invalid\n---\nbody')
 
     const result = invoke(root, home, [
       'doctor',
@@ -427,7 +428,8 @@ describe('doctor agent configuration mode', () => {
   it('treats a static configuration failure as mandatory', () => {
     const root = makeTempDir('ctxharness-doctor-root-')
     const home = makeTempDir('ctxharness-doctor-home-')
-    write(join(root, '.claude', 'skills', 'invalid', 'SKILL.md'), '# missing frontmatter')
+    // Claude skips an agent that declares a name without a description.
+    write(join(root, '.claude', 'agents', 'invalid.md'), '---\nname: invalid\n---\nbody')
 
     const result = invoke(root, home, [
       'doctor',
@@ -446,7 +448,7 @@ describe('doctor agent configuration mode', () => {
     }
     expect(payload.summary.mandatoryFailures).toBeGreaterThan(0)
     expect(payload.findings).toContainEqual(
-      expect.objectContaining({ code: 'skill-invalid', status: 'fail', mandatory: true }),
+      expect.objectContaining({ code: 'agent-invalid', status: 'fail', mandatory: true }),
     )
   })
 
