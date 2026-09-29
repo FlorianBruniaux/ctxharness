@@ -233,6 +233,9 @@ function resolveCommandPaths(
     token.startsWith('../') ||
     token.startsWith('.claude/') ||
     token.startsWith('.codex/')
+  // A variable other than CLAUDE_PROJECT_DIR, or a command substitution such
+  // as `$(git rev-parse --show-toplevel)`, is only known at run time.
+  const expands = (token: string): boolean => token.includes('$') || token.includes('`')
   const resolveToken = (token: string): string => {
     if (isAbsolute(token)) return token
     const boundary = evidence.scope === 'project' ? inventory.root : inventory.home
@@ -294,7 +297,7 @@ function resolveCommandPaths(
       if (token === undefined) break
       if (token === '--') {
         const script = tokens[index + 1]
-        if (script === undefined) return null
+        if (script === undefined || expands(script)) return null
         scriptPath = { path: resolveToken(script), access: 'readable' }
         break
       }
@@ -307,7 +310,7 @@ function resolveCommandPaths(
         optionPaths.push({ path: resolveToken(optionValue), access: 'readable' })
         continue
       }
-      if (token.startsWith('-')) return null
+      if (token.startsWith('-') || expands(token)) return null
       scriptPath = { path: resolveToken(token), access: 'readable' }
       break
     }
