@@ -1,0 +1,47 @@
+packages/core/src/fs-boundary.ts
+  s_ff3dff62f4ff19::t_aa926e51099013 1-84
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_751e261a195bf7 17-18
+README.md
+  s_ff3dff62f4ff19::t_43356cac4cf705 588-589
+docs/configuration-audit.md
+  s_ff3dff62f4ff19::t_e76b146ee1f8b4 1-29
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_e827e256e15185::t_11ce5fe19238e3 25,540-552
+packages/cli/src/index.ts
+  s_ff3dff62f4ff19::t_309e84c5438387 18,1267,1269-1275,1282
+packages/core/src/__tests__/read-boundary.test.ts
+  s_ff3dff62f4ff19::t_de905193e7865f 1-86
+packages/core/src/index.ts
+  s_ff3dff62f4ff19::t_cf59358eee29de 80-83
+packages/core/src/runner.ts
+  s_ff3dff62f4ff19::t_cfaa73d599b50c 121,145
+packages/core/src/scan.ts
+  s_ff3dff62f4ff19::t_7db1cb91bc9284 4,310-311,313-321
+packages/core/src/scanners/index.ts
+  s_ff3dff62f4ff19::t_692e29a3e4a158 4,31,496,498,505,512,517-519,530-531,1000,1004
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5d1fb8ac6fa3df8ae8f6b562bb31eb5a5c42221",
+  "prompts": {},
+  "sessions": {
+    "s_e827e256e15185": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12567-61ab-7c62-8b43-ea0028444170",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
