@@ -1,0 +1,49 @@
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_66f792f4a9eb78 13-14
+docs/configuration-audit.md
+  s_ff3dff62f4ff19::t_3ce88c4ccc0c80 52-75
+docs/contracts/README.md
+  s_ff3dff62f4ff19::t_afd1a0bcceffd1 43-51
+docs/contracts/portable-v1.valid.json
+  s_ff3dff62f4ff19::t_2cf1ff97673440 5-12,14-63
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_ff3dff62f4ff19::t_73c7772934c4d4 592-604
+packages/cli/src/index.ts
+  s_ff3dff62f4ff19::t_4be20038cfb821 440,463,467,471,478
+packages/core/src/agent-config/__tests__/coverage.test.ts
+  s_ff3dff62f4ff19::t_9f1cd2b937604b 1-54
+packages/core/src/agent-config/coverage.ts
+  s_ff3dff62f4ff19::t_75db566bb4340a 1-72
+packages/core/src/agent-config/disclosure.ts
+  s_b52f1819e29e6c::t_2d02617489851b 2,26,39
+packages/core/src/agent-config/inventory.ts
+  s_ff3dff62f4ff19::t_7de6d937a1f858 87,95-96,127,129
+packages/core/src/agent-config/report.ts
+  s_b52f1819e29e6c::t_78b82f669c06a2 9,12,52,271,313
+packages/core/src/index.ts
+  s_b52f1819e29e6c::t_ef97c8f58857f9 88-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2ca1f705e0afcc5ab48e271c169480e5804d949a",
+  "prompts": {},
+  "sessions": {
+    "s_b52f1819e29e6c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f52-94b0-7320-881b-ba68586298ec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
