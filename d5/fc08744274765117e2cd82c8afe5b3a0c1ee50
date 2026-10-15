@@ -1,0 +1,99 @@
+docs/README.md
+  s_ff3dff62f4ff19::t_59a6026e4aab2a 3,7-9
+CLAUDE.md
+  s_ff3dff62f4ff19::t_59a6026e4aab2a 40-41,112,118-120
+  s_ff3dff62f4ff19::t_b163e10fed9c99 28-39
+docs/doctor.md
+  s_ff3dff62f4ff19::t_59a6026e4aab2a 9,19-28,38,58-65,93-115,117-124,126
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_59a6026e4aab2a 13-23,29-44
+  s_ff3dff62f4ff19::t_43bc587ef4f845 45
+docs/roadmap.md
+  s_ff3dff62f4ff19::t_59a6026e4aab2a 9,11,20,22
+README.md
+  s_ff3dff62f4ff19::t_59a6026e4aab2a 44,46,307,319-337,613-614
+docs/configuration-audit.md
+  s_ff3dff62f4ff19::t_47f3b9643c59fd 1-174
+docs/contracts/README.md
+  s_ff3dff62f4ff19::t_600400896c834e 1-106
+docs/contracts/config-snapshot-v1.valid.json
+  s_ff3dff62f4ff19::t_19e994ed47c86f 1-15
+docs/contracts/config-snapshot.runtime.invalid.json
+  s_ff3dff62f4ff19::t_45a06bd21813a0 1-22
+docs/contracts/config-snapshot.unsupported.json
+  s_ff3dff62f4ff19::t_3a0f7f22aefba1 1-15
+docs/contracts/portable-tools-v1.valid.json
+  s_ff3dff62f4ff19::t_ff6f8d736c321e 1-95
+docs/contracts/portable-v1.invalid.json
+  s_ff3dff62f4ff19::t_3b6a55fa3b69a1 1-30
+docs/contracts/portable-v1.valid.json
+  s_ff3dff62f4ff19::t_783e64063672bd 1-95
+docs/contracts/portable.unsupported.json
+  s_ff3dff62f4ff19::t_36bd3879901eea 1-30
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_ff3dff62f4ff19::t_997626759c0fe7 1,25,540-674
+packages/cli/src/index.ts
+  s_ff3dff62f4ff19::t_01a84d01851f96 18,23-28,37-40,89-90,445-450,473-482,485,489-490,493,497-511,646,1047,1049-1055,1062,1300-1332
+packages/core/src/__tests__/read-boundary.test.ts
+  s_ff3dff62f4ff19::t_e05e3cc257c186 1-182
+packages/core/src/agent-config/__tests__/budget.test.ts
+  s_ff3dff62f4ff19::t_8a7a8b9ff67ef4 1-176
+packages/core/src/agent-config/__tests__/coverage.test.ts
+  s_ff3dff62f4ff19::t_0d76a2ef405c17 1-118
+packages/core/src/agent-config/__tests__/hook-shape.test.ts
+  s_ff3dff62f4ff19::t_f854ae8d9350f0 1-80
+packages/core/src/agent-config/__tests__/mcp-credentials.test.ts
+  s_ff3dff62f4ff19::t_b0e5a2e430e3e3 1-66
+packages/core/src/agent-config/__tests__/report.test.ts
+  s_ff3dff62f4ff19::t_70134670301d47 1-136
+packages/core/src/agent-config/__tests__/snapshot.test.ts
+  s_ff3dff62f4ff19::t_f956b8df7f0d83 1-224
+packages/core/src/agent-config/__tests__/tool-availability.test.ts
+  s_ff3dff62f4ff19::t_592ec1328b053a 1-177
+packages/core/src/agent-config/budget.ts
+  s_ff3dff62f4ff19::t_309da5ae0e9801 1-316
+packages/core/src/agent-config/coverage.ts
+  s_ff3dff62f4ff19::t_8fc72b41c92283 1-219
+packages/core/src/agent-config/disclosure.ts
+  s_ff3dff62f4ff19::t_7e84a8a2e4ae4f 1-156
+packages/core/src/agent-config/inventory.ts
+  s_ff3dff62f4ff19::t_6700d80598ca93 87,95-96,127,129
+packages/core/src/agent-config/report.ts
+  s_ff3dff62f4ff19::t_7444964b6aee63 1-406
+packages/core/src/agent-config/scanners/hooks.ts
+  s_ff3dff62f4ff19::t_24050fd7ae1c4c 59,149,161-164,169-171,176,181-184,200-210
+packages/core/src/agent-config/scanners/mcp.ts
+  s_ff3dff62f4ff19::t_1346a0a5470878 35-39
+packages/core/src/agent-config/snapshot.ts
+  s_ff3dff62f4ff19::t_4b0f860043e536 1-197
+packages/core/src/agent-config/tool-availability.ts
+  s_ff3dff62f4ff19::t_c1d504af0d4a4c 1-156
+packages/core/src/agent-config/tool-contract.ts
+  s_ff3dff62f4ff19::t_e242aaa5d3f357 1-72
+packages/core/src/fs-boundary.ts
+  s_ff3dff62f4ff19::t_ff3db6caa7452b 1-177
+packages/core/src/index.ts
+  s_ff3dff62f4ff19::t_8fb389c87c0513 80-101
+packages/core/src/runner.ts
+  s_ff3dff62f4ff19::t_dc4336f6beb9ba 121,145
+packages/core/src/scan.ts
+  s_ff3dff62f4ff19::t_35aa9f40d97e17 4,310-311,313-321
+packages/core/src/scanners/index.ts
+  s_ff3dff62f4ff19::t_f1eb3a5501ec39 4,31,496,498,505,512,517-519,530-531,1000,1004
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d5fc08744274765117e2cd82c8afe5b3a0c1ee50",
+  "prompts": {},
+  "sessions": {
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
