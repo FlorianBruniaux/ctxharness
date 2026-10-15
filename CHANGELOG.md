@@ -14,6 +14,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Fixed
 
+- Validate malformed hook containers, groups and supported handler fields before event semantics; keep omitted, empty and unsupported declarations distinct (#3).
+
 - Bound context imports to caller-selected roots before reading; deduplicate physical files and expose incomplete traversal instead of claiming a complete static budget (#2).
 
 - `doctor` rules layer: `paths` written as a comma-separated string is accepted, and unparsable rule frontmatter reports `claude-rule-frontmatter-invalid` as `warn`, since Claude Code loads such a rule without `paths`.

@@ -27,3 +27,13 @@ fixtures. No imported content is executed.
 The historical `contextBudget` output strings and configurable threshold (default
 3000) remain local policy. The estimate is `ceil(UTF-16 code units / 4)`, not an
 observed model request or a universal quality threshold.
+
+## Hook shapes
+
+Omitted hooks produce no declaration finding; an explicit empty object reports
+`hook-config-empty`. Invalid containers, groups, matcher types and missing handler
+fields report `hook-config-invalid` as mandatory static failures. Commands require
+a nonempty command and optional string-array args; HTTP requires a URL string,
+MCP handlers require server/tool strings, prompt/agent handlers require a prompt.
+Unsupported types/events remain warnings about unresolved applicability. Discovery
+and path resolution do not establish trust, activation or native effect.

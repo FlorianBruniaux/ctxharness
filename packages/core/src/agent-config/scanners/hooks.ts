@@ -56,7 +56,7 @@ function parseHookCommands(path: string): ParsedHooks | null {
   try {
     const content = readFileSync(path, 'utf-8')
     const parsed = path.endsWith('.toml') ? parseToml(content) : JSON.parse(content)
-    if (typeof parsed !== 'object' || parsed === null) return null
+    if (asRecord(parsed) === null) return null
     const hooks = (parsed as Record<string, unknown>)['hooks']
     if (hooks === undefined) return { hooks: undefined, commands: [] }
     const commands: HookCommand[] = []
@@ -146,8 +146,8 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 /** Checks event names, ignored matchers and unsupported handler types. */
 function semanticFindings(hooks: unknown, evidence: AgentConfigEvidence): AgentConfigFinding[] {
+  if (hooks === undefined) return []
   const events = asRecord(hooks)
-  if (events === null) return []
   const table = evidence.host === 'claude' ? CLAUDE_EVENTS : CODEX_EVENTS
   const base = {
     host: evidence.host,
@@ -158,23 +158,30 @@ function semanticFindings(hooks: unknown, evidence: AgentConfigEvidence): AgentC
   }
   const findings: AgentConfigFinding[] = []
 
+  const invalid = (): void => { findings.push({ ...base, code: 'hook-config-invalid', status: 'fail', message: 'Hook declaration has malformed containers or required handler fields.' }) }
+  if (events === null) { invalid(); return findings }
+  if (Object.keys(events).length === 0) findings.push({ ...base, code: 'hook-config-empty', status: 'pass', message: 'Hook configuration explicitly declares no handlers.' })
+
   for (const [event, groups] of Object.entries(events)) {
     // Codex persists per-hook trust (`enabled`, `trusted_hash`) under
     // `[hooks.state]` in config.toml; it is not a lifecycle event.
     if (evidence.host === 'codex' && event === 'state') continue
-    const spec = table[event]
-    if (spec === undefined) {
+    if (!Array.isArray(groups) && asRecord(groups) === null) { invalid(); continue }
+    const spec = table[event] ?? { matcher: true, handlers: ALL }
+    if (table[event] === undefined) {
       findings.push({
         ...base,
         code: 'hook-event-unknown',
         status: 'warn',
-        message: `Hook event is not documented for ${evidence.host}; it never fires there.`,
+        message: `Hook event is not documented for ${evidence.host}; applicability is unresolved.`,
       })
-      continue
     }
     for (const group of Array.isArray(groups) ? groups : [groups]) {
       const fields = asRecord(group)
-      if (fields === null) continue
+      if (fields === null) { invalid(); continue }
+      if (fields['matcher'] !== undefined && typeof fields['matcher'] !== 'string') invalid()
+      if (fields['hooks'] !== undefined && !Array.isArray(fields['hooks'])) { invalid(); continue }
+      if (fields['hooks'] === undefined && fields['type'] === undefined) { invalid(); continue }
       const matcher = fields['matcher']
       if (!spec.matcher && typeof matcher === 'string' && matcher !== '' && matcher !== '*') {
         findings.push({
@@ -190,8 +197,17 @@ function semanticFindings(hooks: unknown, evidence: AgentConfigEvidence): AgentC
           ? [fields]
           : []
       for (const handler of handlers) {
-        const type = asRecord(handler)?.['type']
-        if (typeof type !== 'string') continue
+        const declaration = asRecord(handler)
+        const type = declaration?.['type']
+        if (declaration === null || typeof type !== 'string' || type.trim() === '') { invalid(); continue }
+        if (spec.handlers.includes(type as HandlerType)) {
+          const nonempty = (key: string) => typeof declaration[key] === 'string' && (declaration[key] as string).trim() !== ''
+          const args = declaration['args']
+          if ((type === 'command' && (!nonempty('command') || (args !== undefined && (!Array.isArray(args) || args.some(arg => typeof arg !== 'string'))))) ||
+              (type === 'http' && !nonempty('url')) ||
+              (type === 'mcp_tool' && (!nonempty('server') || !nonempty('tool'))) ||
+              ((type === 'prompt' || type === 'agent') && !nonempty('prompt'))) invalid()
+        }
         if (!spec.handlers.includes(type as HandlerType)) {
           findings.push({
             ...base,
