@@ -1,0 +1,55 @@
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_65866e8247a592 13-14
+docs/configuration-audit.md
+  s_ff3dff62f4ff19::t_7e7d1ef145fa7b 100-124
+docs/contracts/README.md
+  s_ff3dff62f4ff19::t_a49cdca94d1608 61-69
+docs/contracts/portable-v1.valid.json
+  s_ff3dff62f4ff19::t_f138a03cd26e35 74-93
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_31673e08358932::t_c6eee748861185 1,617-632
+packages/cli/src/index.ts
+  s_ff3dff62f4ff19::t_2b3e55e40283a2 33,443-446,469-475,481,485,492-504
+packages/core/src/agent-config/__tests__/tool-availability.test.ts
+  s_ff3dff62f4ff19::t_b63af62dbc5afc 1-177
+packages/core/src/agent-config/disclosure.ts
+  s_ff3dff62f4ff19::t_63df0bbc8c4536 2,102-103,125
+packages/core/src/agent-config/report.ts
+  s_ff3dff62f4ff19::t_56da754150e929 9,14,56,266,391-392
+packages/core/src/agent-config/tool-availability.ts
+  s_ff3dff62f4ff19::t_81654c4bd3d031 1-216
+packages/core/src/index.ts
+  s_edae00164c4bc3::t_a897df307a0561 94-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0f12a860d0e758258a8f2f19aa74eab6a158a963",
+  "prompts": {},
+  "sessions": {
+    "s_31673e08358932": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13b23-2ef0-7e51-96d0-0c6a5b2f3565",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_edae00164c4bc3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a135ea-f172-7f02-944f-04532cb53a51",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
