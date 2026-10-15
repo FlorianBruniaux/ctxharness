@@ -12,7 +12,7 @@
   </tr>
 </table>
 
-**AI documentation drift detection for teams using Claude Code, Cursor, Copilot, and any agent-driven workflow.**
+**AI documentation drift detection and passive configuration diagnosis.**
 
 Your `CLAUDE.md` says the auth config lives at `src/config/auth.ts`. That file moved to `src/modules/auth/config.ts` six months ago. Your agent tries to import from a path that no longer exists, silently, on every session.
 
@@ -33,13 +33,17 @@ Agents work from the context window. Pointing an agent to `package.json` works, 
 
 ## What it checks
 
-**L1 — Fact drift**: file existence, npm scripts, versions, counts, regex captures — any extractable fact from your codebase vs what your AI docs claim.
+**L1: Fact drift.** Compare file paths, npm scripts, versions, counts and regex captures against claims in AI documentation, including CLAUDE.md, AGENTS.md and .cursorrules.
 
-**L2 — Instruction quality**: vague language that degrades agent reliability ("be careful", "use your judgment"), positive/negative instruction ratio, multi-file coherence, token budget.
+**L2: Static instruction checks.** Flag vague language, inspect instruction ratios and estimate context size. These heuristics do not measure task quality or agent reliability.
 
-**L3 — Context assembly**: hook validation, skill loading, rule glob validity, coverage ratio.
+**L3: Configuration diagnosis.** Inspect supported Claude Code and Codex instructions, skills, rules, agents, hooks and MCP declarations. Discovery and valid syntax do not establish native loading, trust or execution.
 
 **No migration needed.** Works on your existing CLAUDE.md, AGENTS.md, and .cursorrules files as-is.
+
+CTX Harness owns documentation drift, passive configuration checks, static measurements and a reusable portable export, as defined in [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10). Session analysis, before/after experiments and adopting optimization candidates belong to a separate project. Existing local helpers such as `fix --apply` keep their documentation-drift behavior.
+
+See the [documentation index](docs/README.md), [configuration doctor guide](docs/doctor.md) and [delivery roadmap](docs/roadmap.md). These describe current source on `main`, including integrated PRs #11 to #14. The package version remains `0.4.6`; these unreleased additions are not a release announcement.
 
 ## Install
 
@@ -59,6 +63,15 @@ pnpm add -D ctxharness
 ctxharness init          # creates .ctxharness.yml
 ctxharness doctor        # full health check with L1/L2/L3 breakdown
 ```
+
+To inspect agent configuration without `.ctxharness.yml`, select a host and scope:
+
+```bash
+ctxharness doctor --host claude --scope project
+ctxharness doctor --host codex --scope project --format json
+```
+
+These examples target the project only. `--scope global` explicitly selects personal configuration; `--scope both` includes both scopes. See [doctor modes, formats and exit codes](docs/doctor.md).
 
 Example output:
 
@@ -84,7 +97,7 @@ typecheck-script        CLAUDE.md:34   true        false
 
 ## Configuration
 
-`.ctxharness.yml` — minimal starter (one assertion per layer):
+`.ctxharness.yml`, minimal starter (one assertion per layer):
 
 ```yaml
 version: 1
@@ -128,7 +141,7 @@ assertions:
 ```
 
 <details>
-<summary>Advanced config — allowlist, scopeFiles, multi-version assertions</summary>
+<summary>Advanced config, allowlist, scopeFiles, multi-version assertions</summary>
 
 ```yaml
 assertions:
@@ -141,7 +154,7 @@ assertions:
     scannerArgs:
       pattern: 'Next\.js\s+v?(\d+(?:\.\d+(?:\.\d+)?)?)'
     allowlist:
-      - CHANGELOG.md   # version history file — intentional old values
+      - CHANGELOG.md # version history file — intentional old values
 
   # scopeFiles: restrict an assertion to a subset of files
   - id: instruction-balance
@@ -156,7 +169,7 @@ assertions:
         - 'CLAUDE.md'
         - 'AGENTS.md'
       exclude:
-        - '.cursorrules'   # constraint-only file by design
+        - '.cursorrules' # constraint-only file by design
 ```
 
 </details>
@@ -168,30 +181,30 @@ Read ground truth from your codebase. Common ones: `fileExists`, `packageScript`
 <details>
 <summary>Full extractor list (20)</summary>
 
-| Name | What it reads | Args |
-|------|--------------|------|
-| `packageJson` | `dependencies`/`devDependencies` version | `package: string` |
-| `packageManager` | `packageManager` field (strips corepack hash) | — |
-| `nvmrc` | `.nvmrc` file | — |
-| `fileExists` | Whether a path exists (`"true"`/`"false"`) | `path: string` |
-| `regexScan` | Capture group from any file | `path`, `pattern`, `group?` |
-| `countMatches` | Count of pattern matches in a file | `path`, `pattern` |
-| `constant` | Fixed value (placeholder for quality scanners) | `value: string` |
-| `prismaModel` | Count of `model X {}` blocks in a Prisma schema | `path: string` |
-| `prismaModelList` | JSON array of model names from a Prisma schema | `path: string` |
-| `prismaEnum` | Count of values in a named Prisma enum | `path: string`, `enum: string` |
-| `trpcRouter` | Count of router entries in a tRPC root file | `path: string` |
-| `trpcRouterList` | JSON array of router names from a tRPC root file | `path: string` |
-| `gitStaleness` | Commits since a file was last changed (0 = up-to-date) | `path: string` |
-| `packageEngines` | Node/runtime version from `package.json` `engines` field (strips `>=` operators) | `field?: string` (default `"node"`) |
-| `tsconfigPaths` | Count of path aliases in `tsconfig.json` `compilerOptions.paths` (JSONC-aware) | `path?: string` (default `"tsconfig.json"`) |
-| `pyprojectToml` | Version from `pyproject.toml` — Poetry and PEP 621 formats | `package?: string`, `field?: string` |
-| `requirementsTxt` | Package version from `requirements.txt` | `package: string`, `path?: string` |
-| `cargoToml` | Version from `Cargo.toml` — own version or dependency; supports Cargo workspaces (`[workspace.package]`, `[workspace.dependencies]`) | `package?: string`, `field?: string` |
-| `goMod` | Module version from `go.mod` | `module: string` |
-| `packageScript` | Returns `"true"`/`"false"` if a named npm script exists in `package.json` | `script` (required), `file` (optional, default `"package.json"`) |
+| Name              | What it reads                                                                                                                       | Args                                                             |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `packageJson`     | `dependencies`/`devDependencies` version                                                                                            | `package: string`                                                |
+| `packageManager`  | `packageManager` field (strips corepack hash)                                                                                       | None                                                             |
+| `nvmrc`           | `.nvmrc` file                                                                                                                       | None                                                             |
+| `fileExists`      | Whether a path exists (`"true"`/`"false"`)                                                                                          | `path: string`                                                   |
+| `regexScan`       | Capture group from any file                                                                                                         | `path`, `pattern`, `group?`                                      |
+| `countMatches`    | Count of pattern matches in a file                                                                                                  | `path`, `pattern`                                                |
+| `constant`        | Fixed value (placeholder for quality scanners)                                                                                      | `value: string`                                                  |
+| `prismaModel`     | Count of `model X {}` blocks in a Prisma schema                                                                                     | `path: string`                                                   |
+| `prismaModelList` | JSON array of model names from a Prisma schema                                                                                      | `path: string`                                                   |
+| `prismaEnum`      | Count of values in a named Prisma enum                                                                                              | `path: string`, `enum: string`                                   |
+| `trpcRouter`      | Count of router entries in a tRPC root file                                                                                         | `path: string`                                                   |
+| `trpcRouterList`  | JSON array of router names from a tRPC root file                                                                                    | `path: string`                                                   |
+| `gitStaleness`    | Commits since a file was last changed (0 = up-to-date)                                                                              | `path: string`                                                   |
+| `packageEngines`  | Node/runtime version from `package.json` `engines` field (strips `>=` operators)                                                    | `field?: string` (default `"node"`)                              |
+| `tsconfigPaths`   | Count of path aliases in `tsconfig.json` `compilerOptions.paths` (JSONC-aware)                                                      | `path?: string` (default `"tsconfig.json"`)                      |
+| `pyprojectToml`   | Version from `pyproject.toml`, Poetry and PEP 621 formats                                                                           | `package?: string`, `field?: string`                             |
+| `requirementsTxt` | Package version from `requirements.txt`                                                                                             | `package: string`, `path?: string`                               |
+| `cargoToml`       | Version from `Cargo.toml`, own version or dependency; supports Cargo workspaces (`[workspace.package]`, `[workspace.dependencies]`) | `package?: string`, `field?: string`                             |
+| `goMod`           | Module version from `go.mod`                                                                                                        | `module: string`                                                 |
+| `packageScript`   | Returns `"true"`/`"false"` if a named npm script exists in `package.json`                                                           | `script` (required), `file` (optional, default `"package.json"`) |
 
-Version normalization: `v22` matches `22.14.0` — partial mentions are valid.
+Version normalization: `v22` matches `22.14.0`, partial mentions are valid.
 
 </details>
 
@@ -204,30 +217,30 @@ Find and validate content in your AI doc files. Common ones: `inlineRegex`, `lit
 
 ### Drift scanners (compare against extractor value)
 
-| Name | What it scans | Args |
-|------|--------------|------|
-| `inlineRegex` | All lines matching a regex | `pattern`, `flags?` |
+| Name             | What it scans                        | Args                         |
+| ---------------- | ------------------------------------ | ---------------------------- |
+| `inlineRegex`    | All lines matching a regex           | `pattern`, `flags?`          |
 | `codeBlockRegex` | Lines inside fenced code blocks only | `pattern`, `lang?`, `flags?` |
-| `yamlField` | YAML front matter or inline YAML | `field` (dot-path) |
-| `jsonField` | Inline JSON blocks | `field` (dot-path) |
-| `literalInMd` | Literal string presence | `literal` |
-| `pathReference` | File path reference | `path` |
+| `yamlField`      | YAML front matter or inline YAML     | `field` (dot-path)           |
+| `jsonField`      | Inline JSON blocks                   | `field` (dot-path)           |
+| `literalInMd`    | Literal string presence              | `literal`                    |
+| `pathReference`  | File path reference                  | `path`                       |
 
 ### Quality scanners (no extractor value needed, use `constant`)
 
-| Name | What it detects | Args |
-|------|----------------|------|
-| `vaguenessPattern` | Vague instructions ("be careful", "as needed", "use your judgment"…) | `patterns?: string[]` |
-| `negativeConstraintDensity` | Positive/negative instruction ratio below threshold | `minRatio?: number` (default 1.0) |
-| `contextBudget` | File token footprint — fails if estimated tokens exceed threshold | `maxTokens?: number` (default 3000), `followImports?: boolean` (follows `@file.md` chains up to depth 3) |
-| `ruleGlobValidity` | Claude Code rules file — checks for YAML frontmatter and optional `paths:` field | `requirePaths?: boolean` (default false) |
-| `hookValidity` | **Standalone.** Resolves `.claude/settings.json` from project root and validates each hook entry | — |
-| `backtickEntityPresence` | Checks that `` `entity` `` appears as inline code in the doc | `entity: string` |
-| `skillValidity` | **Standalone.** Globs `.claude/skills/**/*.md` from project root — validates YAML frontmatter has `name:` and `description:` | `requireDescription?: boolean` (default `true`) |
-| `freshnessScore` | **Standalone.** Interprets commit count from `gitStaleness` — returns pass/warn/fail based on thresholds | `warnAfter?: number` (default 30), `failAfter?: number` (default 100) |
-| `coverageRatio` | Checks what fraction of a JSON array (from `prismaModelList`/`trpcRouterList`) appears in the doc | `minRatio?: number` (default 0.8), `valueAllowlist?: string[]` |
+| Name                        | What it detects                                                                                                             | Args                                                                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `vaguenessPattern`          | Vague instructions ("be careful", "as needed", "use your judgment"…)                                                        | `patterns?: string[]`                                                                                    |
+| `negativeConstraintDensity` | Positive/negative instruction ratio below threshold                                                                         | `minRatio?: number` (default 1.0)                                                                        |
+| `contextBudget`             | File token footprint, fails if estimated tokens exceed threshold                                                            | `maxTokens?: number` (default 3000), `followImports?: boolean` (follows `@file.md` chains up to depth 3) |
+| `ruleGlobValidity`          | Claude Code rules file, checks for YAML frontmatter and optional `paths:` field                                             | `requirePaths?: boolean` (default false)                                                                 |
+| `hookValidity`              | **Standalone.** Resolves `.claude/settings.json` from project root and validates each hook entry                            | None                                                                                                     |
+| `backtickEntityPresence`    | Checks that `` `entity` `` appears as inline code in the doc                                                                | `entity: string`                                                                                         |
+| `skillValidity`             | **Standalone.** Globs `.claude/skills/**/*.md` from project root, validates YAML frontmatter has `name:` and `description:` | `requireDescription?: boolean` (default `true`)                                                          |
+| `freshnessScore`            | **Standalone.** Interprets commit count from `gitStaleness`, returns pass/warn/fail based on thresholds                     | `warnAfter?: number` (default 30), `failAfter?: number` (default 100)                                    |
+| `coverageRatio`             | Checks what fraction of a JSON array (from `prismaModelList`/`trpcRouterList`) appears in the doc                           | `minRatio?: number` (default 0.8), `valueAllowlist?: string[]`                                           |
 
-**Standalone scanners** (`hookValidity`, `skillValidity`, `freshnessScore`) bypass `files.include` and resolve their own targets from the project root. You do not add their paths to `files.include` — they run once regardless of how many files are in scope.
+**Standalone scanners** (`hookValidity`, `skillValidity`, `freshnessScore`) bypass `files.include` and resolve their own targets from the project root. You do not add their paths to `files.include`, they run once regardless of how many files are in scope.
 
 `vaguenessPattern` accepts custom patterns via `scannerArgs.patterns` (array of regex strings).
 
@@ -244,11 +257,11 @@ Find and validate content in your AI doc files. Common ones: `inlineRegex`, `lit
     path: CLAUDE.md
   scanner: freshnessScore
   scannerArgs:
-    warnAfter: 20   # ⚠ warn if >20 commits since last edit
-    failAfter: 50   # ✗ fail if >50 commits
+    warnAfter: 20 # ⚠ warn if >20 commits since last edit
+    failAfter: 50 # ✗ fail if >50 commits
 ```
 
-`coverageRatio` checks that a fraction of your actual entities (models, routers…) are mentioned in the docs — useful when you can't document everything but want to enforce a minimum:
+`coverageRatio` checks that a fraction of your actual entities (models, routers…) are mentioned in the docs, useful when you can't document everything but want to enforce a minimum:
 
 ```yaml
 - id: prisma-model-coverage
@@ -257,9 +270,9 @@ Find and validate content in your AI doc files. Common ones: `inlineRegex`, `lit
     path: src/server/db/prisma/schema.prisma
   scanner: coverageRatio
   scannerArgs:
-    minRatio: 0.5          # at least 50% of models mentioned
+    minRatio: 0.5 # at least 50% of models mentioned
   valueAllowlist:
-    - MigrationVersion     # internal model, not required in CLAUDE.md
+    - MigrationVersion # internal model, not required in CLAUDE.md
 ```
 
 </details>
@@ -291,6 +304,38 @@ Options:
 -w, --watch            Re-run on file changes (run command only)
 ```
 
+These common options are command-specific. The configuration doctor uses `--format human|json|gha`, while `run` uses `--format text|json|gha`. Selecting `--host`, `--scope`, `--format`, `--runtime-evidence`, `--coverage`, `--budget`, `--export` or any tool option switches `doctor` to configuration mode; bare `doctor` retains its YAML assertion workflow. Use `ctxharness <command> --help` for the exact options.
+
+### Configuration doctor
+
+```bash
+ctxharness doctor --host both --scope project --format human
+ctxharness doctor --host claude --scope project --format json > doctor.local.json
+ctxharness doctor --host codex --scope project --format gha
+```
+
+This mode does not require `.ctxharness.yml` and does not run hooks, skills, MCP servers or host clients. It reports `PASS`, `WARN`, `FAIL`, `UNKNOWN` and `N/A`; missing evidence stays unknown. Exit status is 1 for mandatory static failures or command errors and 0 otherwise. Exit 0 can therefore include warnings and unknowns.
+
+Local JSON includes source paths and diagnostic details. Review it before sharing. Use the versioned portable profile to omit paths, names, raw messages and credentials. It includes declared coverage and static sizes by default:
+
+```bash
+ctxharness doctor --host both --scope project --export portable > doctor.portable.json
+ctxharness doctor --host claude --scope project --coverage --budget --format json
+```
+
+Byte counts measure discovered source content; the named character estimate does not establish model input or savings. Validate artifacts with the [core contracts and fixtures](docs/contracts/README.md). Opaque references do not guarantee anonymization.
+
+The optional extensions have separate entry points:
+
+```bash
+ctxharness config-snapshot --host claude --scope project --output first.json
+ctxharness config-snapshot --host claude --scope project --output second.json
+ctxharness config-diff first.json second.json
+ctxharness doctor --host claude --scope project --tools rg,gh --tool-path /opt/example/bin --tool-environment declared-client --format json
+```
+
+Snapshot output never overwrites an existing file; structural comparison does not update the baseline or measure performance. The example tool PATH is caller-supplied: absent environment evidence stays unknown, and no tool is executed or installed. Authentication and client permissions remain unknown. See the [full guide](docs/doctor.md) and [delivery status](docs/roadmap.md).
+
 `ctxharness fix` finds every assertion where the actual version differs from expected on a specific line and shows what it would change. Pass `--apply` to write the files:
 
 ```
@@ -321,7 +366,7 @@ Scanning CLAUDE.md...
 2 issues found. Run with --suggest-config to generate .ctxharness.yml.
 ```
 
-Since v0.4.2, `scan` follows `@file.md` includes (Claude/Gemini/Cursor convention) up to depth 3. Claims in included files are detected and verified — a drift in `@agents.md` referenced from `CLAUDE.md` is no longer invisible.
+Since v0.4.2, `scan` follows `@file.md` includes (Claude/Gemini/Cursor convention) up to depth 3. Claims in included files are detected and verified, a drift in `@agents.md` referenced from `CLAUDE.md` is no longer invisible.
 
 ```bash
 npx ctxharness scan CLAUDE.md --suggest-config   # generate a starter .ctxharness.yml
@@ -330,9 +375,9 @@ npx ctxharness scan CLAUDE.md --exit-zero        # warn without blocking (hooks 
 
 The detector filters out common false positives: Claude Code slash commands (`/plan`, `/ship`), URL route patterns (`/api/chunk`, `/about/`), and template placeholders (`{slug}`, `[owner]`).
 
-**scan vs run:** `scan` is for discovery — zero-config, always informational. `run` is for enforcement — requires `.ctxharness.yml`, exits 1 on drift.
+**scan vs run:** `scan` discovers claims without configuration and exits 1 when drift is found; `--exit-zero` makes drift warning-only. `run` enforces the assertions in `.ctxharness.yml` and exits 1 on failure. Input errors remain errors in either mode.
 
-**Husky hook** — the `post-merge` template automatically picks the right mode:
+**Husky hook**, the `post-merge` template automatically picks the right mode:
 
 ```bash
 # .husky/post-merge (generated by ctxharness init --hooks)
@@ -359,7 +404,7 @@ Snapshots are saved to `.ctxharness/snapshots/` with timestamp. Commit the lates
 
 ### Trend history
 
-Every `run`, `check`, `score`, and `doctor` execution auto-records a drift score to `~/.ctxharness/history.jsonl`. The `trend` command shows your score trajectory over time:
+`run`, `check`, `score`, and the YAML assertion mode of `doctor` auto-record a drift score to `~/.ctxharness/history.jsonl`. The configuration doctor does not record a trend entry. The `trend` command shows your documentation score history:
 
 ```bash
 ctxharness trend
@@ -386,7 +431,7 @@ ctxharness trend --limit 50     # last 50 runs (default: 20)
 ctxharness trend --project api  # specific project name
 ```
 
-In CI, use `--no-trend` to skip recording — useful when you only want trend data from your main branch, not every PR run:
+In CI, use `--no-trend` to skip recording, useful when you only want trend data from your main branch, not every PR run:
 
 ```bash
 ctxharness run --no-trend
@@ -408,7 +453,7 @@ Typical workflow: run `ctxharness init` once to bootstrap the config, then run `
 
 ### warn status
 
-Assertions can return three states: `pass`, `warn`, or `fail`. `warn` is counted as 0.5 in the score — useful for staleness checks where you want early signal without blocking CI:
+Assertions can return three states: `pass`, `warn`, or `fail`. `warn` is counted as 0.5 in the score, useful for staleness checks where you want early signal without blocking CI:
 
 ```
 ⚠ 1 warn   — claude-md-freshness: 35 commits since last edit
@@ -467,13 +512,13 @@ Use `name: myExtractor` and `scanner: myScanner` in your `.ctxharness.yml` like 
 
 Ready-to-use config templates for common stacks:
 
-| Preset | Path | Covers |
-|--------|------|--------|
-| T3 (Next.js + Prisma + tRPC) | `templates/presets/t3.yml` | node, next, typescript, prisma, trpc versions + model/router counts |
-| Next.js App Router | `templates/presets/next-app-router.yml` | node, next, typescript, react versions + quality assertions |
-| Python | `templates/presets/python.yml` | python version, pyproject.toml deps + quality assertions |
-| Go | `templates/presets/go.yml` | go toolchain version, go.mod deps + quality assertions |
-| Rust | `templates/presets/rust.yml` | crate version, Cargo.toml deps + quality assertions (workspace-aware) |
+| Preset                       | Path                                    | Covers                                                                |
+| ---------------------------- | --------------------------------------- | --------------------------------------------------------------------- |
+| T3 (Next.js + Prisma + tRPC) | `templates/presets/t3.yml`              | node, next, typescript, prisma, trpc versions + model/router counts   |
+| Next.js App Router           | `templates/presets/next-app-router.yml` | node, next, typescript, react versions + quality assertions           |
+| Python                       | `templates/presets/python.yml`          | python version, pyproject.toml deps + quality assertions              |
+| Go                           | `templates/presets/go.yml`              | go toolchain version, go.mod deps + quality assertions                |
+| Rust                         | `templates/presets/rust.yml`            | crate version, Cargo.toml deps + quality assertions (workspace-aware) |
 
 Copy a preset as your `.ctxharness.yml` starting point:
 
@@ -501,73 +546,53 @@ Husky (post-merge, post-checkout): copy from `templates/husky/`.
 
 Claude Code follows a two-file convention for project settings:
 
-- **`settings.json`** — committed to the repo. Contains config that should work for anyone who clones the project: hook definitions, permission rules, shared assertions. Use relative paths for hook commands (`.claude/hooks/my-hook.sh`, not `/Users/yourname/...`).
-- **`settings.local.json`** — gitignored. Contains machine-specific or personal overrides: your own keybindings, local path overrides, personal MCP servers.
+- **`settings.json`**, committed to the repo. Contains config that should work for anyone who clones the project: hook definitions, permission rules, shared assertions. Use relative paths for hook commands (`.claude/hooks/my-hook.sh`, not `/Users/yourname/...`).
+- **`settings.local.json`**, gitignored. Contains machine-specific or personal overrides: your own keybindings, local path overrides, personal MCP servers.
 
-`hookValidity` validates `settings.json`. If a hook command contains an absolute path (e.g. `/Users/yourname/...`), it returns `status: warn` — those paths break for every other contributor.
+`hookValidity` validates `settings.json`. If a hook command contains an absolute path (e.g. `/Users/yourname/...`), it returns `status: warn`, those paths break for every other contributor.
 
 The same layering applies to `CLAUDE.md` files: project-level goes in the repo root (committed), personal goes in `~/.claude/CLAUDE.md` (your machine only). [Claude Code memory docs](https://docs.anthropic.com/en/docs/claude-code/memory).
 
-## Ecosystem Positioning
+## Product boundary
 
-```
-                         FACTUAL ACCURACY
-                                ▲
-                                │
-                                │              ★ ctxharness
-                                │         "Are the claims still true?"
-                                │          paths · scripts · versions
-                                │
-  ──────────────────────────────┼──────────────────────────────────► RUNTIME
-  [vigiles]                     │                                    VERIFICATION
-  TS spec → CLAUDE.md           │
-                                │
-  [AgentLint]                   │     [cclint / cursor-doctor]
-  structural linter             │     syntax & format checks
-                                │
-  [Ruler / rulesync]            │
-  rule distribution             │
-                         STATIC / STRUCTURAL
-```
+CTX Harness compares documented claims with local sources and diagnoses supported configuration declarations. It can check inputs produced by configuration generators or distribution tools without applying their output.
 
-ctxharness does not compete with any of these tools. It validates what they write, compile, or distribute.
+Session collectors, semantic optimization, task-quality judges, controlled cost/cache experiments and candidate application are outside this project. Importing a runtime result only records a caller declaration; it does not run or authenticate that result. The [delivery roadmap](docs/roadmap.md) keeps these responsibilities separate.
 
 ## Taxonomy
 
 ctxharness covers three layers of context engineering testing:
 
-| Layer | What |
-|-------|------|
-| **L1 Doc Drift** | Facts in AI docs vs code reality — file existence, npm scripts, versions, counts, regex captures |
-| **L2 Instruction Quality** | Vague language, positive/negative ratio, token budget, multi-file coherence |
-| **L3 Context Assembly** | Hook validation, skill loading, rule glob validity, coverage ratio |
+| Layer                            | What                                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **L1 Doc Drift**                 | Facts in AI docs vs code reality, file existence, npm scripts, versions, counts, regex captures                      |
+| **L2 Static Instruction Checks** | Vague language, instruction ratios, estimated context size and multi-file coherence                                  |
+| **L3 Configuration Diagnosis**   | Supported instruction, skill, rule, agent, hook and MCP declarations; loading and execution remain separate evidence |
 
-L4 (agent behavior eval) is out of scope — use [Promptfoo](https://promptfoo.dev) or [Braintrust](https://braintrust.dev) for that.
-
-**ctxharness vs Promptfoo**: Promptfoo evals what your agent *says* (output quality). ctxharness evals what your agent *reads* (input freshness). They're complementary, not competing.
+Agent behavior evaluation is outside this scope. A static score, smaller source file or structurally valid configuration does not establish what a model received, task success, saved tokens or latency.
 
 ## Further Reading
 
 The problem ctxharness addresses is well-documented. These are the sources worth reading.
 
-**Context engineering — why accuracy matters**
+**Context engineering, why accuracy matters**
 
-- [Context Engineering](https://simonwillison.net/2025/Jun/27/context-engineering/) — Simon Willison, June 2025. Why "context engineering" is a better term than "prompt engineering" and what it means in practice.
-- [The Rise of Context Engineering](https://www.langchain.com/blog/the-rise-of-context-engineering) — LangChain, June 2025. *"Most of the time when an agent is not performing reliably, the underlying cause is that the appropriate context has not been communicated to the model."*
-- [Context Engineering for Large Codebases](https://packmind.com/context-engineering-ai-coding/context-engineering-large-codebases/) — Packmind, April 2026. Documents "context drift" — stale instruction files referencing deprecated frameworks cause agents to silently generate code using wrong patterns.
+- [Context Engineering](https://simonwillison.net/2025/Jun/27/context-engineering/), Simon Willison, June 2025. Why "context engineering" is a better term than "prompt engineering" and what it means in practice.
+- [The Rise of Context Engineering](https://www.langchain.com/blog/the-rise-of-context-engineering), LangChain, June 2025. _"Most of the time when an agent is not performing reliably, the underlying cause is that the appropriate context has not been communicated to the model."_
+- [Context Engineering for Large Codebases](https://packmind.com/context-engineering-ai-coding/context-engineering-large-codebases/), Packmind, April 2026. Documents "context drift", stale instruction files referencing deprecated frameworks cause agents to silently generate code using wrong patterns.
 
 **What stale context does to LLMs**
 
-- [Contextual Drag: How Errors in the Context Affect LLM Reasoning](https://arxiv.org/abs/2602.04288) — arXiv, Feb 2026. Wrong context causes 10-20% performance drops across 11 models and 8 reasoning tasks. Self-refinement makes it worse, not better.
-- [Knowledge Conflicts for LLMs: A Survey](https://arxiv.org/abs/2403.08319) — EMNLP 2024. Temporal knowledge conflicts (outdated context vs. model knowledge) are a primary source of factually wrong outputs. LLMs may generate code using deprecated function signatures from older library versions.
-- [Lost in the Middle](https://arxiv.org/abs/2307.03172) — Stanford / ACL 2024. Relevant information placed in the middle of long contexts is systematically under-weighted by LLMs. Instruction files that accumulate stale content push critical facts into this dead zone.
-- [Your Agent's Context Is a Junk Drawer](https://www.augmentcode.com/blog/your-agents-context-is-a-junk-drawer) — Augment Code, Feb 2026. Documents "context collapse" — agents forget earlier constraints when context grows stale and unmanaged.
+- [Contextual Drag: How Errors in the Context Affect LLM Reasoning](https://arxiv.org/abs/2602.04288), arXiv, Feb 2026. Wrong context causes 10-20% performance drops across 11 models and 8 reasoning tasks. Self-refinement makes it worse, not better.
+- [Knowledge Conflicts for LLMs: A Survey](https://arxiv.org/abs/2403.08319), EMNLP 2024. Temporal knowledge conflicts (outdated context vs. model knowledge) are a primary source of factually wrong outputs. LLMs may generate code using deprecated function signatures from older library versions.
+- [Lost in the Middle](https://arxiv.org/abs/2307.03172), Stanford / ACL 2024. Relevant information placed in the middle of long contexts is systematically under-weighted by LLMs. Instruction files that accumulate stale content push critical facts into this dead zone.
+- [Your Agent's Context Is a Junk Drawer](https://www.augmentcode.com/blog/your-agents-context-is-a-junk-drawer), Augment Code, Feb 2026. Documents "context collapse", agents forget earlier constraints when context grows stale and unmanaged.
 
 **The CLAUDE.md / AGENTS.md problem specifically**
 
-- [Writing a Good CLAUDE.md](https://www.humanlayer.dev/blog/writing-a-good-claude-md) — HumanLayer, Nov 2025. *"Don't include code snippets — they will become out-of-date quickly."* Direct practitioner warning on content drift.
-- [New Research Reassesses the Value of AGENTS.md Files](https://www.infoq.com/news/2026/03/agents-context-file-value-review/) — InfoQ, March 2026. ETH Zurich study: LLM-generated context files reduce task success by 3% on average and increase inference costs by 20%+. Authors recommend limiting instructions to non-inferable details — exactly the facts ctxharness verifies.
-- [When AGENTS.md Backfires](https://notchrisgroves.com/when-agents-md-backfires/) — Feb 2026. Only 14.5% of agent context files include security instructions. LLM-generated files reduced task success in 5 of 8 evaluation settings.
+- [Writing a Good CLAUDE.md](https://www.humanlayer.dev/blog/writing-a-good-claude-md), HumanLayer, Nov 2025. `"Don't include code snippets — they will become out-of-date quickly."` Direct practitioner warning on content drift.
+- [New Research Reassesses the Value of AGENTS.md Files](https://www.infoq.com/news/2026/03/agents-context-file-value-review/), InfoQ, March 2026. ETH Zurich study: LLM-generated context files reduce task success by 3% on average and increase inference costs by 20%+. Authors recommend limiting instructions to non-inferable details, exactly the facts ctxharness verifies.
+- [When AGENTS.md Backfires](https://notchrisgroves.com/when-agents-md-backfires/), Feb 2026. Only 14.5% of agent context files include security instructions. LLM-generated files reduced task success in 5 of 8 evaluation settings.
 
 <!-- BEGIN GENERATED RELATED PROJECTS -->
 <!-- Source: https://github.com/FlorianBruniaux/FlorianBruniaux/blob/main/ecosystem/projects.json; project: ctxharness -->

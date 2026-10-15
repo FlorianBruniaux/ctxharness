@@ -10,8 +10,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Added
 
-- Explicit tool availability diagnostics using caller-supplied PATH/environment, filesystem resolution only and bounded portable results (#9).
+- Documentation (2026-10-15): add an index, configuration doctor guide and delivery roadmap covering integrated PRs #11 to #14, portable contracts and optional extensions; distinguish source behavior from published releases and static evidence from runtime observations.
 
+- Explicit tool availability diagnostics using caller-supplied PATH/environment, filesystem resolution only and bounded portable results (#9).
 
 - Separate opt-in configuration snapshots and deterministic structural comparisons, without changing documentation snapshot/diff policy (#8).
 
@@ -27,7 +28,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 - Resolve relative imports at every hardlink location while measuring each physical body once (#2, review #11).
 - Require explicit tool lists for all caller-supplied tool options, while defaults preserve legacy doctor behavior; reuse the foundation v1 tools contract (#9, review #14).
-
 
 - Enforce static-only snapshot findings, canonicalize all physical aliases against selected roots and reject special-file snapshot inputs without blocking (#8, review #13).
 
