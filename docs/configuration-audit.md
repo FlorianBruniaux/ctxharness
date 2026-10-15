@@ -140,3 +140,35 @@ Every explicitly supplied tool option requires `--tools`, including platform,
 working directory and symlink policy. Defaults alone preserve historical doctor
 behavior. The extension uses the foundation's shared v1 schemas and projector;
 its portable report is accepted by the foundation-only consumer.
+
+
+## Optional configuration snapshots
+
+`config-snapshot --host claude --scope project --output first.json` explicitly
+creates a separate `ctxharness-config-snapshot` v1 artifact. Output is exclusive,
+private to the current user, and bounded to 8 MiB. Existing files are never
+overwritten. The default scope is project. `config-diff first.json second.json`
+compares two artifacts without rescanning or writing a baseline. It returns 0 for
+valid equal/changed comparisons and 2 for incomparable/invalid inputs. These exit
+codes are independent from documentation score/diff policy.
+
+Core exports the corresponding builder, parser, schema, save/load and comparator.
+Timestamp and enumeration order do not affect structural comparison. Selections
+(including selected root identities) and profile versions must be compatible.
+Unsupported versions have no implicit migration and compare as incomparable.
+Static findings, content hashes, explicit inventory changes and source generation
+are canonicalized. Renames appear as additions/removals; files need not be tracked
+by Git if discovered by the explicit configuration inventory. Missing sources and
+truncated reads retain unresolved/incomplete evidence. Native loading remains
+unknown even when static traversal is complete.
+
+Snapshots contain bounded codes/states and opaque source/content/root digests.
+They contain no raw paths or file contents; digests are not an anonymization
+promise and may reveal equality or permit guessing. Imported runtime results are
+excluded. Reduced static size is not a performance result. No application,
+promotion, benchmark, recovery or baseline update is performed by comparison.
+
+The parser enforces the static finding namespace for imported artifacts as well
+as generated ones. Content identities use selected scope roots and all physical
+aliases retained by the foundation ledger. Global-only snapshots ignore the
+unselected project root. Special-file inputs are rejected without blocking.

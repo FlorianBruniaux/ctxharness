@@ -86,3 +86,21 @@ Schemas and projection come from the foundation `tool-contract` module. The
 extension supplies request validation and filesystem diagnosis only. Both
 `portable-v1.valid.json` and the foundation's `portable-tools-v1.valid.json`
 validate against the same v1 consumer contract.
+
+
+## Optional snapshot artifact
+
+`ConfigSnapshotSchema` / `parseConfigSnapshot` validate the separate
+`ctxharness-config-snapshot` v1 namespace. See
+[the valid snapshot](config-snapshot-v1.valid.json) and
+[the unsupported snapshot](config-snapshot.unsupported.json). Source refs and
+content/root identities are SHA-256 digests, not personal paths or an anonymity
+guarantee. Unsupported versions are rejected without migration. Comparisons
+return incomparable for incompatible selections/profile versions and expose
+incomplete traversal separately from structural equality.
+
+Snapshot findings must have `source: static`; runtime finding codes are rejected
+even if relabeled static. `config-snapshot.runtime.invalid.json` is a rejected
+consumer fixture. Content identities include selected scope and every local
+physical alias, so enumeration order and unselected project roots have no effect.
+Snapshot loading accepts bounded regular files only and never waits on a FIFO.

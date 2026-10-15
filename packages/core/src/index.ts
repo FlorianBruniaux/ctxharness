@@ -95,3 +95,7 @@ export { ToolAvailabilitySchema, PortableToolsSchema, portableToolAvailability }
 export type { ToolAvailability } from './agent-config/tool-contract.js'
 export { diagnoseToolAvailability } from './agent-config/tool-availability.js'
 export type { ToolAvailabilityOptions } from './agent-config/tool-availability.js'
+
+
+export { buildConfigSnapshot, compareConfigSnapshots, saveConfigSnapshot, loadConfigSnapshot, parseConfigSnapshot, ConfigSnapshotSchema } from './agent-config/snapshot.js'
+export type { ConfigSnapshot, ConfigSnapshotDiff } from './agent-config/snapshot.js'

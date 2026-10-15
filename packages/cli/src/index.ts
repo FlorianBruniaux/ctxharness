@@ -20,6 +20,10 @@ import {
   appendTrendRecord,
   populateFromConfig,
   assertionsToYaml,
+  buildConfigSnapshot,
+  saveConfigSnapshot,
+  loadConfigSnapshot,
+  compareConfigSnapshots,
   buildAgentDoctorReport,
   projectPortableReport,
 } from '@florianbruniaux/ctxharness-core'
@@ -1290,6 +1294,39 @@ program
     } catch (e) {
       process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
       process.exit(1)
+    }
+  })
+
+program
+  .command('config-snapshot')
+  .description('Write an explicit structural configuration snapshot')
+  .option('-r, --root <dir>', 'Project root directory', '')
+  .option('--host <host>', 'Agent host: claude | codex | both')
+  .option('--scope <scope>', 'Configuration scope: project | global | both', 'project')
+  .requiredOption('--output <path>', 'New snapshot artifact path (never overwritten)')
+  .action((opts: {root:string;host?:string;scope?:string;output:string}) => {
+    try {
+      const cwd=process.cwd(),root=opts.root!==''?resolve(cwd,opts.root):cwd,home=resolve(homedir())
+      const report=buildAgentDoctorReport({root,home,hosts:parseHosts(opts.host),scopes:parseScopes(opts.scope),includeCoverage:true,includeBudget:true})
+      saveConfigSnapshot(buildConfigSnapshot(report,{home}),resolve(cwd,opts.output))
+      process.stdout.write('Configuration snapshot saved.\n')
+    } catch {
+      process.stderr.write('Error: configuration snapshot could not be created.\n')
+      process.exitCode=1
+    }
+  })
+
+program
+  .command('config-diff <baseline> <candidate>')
+  .description('Compare configuration artifacts without writing a baseline')
+  .action((baseline:string,candidate:string)=>{
+    try {
+      const result=compareConfigSnapshots(loadConfigSnapshot(resolve(baseline)),loadConfigSnapshot(resolve(candidate)))
+      process.stdout.write(JSON.stringify(result,null,2)+'\n')
+      process.exitCode=result.status==='incomparable'?2:0
+    } catch {
+      process.stdout.write('{"status":"incomparable","evidence":"incomplete","reason":"unsupported-or-invalid-input","changes":[],"findingsChanged":false,"generationChanged":false}\n')
+      process.exitCode=2
     }
   })
 
