@@ -1,0 +1,23 @@
+packages/core/src/agent-config/budget.ts
+  s_ff3dff62f4ff19::t_9f804c53ba223d 41,86-87,89-112,120,127,131,188-206
+  s_ff3dff62f4ff19::t_cfdc3fe965402f 207-216,220,223,261-264,269,272-280
+packages/core/src/agent-config/__tests__/budget.test.ts
+  s_ff3dff62f4ff19::t_713289ea1d08f8 2,118-158
+  s_ff3dff62f4ff19::t_42a998a2d10ec2 159-176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eae3847e3c3a69376faa1e1ae62f909cb2ebffe6",
+  "prompts": {},
+  "sessions": {
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
