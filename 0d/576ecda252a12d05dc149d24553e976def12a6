@@ -1,0 +1,37 @@
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_50b405646fab77 24-26
+docs/contracts/README.md
+  s_ff3dff62f4ff19::t_50b405646fab77 61-73
+packages/core/src/agent-config/disclosure.ts
+  s_ff3dff62f4ff19::t_c28bd318bcec02 2,104,128
+  s_ff3dff62f4ff19::t_b274e0ac2572bd 129-130
+packages/core/src/agent-config/report.ts
+  s_ff3dff62f4ff19::t_c28bd318bcec02 11,55,391
+docs/configuration-audit.md
+  s_ff3dff62f4ff19::t_50b405646fab77 107-111
+packages/core/src/index.ts
+  s_ff3dff62f4ff19::t_c28bd318bcec02 94-95
+packages/core/src/agent-config/__tests__/report.test.ts
+  s_ff3dff62f4ff19::t_713289ea1d08f8 112-118
+  s_ff3dff62f4ff19::t_071ca3cb742e68 119-136
+docs/contracts/portable-tools-v1.valid.json
+  s_ff3dff62f4ff19::t_ad7221f95a780a 1-95
+packages/core/src/agent-config/tool-contract.ts
+  s_ff3dff62f4ff19::t_cb7f69b265eafc 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0d576ecda252a12d05dc149d24553e976def12a6",
+  "prompts": {},
+  "sessions": {
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
