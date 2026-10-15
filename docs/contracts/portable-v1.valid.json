@@ -71,5 +71,25 @@
     },
     "files": [],
     "edges": []
+  },
+  "toolAvailability": {
+    "profileVersion": 1,
+    "environment": {
+      "source": "caller-declared",
+      "platform": "posix",
+      "symlinks": "reject"
+    },
+    "results": [
+      {
+        "ref": "t1",
+        "state": "not-found",
+        "reason": "no-path-match",
+        "requirement": "project-requirement",
+        "advice": "review-requirement",
+        "authentication": "unknown",
+        "permissions": "unknown",
+        "pathEntriesChecked": 1
+      }
+    ]
   }
 }

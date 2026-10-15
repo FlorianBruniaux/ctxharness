@@ -71,3 +71,13 @@ are pure data contracts; no filesystem diagnostic runs in the foundations.
 `portable-tools-v1.valid.json` is an extension-bearing v1 consumer fixture.
 Unknown fields, raw tool identities and personal environment data remain rejected
 by the portable validator. The optional extension supplies diagnosis separately.
+
+
+## Optional tool availability extension
+
+`diagnoseToolAvailability` accepts explicit tools and a caller-declared environment.
+`ToolAvailabilitySchema` validates local results; `PortableToolsSchema` and
+`portableToolAvailability` retain only bounded resolution states/reasons, requirement
+kinds, generated `tN` references and unknown authentication/permissions. Neither
+PATH entries, tool names, environment identity nor raw failures are exported.
+The report builder's `toolRequest` option and doctor's `--tools` flag opt in.
