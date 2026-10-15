@@ -1,0 +1,26 @@
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_025424733f5dbd 17-18
+packages/core/src/fs-boundary.ts
+  s_ff3dff62f4ff19::t_025424733f5dbd 72-73,93-100,126-127,135-139,161-163,165
+packages/core/src/__tests__/read-boundary.test.ts
+  s_ff3dff62f4ff19::t_3a9a47f1abe85a 58-68
+  s_ff3dff62f4ff19::t_ee7dbb3ff53867 69-78
+docs/configuration-audit.md
+  s_ff3dff62f4ff19::t_025424733f5dbd 30-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "002fb6e1ac9767adbae8fccbc70d9d69db5b138a",
+  "prompts": {},
+  "sessions": {
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
