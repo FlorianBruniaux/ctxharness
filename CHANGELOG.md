@@ -10,6 +10,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Added
 
+- Separate opt-in configuration snapshots and deterministic structural comparisons, without changing documentation snapshot/diff policy (#8).
+
 - Attributed static context-size ledger with exact UTF-8 bytes, explicitly named historical character estimates, physical deduplication and completeness limits (#7).
 
 - Opt-in declared configuration coverage with source states and explicit unsupported/unobserved surfaces; portable exports include bounded coverage (#6).

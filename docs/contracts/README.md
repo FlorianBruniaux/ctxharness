@@ -71,3 +71,15 @@ are pure data contracts; no filesystem diagnostic runs in the foundations.
 `portable-tools-v1.valid.json` is an extension-bearing v1 consumer fixture.
 Unknown fields, raw tool identities and personal environment data remain rejected
 by the portable validator. The optional extension supplies diagnosis separately.
+
+
+## Optional snapshot artifact
+
+`ConfigSnapshotSchema` / `parseConfigSnapshot` validate the separate
+`ctxharness-config-snapshot` v1 namespace. See
+[the valid snapshot](config-snapshot-v1.valid.json) and
+[the unsupported snapshot](config-snapshot.unsupported.json). Source refs and
+content/root identities are SHA-256 digests, not personal paths or an anonymity
+guarantee. Unsupported versions are rejected without migration. Comparisons
+return incomparable for incompatible selections/profile versions and expose
+incomplete traversal separately from structural equality.
