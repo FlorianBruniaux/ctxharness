@@ -50,3 +50,62 @@ Numeric `--max-tokens` and `--token-budget` args (separate or `=` forms) are
 resource limits. Other token-like options, nonnumeric values, literal keys, bearer
 headers and literal environment fallbacks still undergo credential checks.
 Findings never serialize the matched credential. No MCP server is executed.
+
+## Reusable export
+
+See the [versioned configuration contracts](contracts/README.md) for the local
+report, portable projection, schemas, sanitized fixtures and disclosure limits.
+
+## Declared coverage
+
+`doctor --coverage --host both --scope project --format json` adds a versioned
+coverage extension. Portable exports include it by default. Core callers opt in
+with `includeCoverage: true` or use `buildConfigCoverage(inventory)` directly.
+The legacy report without these options retains its fields.
+
+Items carry source provenance and explicit discovered, declared, statically
+applicable, conditional, shadowed, invalid, outside-selection or unresolved
+states. Root instructions and Codex override shadowing use the existing static
+host profiles. Directory-specific instructions, rule globs, skills and agents
+remain conditional; a rare glob with no current file match remains useful.
+Hooks/MCP declarations do not establish trust or invocation. Project/global
+sources retain their provenance; repeated requested roots are deduplicated.
+Skill checks cover manifest metadata and declared reference existence, not a
+native client's resource loading or effective catalog serialization.
+
+The support inventory explicitly marks memory, Output Styles, plugin manifests,
+command manifests and managed settings unsupported. Codex imports and Claude-style
+rule globs are unsupported by this profile. Release support is unobserved here.
+Resolution remains partial; native client and platform qualification are
+unobserved/unqualified. Every item's loaded, executed and beneficial states remain
+unknown. No session trace is collected or needed to retain a conditional rule.
+
+## Static source sizes
+
+`doctor --budget --host claude --scope project --format json` adds the static
+ledger; portable export includes it by default. Core exposes
+`buildStaticBudget(inventory, limits)` and report option `includeBudget: true`.
+Sizes cover discovered content only, under the same caller-owned read boundaries.
+
+The ledger separately labels exact UTF-8 bytes, JavaScript UTF-16 code units and
+`ceil(codeUnits / 4)`. It preserves the historical character estimate rather than
+substituting bytes/4. Each physical artifact is traversed once, with import edges
+retained. Different files with equal content share a content-group marker; this
+is an equality signal, not proof of duplicate injection.
+
+Attribution separates instruction bodies, conditional rules, skill manifest
+metadata and bodies, agent bodies, hook configuration and discoverable MCP
+metadata. Catalog metadata measures source frontmatter, not native prompt
+serialization. A server declaration reveals no full tool-schema payload. Shared
+physical configurations retain multiple host/scope/layer attributions. Missing,
+non-text, inaccessible and capped content makes the traversal incomplete.
+
+Portable ledgers contain bounded categories, methods, counts and opaque group/file
+references. Local paths and content digests stay local. Hidden prompts, loading and
+request assembly remain unknown. The ledger calculates no saved tokens, money,
+quality, provider cache effect or before/after result.
+
+Import attribution unions every selected parent, including hardlinks shared by
+project and global roots. Physical content is measured once. Local alias paths
+are retained for deterministic structural consumers and omitted from exports.
+Budget validators reject inconsistent segments, references and completeness.

@@ -567,3 +567,50 @@ it('includes malformed hooks and unrelated valid layers with consistent mandator
     expect(report.summary.mandatoryFailures).toBe(report.findings.filter((f: {status: string; mandatory: boolean}) => f.status === 'fail' && f.mandatory).length)
   } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
 })
+
+it('exports bounded portable JSON and suppresses raw strings on export failures', () => {
+  const root = makeTempDir('ctx-portable-cli-')
+  const home = makeTempDir('ctx-portable-home-')
+  try {
+    write(join(root, '.mcp.json'), JSON.stringify({ mcpServers: { 'HOSTILE-private-name': { args: ['--api-key=HOSTILE-synthetic-secret'] } } }))
+    const result = invoke(root, home, ['doctor', '--host', 'claude', '--scope', 'project', '--export', 'portable'])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe('')
+    expect(JSON.parse(result.stdout).kind).toBe('ctxharness-portable')
+    expect(result.stdout).not.toContain('HOSTILE')
+    expect(result.stdout).not.toContain(root)
+    const bad = invoke(root, home, ['doctor', '--host', 'HOSTILE-secret', '--export', 'portable'])
+    expect(bad.status).toBe(1)
+    expect(bad.stdout).toBe('')
+    expect(bad.stderr).toBe('{"schemaVersion":1,"kind":"ctxharness-export-error","code":"export-failed"}\n')
+    const parserFailure = invoke(root, home, ['doctor', '--export', 'portable', '--HOSTILE-private-option'])
+    expect(parserFailure.status).toBe(1)
+    expect(parserFailure.stdout).toBe('')
+    expect(parserFailure.stderr).not.toContain('HOSTILE')
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
+})
+
+it('keeps legacy fields unchanged and exposes opt-in coverage in JSON and human output', () => {
+  const root=makeTempDir('ctx-coverage-cli-'),home=makeTempDir('ctx-coverage-cli-home-')
+  try {
+    write(join(root,'CLAUDE.md'),'fixture')
+    const legacy=invoke(root,home,['doctor','--host','claude','--scope','project','--format','json'])
+    expect(JSON.parse(legacy.stdout)).not.toHaveProperty('coverage')
+    const json=invoke(root,home,['doctor','--host','claude','--scope','project','--coverage','--format','json'])
+    expect(JSON.parse(json.stdout).coverage.resolution).toBe('partial')
+    const human=invoke(root,home,['doctor','--host','claude','--scope','project','--coverage'])
+    expect(human.stdout).toContain('Coverage    partial')
+  } finally {rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})
+it('reports Unicode static bytes and named estimates through the real CLI',()=>{
+  const root=makeTempDir('ctx-budget-cli-'),home=makeTempDir('ctx-budget-cli-home-')
+  try{
+    write(join(root,'CLAUDE.md'),'é😊')
+    const result=invoke(root,home,['doctor','--host','claude','--scope','project','--budget','--format','json'])
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+    const b=JSON.parse(result.stdout).budget
+    expect(b.totals).toEqual({utf8Bytes:6,utf16CodeUnits:3,estimatedTokens:1})
+    expect(b.methods.estimate).toBe('utf16-code-units-div-4-ceil')
+  }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})

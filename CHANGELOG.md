@@ -10,13 +10,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Added
 
+- Attributed static context-size ledger with exact UTF-8 bytes, explicitly named historical character estimates, physical deduplication and completeness limits (#7).
+
+- Opt-in declared configuration coverage with source states and explicit unsupported/unobserved surfaces; portable exports include bounded coverage (#6).
+
+- Reusable validated doctor v1 report and separately versioned portable export, with closed vocabularies and importable contract fixtures (#5).
+
 - `doctor` hooks layer: `hook-event-unknown` checks event names per host (33 Claude Code events, 12 Codex events), `hook-matcher-ignored` flags a matcher on an event that ignores it, and `hook-handler-unsupported` flags a handler type the event does not run (Codex `prompt` and `agent`, Claude `agent` on `PermissionRequest`). All three report `warn`.
 
 ### Fixed
 
 - Resolve relative imports at every hardlink location while measuring each physical body once (#2, review #11).
+- Validate static ledger segments, references and completeness; retain every import attribution and local physical alias (#7, review #12).
+- Share the typed optional tools data contract in foundation v1 so extension exports remain consumable without enabling tool diagnosis (#5, review #14).
 
 - Reject special files without blocking and traverse imports in breadth-first order so physical deduplication preserves all descendants reachable within the depth cap (#2, review #11).
+- Keep static budgets incomplete when a discovered instruction disappears or becomes unreadable after inventory (#7).
 
 - Treat only exact numeric `--max-tokens` and `--token-budget` MCP arguments as resource limits; preserve literal credential and environment-fallback detection (#4).
 

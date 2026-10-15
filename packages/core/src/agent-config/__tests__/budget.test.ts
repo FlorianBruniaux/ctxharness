@@ -1,0 +1,176 @@
+import { afterEach, expect, it } from 'vitest'
+import { linkSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import * as core from '../../index.js'
+const dirs: string[] = []
+afterEach(() => {
+  for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
+})
+function write(path: string, content: string) {
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, content)
+}
+function fixture() {
+  const root = mkdtempSync(join(tmpdir(), 'ctx-budget-'))
+  dirs.push(root)
+  return root
+}
+function budget(root: string, limits: object = {}) {
+  const fn = Reflect.get(core, 'buildStaticBudget') as (
+    inventory: unknown,
+    limits: object,
+  ) => {
+    complete: boolean
+    totals: { utf8Bytes: number; utf16CodeUnits: number; estimatedTokens: number }
+    files: { path: string; contentGroup: string; segments: { category: string }[] }[]
+    edges: { status: string }[]
+  }
+  expect(fn).toBeTypeOf('function')
+  return fn(
+    core.inventoryAgentConfig({ root, home: root, hosts: ['claude'], scopes: ['project'] }),
+    limits,
+  )
+}
+it('labels exact UTF-8 bytes separately from the historical UTF-16 chars/4 estimate', () => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), 'é😊')
+  expect(budget(root).totals).toEqual({ utf8Bytes: 6, utf16CodeUnits: 3, estimatedTokens: 1 })
+})
+it('deduplicates physical files while retaining edges and distinct equal content', () => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), '@a.md @alias.md @b.md')
+  write(join(root, 'a.md'), 'same')
+  write(join(root, 'b.md'), 'same')
+  symlinkSync(join(root, 'a.md'), join(root, 'alias.md'))
+  const b = budget(root)
+  expect(b.files).toHaveLength(3)
+  expect(b.files[1]?.contentGroup).toBe(b.files[2]?.contentGroup)
+  expect(b.edges.filter((e) => e.status === 'duplicate')).toHaveLength(1)
+  expect(b.totals).toEqual({ utf8Bytes: 29, utf16CodeUnits: 29, estimatedTokens: 8 })
+})
+it('separates conditional rules, skill metadata/body and discoverable MCP metadata', () => {
+  const root = fixture()
+  write(join(root, '.claude/rules/rare.md'), '---\npaths: ["rare/**"]\n---\nFrench français')
+  write(
+    join(root, '.claude/skills/review/SKILL.md'),
+    '---\nname: review\ndescription: Review code\n---\nBody code const x = 1',
+  )
+  write(join(root, '.mcp.json'), JSON.stringify({ mcpServers: { fixture: { command: 'inert' } } }))
+  const categories = budget(root).files.flatMap((f) => f.segments.map((s) => s.category))
+  expect(categories).toContain('conditional-rule')
+  expect(categories).toContain('skill-catalog-metadata')
+  expect(categories).toContain('skill-body')
+  expect(categories).toContain('mcp-discoverable-metadata')
+})
+it('marks cycles, unavailable imports and caps honestly without manufacturing savings', () => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), '@a.md @missing.md')
+  write(join(root, 'a.md'), '@CLAUDE.md')
+  const b = budget(root)
+  expect(b.complete).toBe(false)
+  expect(b.edges.some((e) => e.status === 'duplicate')).toBe(true)
+  expect(b.edges.some((e) => e.status === 'unavailable')).toBe(true)
+  expect(budget(root, { maxFiles: 1 }).edges.some((e) => e.status === 'file-limit')).toBe(true)
+  expect(budget(root, { maxBytes: 1 }).edges.some((e) => e.status === 'byte-limit')).toBe(true)
+  expect(budget(root, { maxDepth: 1 }).edges.some((e) => e.status === 'depth-limit')).toBe(true)
+})
+it('keeps portable measurements path-free and rejects inconsistent totals', () => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), 'é😊')
+  const report = core.buildAgentDoctorReport({
+    root,
+    home: root,
+    hosts: ['claude'],
+    scopes: ['project'],
+    includeBudget: true,
+  })
+  const portable = core.projectPortableReport(report)
+  expect(portable.budget?.methods.estimate).toBe('utf16-code-units-div-4-ceil')
+  expect(portable.budget?.totals.utf8Bytes).toBe(6)
+  expect(JSON.stringify(portable)).not.toContain(root)
+  expect(JSON.stringify(portable)).not.toContain('contentDigest')
+  expect(() =>
+    core.parsePortableReport({
+      ...portable,
+      budget: {
+        ...portable.budget,
+        totals: { utf8Bytes: 99, utf16CodeUnits: 3, estimatedTokens: 1 },
+      },
+    }),
+  ).toThrow()
+})
+
+it('marks a discovered source that disappears after inventory incomplete', () => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), 'inert')
+  const inventory = core.inventoryAgentConfig({
+    root,
+    home: root,
+    hosts: ['claude'],
+    scopes: ['project'],
+  })
+  rmSync(join(root, 'CLAUDE.md'))
+  const ledger = core.buildStaticBudget(inventory)
+  expect(ledger.complete).toBe(false)
+  expect(ledger.edges.some((e) => e.status === 'unavailable')).toBe(true)
+})
+
+it.each([
+  'empty-segments',
+  'segment-sum',
+  'dangling-edge',
+  'duplicate-file',
+  'duplicate-physical',
+  'blocked-complete',
+])('rejects an internally inconsistent portable budget: %s', (defect) => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), 'inert')
+  const b = core.portableBudget(
+    core.buildStaticBudget(
+      core.inventoryAgentConfig({ root, home: root, hosts: ['claude'], scopes: ['project'] }),
+    ),
+  )
+  const file = b.files[0]!
+  if (defect === 'empty-segments') file.segments = []
+  if (defect === 'segment-sum')
+    file.segments[0]!.measurement = { utf8Bytes: 1, utf16CodeUnits: 1, estimatedTokens: 1 }
+  if (defect === 'dangling-edge') b.edges.push({ status: 'duplicate', to: 'p999' })
+  if (defect === 'blocked-complete') b.edges.push({ status: 'outside-boundary' })
+  if (defect === 'duplicate-file' || defect === 'duplicate-physical') {
+    b.files.push({
+      ...file,
+      ...(defect === 'duplicate-physical' ? { ref: 'b2' } : { physicalRef: 'p2' }),
+    })
+    b.totals = { utf8Bytes: 10, utf16CodeUnits: 10, estimatedTokens: 3 }
+  }
+  expect(core.PortableBudgetSchema.safeParse(b).success).toBe(false)
+})
+
+it('retains every imported scope attribution and local physical alias', () => {
+  const root = fixture(),
+    home = fixture()
+  write(join(root, 'CLAUDE.md'), '@shared.md')
+  write(join(root, 'shared.md'), 'inert')
+  write(join(home, '.claude/CLAUDE.md'), '@shared.md')
+  linkSync(join(root, 'shared.md'), join(home, '.claude/shared.md'))
+  const b = core.buildStaticBudget(
+    core.inventoryAgentConfig({ root, home, hosts: ['claude'], scopes: ['project', 'global'] }),
+  )
+  const file = b.files.find((f) => f.path.endsWith('/shared.md'))!
+  expect(file.attribution.map((a) => a.scope).sort()).toEqual(['global', 'project'])
+  expect(Reflect.get(file, 'paths')).toHaveLength(2)
+  expect(JSON.stringify(core.portableBudget(b))).not.toContain('paths')
+})
+
+it('keeps non-text rejection edges valid without dangling physical references', () => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), '@binary.md')
+  write(join(root, 'binary.md'), '\0inert')
+  const b = core.buildStaticBudget(
+    core.inventoryAgentConfig({ root, home: root, hosts: ['claude'], scopes: ['project'] }),
+  )
+  expect(b.complete).toBe(false)
+  expect(b.edges.find((e) => e.status === 'non-text')?.to).toBeUndefined()
+  expect(core.PortableBudgetSchema.safeParse(core.portableBudget(b)).success).toBe(true)
+})

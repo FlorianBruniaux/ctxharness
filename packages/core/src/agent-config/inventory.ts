@@ -84,6 +84,7 @@ function unavailableRootFinding(root: AgentConfigRoot): AgentConfigFinding {
 
 function discoverSkillPaths(root: AgentConfigRoot, findings: AgentConfigFinding[]): string[] {
   const skills: string[] = []
+  const visited = new Set<string>()
   const visit = (directory: string): void => {
     const resolvedDirectory = resolveExistingPath(directory, root.boundary)
     if (resolvedDirectory === null) {
@@ -91,6 +92,8 @@ function discoverSkillPaths(root: AgentConfigRoot, findings: AgentConfigFinding[
       return
     }
 
+    if (visited.has(resolvedDirectory)) return
+    visited.add(resolvedDirectory)
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const candidate = resolve(directory, entry.name)
       let stats
@@ -121,9 +124,9 @@ function resolveRoots(options: AgentConfigInventoryOptions, root: string, home: 
   const scopes = options.scopes ?? DEFAULT_SCOPES
   const roots: AgentConfigRoot[] = []
 
-  for (const scope of scopes) {
+  for (const scope of new Set(scopes)) {
     const boundary = scope === 'project' ? root : home
-    for (const host of hosts) {
+    for (const host of new Set(hosts)) {
       if (host === 'claude') roots.push(...resolveClaudeRoots(scope, boundary))
       else roots.push(...resolveCodexRoots(scope, boundary))
     }

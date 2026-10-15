@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 999,
+  "kind": "ctxharness-portable",
+  "profileVersion": 1,
+  "selection": {
+    "hosts": ["claude"],
+    "scopes": ["project"]
+  },
+  "runtimeEvidence": "not-provided",
+  "summary": {
+    "pass": 1,
+    "warn": 0,
+    "fail": 0,
+    "unknown": 0,
+    "notApplicable": 0,
+    "mandatoryFailures": 0
+  },
+  "findings": [
+    {
+      "ref": "f1",
+      "code": "instruction-valid",
+      "status": "pass",
+      "source": "static",
+      "mandatory": false,
+      "host": "claude",
+      "scope": "project",
+      "layer": "instructions"
+    }
+  ]
+}
