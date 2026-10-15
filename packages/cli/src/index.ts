@@ -15,6 +15,7 @@ import {
   findLatestSnapshot,
   diffSnapshots,
   scanFile,
+  scanFileWithCoverage,
   detectIncludes,
   appendTrendRecord,
   populateFromConfig,
@@ -1263,15 +1264,22 @@ program
       process.stdout.write(`Scanning ${targetFile} for verifiable claims...\n\n`)
 
       let results: HeuristicResult[]
+      let complete = true
       try {
-        results = scanFile(filePath, root)
+        const scanned = scanFileWithCoverage(filePath, root)
+        results = scanned.results
+        complete = scanned.coverage.complete
+        if (!complete) {
+          const reasons = [...new Set(scanned.coverage.edges.filter(e => e.status !== 'included' && e.status !== 'duplicate').map(e => e.status))]
+          process.stdout.write('Incomplete import coverage: ' + reasons.join(', ') + '\n')
+        }
       } catch (err) {
         process.stderr.write(`Error reading file: ${err instanceof Error ? err.message : String(err)}\n`)
         process.exit(1)
       }
 
       if (results.length === 0) {
-        const includes = detectIncludes(filePath)
+        const includes = complete ? detectIncludes(filePath) : []
         if (includes.length > 0) {
           process.stdout.write(`No verifiable claims found directly in ${targetFile}.\n`)
           process.stdout.write(`Included files were also scanned: ${includes.join(', ')}\n`)

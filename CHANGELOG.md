@@ -14,6 +14,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Fixed
 
+- Bound context imports to caller-selected roots before reading; deduplicate physical files and expose incomplete traversal instead of claiming a complete static budget (#2).
+
 - `doctor` rules layer: `paths` written as a comma-separated string is accepted, and unparsable rule frontmatter reports `claude-rule-frontmatter-invalid` as `warn`, since Claude Code loads such a rule without `paths`.
 - `doctor` skills layer: `name` is optional for Claude Code skills (the folder name applies) and required for Codex; name collisions use the effective name; a Claude skill without `description` reports `skill-description-missing` as `warn`.
 - `doctor` agents layer: an empty body is accepted, Markdown without `name` reports `agent-documentation` as `not-applicable`, and frontmatter that strict YAML rejects but that still exposes `name` and `description` lines reports `agent-frontmatter-nonstrict` as `warn` instead of a mandatory failure.
