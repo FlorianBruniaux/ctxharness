@@ -32,6 +32,11 @@ function containsLiteralSecret(value: unknown, key = '', protectedEnvReference =
   if (Array.isArray(value)) {
     for (let index = 0; index < value.length; index++) {
       const item = value[index]
+      // Only these exact numeric resource options are non-credential arguments.
+      if (key === 'args' && typeof item === 'string') {
+        if (/^--(?:max-tokens|token-budget)=[0-9]+$/.test(item)) continue
+        if (/^--(?:max-tokens|token-budget)$/.test(item) && typeof value[index + 1] === 'string' && /^[0-9]+$/.test(value[index + 1] as string)) { index++; continue }
+      }
       if (
         typeof item === 'string' &&
         SECRET_FIELD.test(item) &&

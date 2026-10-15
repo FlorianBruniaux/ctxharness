@@ -118,7 +118,7 @@ export async function run(config: CtxharnessConfig, root: string): Promise<RunRe
     if (isStandalone) {
       // Run once with root — scanner resolves its own targets
       try {
-        results = runScanner(assertion.scanner, root, expected, mergedScannerArgs)
+        results = runScanner(assertion.scanner, root, expected, mergedScannerArgs, { allowedRoots: [root], maxDepth: 3 })
       } catch (e) {
         error = e instanceof Error ? e.message : String(e)
         return { id: assertion.id, label: assertion.label ?? assertion.id, expected, error, results: [], status: 'error' }
@@ -142,6 +142,7 @@ export async function run(config: CtxharnessConfig, root: string): Promise<RunRe
             filePath,
             expected,
             mergedScannerArgs,
+            { allowedRoots: [root], maxDepth: 3 },
           )
 
           // Annotate generated-file results with a note pointing to the source

@@ -77,3 +77,7 @@ export type {
   AgentConfigInventory,
   AgentConfigInventoryOptions,
 } from './agent-config/types.js'
+
+export { readContext } from './fs-boundary.js'
+export type { ReadPolicy, ReadReason, ContextRead, ContextFile, ImportEdge } from './fs-boundary.js'
+export { scanFileWithCoverage } from './scan.js'

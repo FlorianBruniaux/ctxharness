@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { dirname, resolve, join, basename } from 'node:path'
 import { load } from 'js-yaml'
+import { readContext, type ReadPolicy } from '../fs-boundary.js'
 import type { ScannerName } from '../config.js'
 import type { AgentConfigFinding, AgentConfigInventory } from '../agent-config/types.js'
 import { scanInstructions } from '../agent-config/scanners/instructions.js'
@@ -27,6 +28,7 @@ export type ScannerFn = (
   filePath: string,
   expected: string,
   args: Record<string, unknown>,
+  policy?: ReadPolicy,
 ) => ScanResult[]
 
 // Re-export so consumers don't need to import config separately
@@ -491,47 +493,30 @@ function negativeConstraintDensity(
 // ─── 9. contextBudget ────────────────────────────────────────────────────────
 
 /**
- * Measures a file's token footprint and fails if it exceeds a threshold.
+ * Estimates static content using UTF-16 code units / 4 against a local policy.
  * Designed to be run over .claude/rules/**\/*.md or CLAUDE.md to catch bloated
- * context files before they degrade agent quality.
+ * context files. No native loading or quality is measured.
  *
  * Args:
  *   maxTokens?: number    — threshold in tokens (default 3000)
  *   followImports?: boolean — follow @file.md references and include their sizes
  *                             (resolves up to depth 3, relative to the scanned file)
  *
- * Token estimate: chars ÷ 4 (conservative average for English/code mix).
+ * Historical estimate: Math.ceil(content.length / 4), not measured tokens.
  * Returns one result.
  */
-function collectChars(filePath: string, visited: Set<string>, depth: number): number {
-  if (depth <= 0 || visited.has(filePath) || !existsSync(filePath)) return 0
-  visited.add(filePath)
-
-  const content = readFileSync(filePath, 'utf-8')
-  let total = content.length
-
-  const dir = dirname(filePath)
-  const importPattern = /@([\w./\-]+\.md)/g
-  let match: RegExpExecArray | null
-  while ((match = importPattern.exec(content)) !== null) {
-    const imported = resolve(dir, match[1]!)
-    total += collectChars(imported, visited, depth - 1)
-  }
-
-  return total
-}
-
 function contextBudget(
   filePath: string,
   _expected: string,
   args: Record<string, unknown>,
+  policy?: ReadPolicy,
 ): ScanResult[] {
   const maxTokens = typeof args['maxTokens'] === 'number' ? args['maxTokens'] : 3000
   const followImports = args['followImports'] === true
 
-  const totalChars = followImports
-    ? collectChars(filePath, new Set(), 3)
-    : readFileSync(filePath, 'utf-8').length
+  const collected = readContext([filePath], policy ?? { allowedRoots: [dirname(filePath)], maxDepth: 3 }, followImports)
+  const totalChars = collected.files.reduce((sum, file) => sum + file.content.length, 0)
+  const reasons = [...new Set(collected.edges.filter((edge) => edge.status !== 'included' && edge.status !== 'duplicate').map((edge) => edge.status))]
 
   const estimatedTokens = Math.ceil(totalChars / 4)
   const suffix = followImports ? ' (incl. imports)' : ''
@@ -542,7 +527,8 @@ function contextBudget(
       line: 0,
       actual: `${estimatedTokens} tokens${suffix}`,
       expected: `≤${maxTokens} tokens`,
-      status: estimatedTokens <= maxTokens ? 'pass' : 'fail',
+      status: estimatedTokens > maxTokens ? 'fail' : collected.complete ? 'pass' : 'warn',
+      ...(!collected.complete ? { note: 'Incomplete static coverage: ' + reasons.join(', ') } : {}),
     },
   ]
 }
@@ -1011,10 +997,11 @@ export function runScanner(
   filePath: string,
   expected: string,
   args: Record<string, unknown>,
+  policy?: ReadPolicy,
 ): ScanResult[] {
   const fn = SCANNERS[name]
   if (fn === undefined) throw new Error(`Unknown scanner: "${name}"`)
-  return fn(filePath, expected, args)
+  return fn(filePath, expected, args, policy)
 }
 
 /** Runs every native agent-configuration scanner while retaining inventory evidence. */

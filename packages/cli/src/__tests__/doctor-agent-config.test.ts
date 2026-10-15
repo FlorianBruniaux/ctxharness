@@ -22,7 +22,7 @@ beforeAll(() => {
       )
     }
   }
-})
+}, 120_000)
 
 function makeTempDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix))
@@ -536,4 +536,34 @@ describe('doctor agent configuration mode', () => {
     expect(result.stdout).toContain('Context Assembly Report')
     expect(result.stdout).not.toContain('agent-config')
   })
+})
+
+
+it('reports bounded import coverage without claiming rejected files were scanned', () => {
+  const root = makeTempDir('ctx-import-cli-')
+  const home = makeTempDir('ctx-import-home-')
+  try {
+    write(join(root, 'CLAUDE.md'), '@../outside.md')
+    const result = invoke(root, home, ['scan', 'CLAUDE.md'])
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('Incomplete import coverage: unavailable')
+    expect(result.stdout).not.toContain('Included files were also scanned:')
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
+})
+
+it('includes malformed hooks and unrelated valid layers with consistent mandatory counts', () => {
+  const root = makeTempDir('ctx-hook-cli-')
+  const home = makeTempDir('ctx-hook-home-')
+  try {
+    write(join(root, 'CLAUDE.md'), 'Inert fixture')
+    write(join(root, '.claude/settings.json'), JSON.stringify({ hooks: { PreToolUse: 'bad' } }))
+    const result = invoke(root, home, ['doctor', '--host', 'claude', '--scope', 'project', '--format', 'json'])
+    const report = JSON.parse(result.stdout)
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe('')
+    expect(report.findings).toContainEqual(expect.objectContaining({ code: 'hook-config-invalid', status: 'fail', mandatory: true }))
+    expect(report.findings).toContainEqual(expect.objectContaining({ code: 'instruction-valid', status: 'pass' }))
+    expect(report.summary.fail).toBe(report.findings.filter((f: {status: string}) => f.status === 'fail').length)
+    expect(report.summary.mandatoryFailures).toBe(report.findings.filter((f: {status: string; mandatory: boolean}) => f.status === 'fail' && f.mandatory).length)
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
 })

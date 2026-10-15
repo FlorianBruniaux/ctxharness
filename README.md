@@ -585,3 +585,5 @@ These projects extend the workflow without duplicating this tool:
 ## License
 
 MIT
+
+Configuration audit scope and import boundaries: [configuration audit](docs/configuration-audit.md).
