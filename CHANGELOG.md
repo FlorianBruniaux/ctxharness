@@ -21,6 +21,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 ### Fixed
 
 - Resolve relative imports at every hardlink location while measuring each physical body once (#2, review #11).
+- Validate static ledger segments, references and completeness; retain every import attribution and local physical alias (#7, review #12).
+- Share the typed optional tools data contract in foundation v1 so extension exports remain consumable without enabling tool diagnosis (#5, review #14).
 
 - Reject special files without blocking and traverse imports in breadth-first order so physical deduplication preserves all descendants reachable within the depth cap (#2, review #11).
 - Keep static budgets incomplete when a discovered instruction disappears or becomes unreadable after inventory (#7).

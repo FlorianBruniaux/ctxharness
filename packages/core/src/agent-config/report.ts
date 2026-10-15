@@ -8,6 +8,7 @@ import type { AgentConfigFinding, AgentHost, AgentConfigScope } from './types.js
 import { z } from 'zod'
 import { buildStaticBudget, StaticBudgetSchema, type StaticBudget } from './budget.js'
 import { buildConfigCoverage, ConfigCoverageSchema, type ConfigCoverage } from './coverage.js'
+import { ToolAvailabilitySchema, type ToolAvailability } from './tool-contract.js'
 
 export interface AgentDoctorOptions {
   includeCoverage?: boolean
@@ -51,6 +52,7 @@ interface RuntimeEvidenceLoadResult {
 }
 
 export interface AgentDoctorReport {
+  toolAvailability?: ToolAvailability
   coverage?: ConfigCoverage
   budget?: StaticBudget
   schemaVersion: 1
@@ -386,6 +388,7 @@ export const AgentDoctorReportSchema = z
       .nullable(),
     coverage: ConfigCoverageSchema.optional(),
     budget: StaticBudgetSchema.optional(),
+    toolAvailability: ToolAvailabilitySchema.optional(),
     summary: SummarySchema,
     findings: z.array(DoctorFindingSchema).max(100_000),
   })

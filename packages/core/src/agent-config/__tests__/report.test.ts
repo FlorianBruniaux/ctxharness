@@ -109,3 +109,28 @@ it('ships importable valid, invalid and unsupported contract fixtures', async ()
   expect(() => parse(fixture('portable-v1.invalid.json'))).toThrow()
   expect(() => parse(fixture('portable.unsupported.json'))).toThrow()
 })
+
+it('consumes the optional tool extension through the foundation v1 contract', async () => {
+  const { readFileSync } = await import('node:fs')
+  const fixture = JSON.parse(
+    readFileSync(
+      new URL('../../../../../docs/contracts/portable-tools-v1.valid.json', import.meta.url),
+      'utf8',
+    ),
+  ) as Record<string, unknown>
+  expect(core.parsePortableReport(fixture)).toHaveProperty('toolAvailability')
+  expect(() =>
+    core.parsePortableReport({
+      ...fixture,
+      toolAvailability: {
+        ...(fixture.toolAvailability as object),
+        environment: {
+          source: 'caller-declared',
+          platform: 'posix',
+          symlinks: 'reject',
+          identity: '/private/secret',
+        },
+      },
+    }),
+  ).toThrow()
+})

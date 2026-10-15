@@ -58,3 +58,16 @@ files carry bounded segments/attributions and opaque physical/content group refs
 raw paths, content and content digests are excluded. `StaticBudgetSchema` and
 `PortableBudgetSchema` reject inconsistent totals and estimates. `complete` refers
 to bounded traversal, not complete model request observation.
+
+Budget validation also checks segment sums, unique file/physical references,
+retained edge targets and the consistency of `complete` with traversal outcomes.
+Non-text sources remain explicit incomplete edges without dangling references.
+Local ledgers retain discovered physical aliases in `paths` and union attribution
+across all import parents. The portable projector omits aliases and paths.
+
+The foundation v1 validators reserve a typed optional `toolAvailability` field.
+`ToolAvailabilitySchema`, `PortableToolsSchema` and `portableToolAvailability`
+are pure data contracts; no filesystem diagnostic runs in the foundations.
+`portable-tools-v1.valid.json` is an extension-bearing v1 consumer fixture.
+Unknown fields, raw tool identities and personal environment data remain rejected
+by the portable validator. The optional extension supplies diagnosis separately.

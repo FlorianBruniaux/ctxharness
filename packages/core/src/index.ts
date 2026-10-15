@@ -91,3 +91,5 @@ export type { ConfigCoverage } from './agent-config/coverage.js'
 
 export { buildStaticBudget, StaticBudgetSchema, portableBudget, PortableBudgetSchema } from './agent-config/budget.js'
 export type { StaticBudget } from './agent-config/budget.js'
+export { ToolAvailabilitySchema, PortableToolsSchema, portableToolAvailability } from './agent-config/tool-contract.js'
+export type { ToolAvailability } from './agent-config/tool-contract.js'

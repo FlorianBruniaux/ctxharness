@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { portableToolAvailability, PortableToolsSchema } from './tool-contract.js'
 import { portableBudget, PortableBudgetSchema } from './budget.js'
 import { portableCoverage, PortableCoverageSchema } from './coverage.js'
 import {
@@ -100,6 +101,7 @@ export const PortableReportSchema = z
     profileVersion: z.literal(1),
     coverage: PortableCoverageSchema.optional(),
     budget: PortableBudgetSchema.optional(),
+    toolAvailability: PortableToolsSchema.optional(),
     selection: SelectionSchema,
     summary: SummarySchema,
     runtimeEvidence: z.enum(['not-provided', 'unavailable', 'timestamped', 'declared-signature']),
@@ -123,6 +125,9 @@ export function projectPortableReport(value: unknown): PortableReport {
     schemaVersion: 1,
     kind: 'ctxharness-portable',
     profileVersion: 1,
+    ...(report.toolAvailability === undefined
+      ? {}
+      : { toolAvailability: portableToolAvailability(report.toolAvailability) }),
     ...(report.budget === undefined ? {} : { budget: portableBudget(report.budget) }),
     ...(report.coverage === undefined ? {} : { coverage: portableCoverage(report.coverage) }),
     selection: report.selection,

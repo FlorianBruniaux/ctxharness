@@ -104,3 +104,8 @@ Portable ledgers contain bounded categories, methods, counts and opaque group/fi
 references. Local paths and content digests stay local. Hidden prompts, loading and
 request assembly remain unknown. The ledger calculates no saved tokens, money,
 quality, provider cache effect or before/after result.
+
+Import attribution unions every selected parent, including hardlinks shared by
+project and global roots. Physical content is measured once. Local alias paths
+are retained for deterministic structural consumers and omitted from exports.
+Budget validators reject inconsistent segments, references and completeness.
