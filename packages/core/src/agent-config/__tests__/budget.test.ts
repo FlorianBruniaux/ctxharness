@@ -100,3 +100,18 @@ it('keeps portable measurements path-free and rejects inconsistent totals', () =
     }),
   ).toThrow()
 })
+
+it('marks a discovered source that disappears after inventory incomplete', () => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), 'inert')
+  const inventory = core.inventoryAgentConfig({
+    root,
+    home: root,
+    hosts: ['claude'],
+    scopes: ['project'],
+  })
+  rmSync(join(root, 'CLAUDE.md'))
+  const ledger = core.buildStaticBudget(inventory)
+  expect(ledger.complete).toBe(false)
+  expect(ledger.edges.some((e) => e.status === 'unavailable')).toBe(true)
+})

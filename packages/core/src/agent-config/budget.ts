@@ -127,7 +127,15 @@ export function buildStaticBudget(
       (i) =>
         i.states.includes('discovered') &&
         !i.states.includes('outside-selection') &&
-        (i.layer !== 'instructions' || i.states.includes('declared')),
+        (i.layer !== 'instructions' ||
+          i.states.includes('declared') ||
+          inventory.capabilities.some(
+            (c) =>
+              c.layer === 'instructions' &&
+              c.host === i.host &&
+              c.scope === i.scope &&
+              c.path === i.path,
+          )),
     )
     .filter((i) => {
       try {

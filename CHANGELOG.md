@@ -23,6 +23,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 - Resolve relative imports at every hardlink location while measuring each physical body once (#2, review #11).
 
 - Reject special files without blocking and traverse imports in breadth-first order so physical deduplication preserves all descendants reachable within the depth cap (#2, review #11).
+- Keep static budgets incomplete when a discovered instruction disappears or becomes unreadable after inventory (#7).
 
 - Treat only exact numeric `--max-tokens` and `--token-budget` MCP arguments as resource limits; preserve literal credential and environment-fallback detection (#4).
 
