@@ -1,0 +1,43 @@
+CHANGELOG.md
+  s_ae085abdb4f4d0::t_c37184c2d802d1 17-18
+docs/configuration-audit.md
+  s_ae085abdb4f4d0::t_9edbf5e8352f68 30-39
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_ae085abdb4f4d0::t_dd6c99d326f0e4 553-569
+packages/core/src/agent-config/__tests__/hook-shape.test.ts
+  s_ff3dff62f4ff19::t_8f4010f4a72f34 1-40
+packages/core/src/agent-config/scanners/hooks.ts
+  s_9e80b85afcc43a::t_c1d0c87dcdd66c 59,149,161-164,169-171,176,181-184,200-210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf89fc181ec2c8cefbe94bb3d389b23b6f8ac7de",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
