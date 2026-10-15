@@ -93,5 +93,9 @@ export { buildStaticBudget, StaticBudgetSchema, portableBudget, PortableBudgetSc
 export type { StaticBudget } from './agent-config/budget.js'
 export { ToolAvailabilitySchema, PortableToolsSchema, portableToolAvailability } from './agent-config/tool-contract.js'
 export type { ToolAvailability } from './agent-config/tool-contract.js'
+export { diagnoseToolAvailability } from './agent-config/tool-availability.js'
+export type { ToolAvailabilityOptions } from './agent-config/tool-availability.js'
+
+
 export { buildConfigSnapshot, compareConfigSnapshots, saveConfigSnapshot, loadConfigSnapshot, parseConfigSnapshot, ConfigSnapshotSchema } from './agent-config/snapshot.js'
 export type { ConfigSnapshot, ConfigSnapshotDiff } from './agent-config/snapshot.js'

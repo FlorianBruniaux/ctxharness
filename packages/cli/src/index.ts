@@ -34,6 +34,7 @@ import type {
   HeuristicClaim,
   TrendRecord,
   RunResult,
+  ToolAvailabilityOptions,
   AgentDoctorReport,
   AgentDoctorFinding,
   AgentDoctorStatus,
@@ -443,6 +444,10 @@ function reportAgentDoctor(result: AgentDoctorReport, format: AgentDoctorFormat)
   process.stdout.write(`Root        ${result.root}\n`)
   if (result.coverage !== undefined) process.stdout.write('Coverage    partial; ' + result.coverage.items.length + ' source entries; native loading unknown\n')
   if (result.budget !== undefined) process.stdout.write('Static size ' + result.budget.totals.utf8Bytes + ' UTF-8 bytes; ' + result.budget.totals.estimatedTokens + ' estimated tokens (UTF-16 chars/4); complete=' + result.budget.complete + '\n')
+  if (result.toolAvailability !== undefined) {
+    process.stdout.write('Tools       caller-selected filesystem resolution; authentication unknown\n')
+    for (const tool of result.toolAvailability.results) process.stdout.write('  ' + tool.tool + ': ' + tool.state + ' (' + tool.reason + ')\n')
+  }
   if (result.runtimeEvidence !== null) {
     process.stdout.write(`Runtime     ${result.runtimeEvidence.kind} evidence loaded separately\n`)
   }
@@ -465,23 +470,43 @@ program
   .option('--host <host>', 'Agent host: claude | codex | both')
   .option('--scope <scope>', 'Configuration scope: project | global | both')
   .option('--format <format>', 'Agent configuration output: human | json | gha')
+  .option('--tools <names>', 'Explicit comma-separated tool names; resolution only')
+  .option('--tool-path <path>', 'Caller-supplied client PATH (never inferred from this shell)')
+  .option('--tool-environment <identity>', 'Caller-declared client environment identity')
+  .option('--tool-platform <platform>', 'Client platform: posix | win32', 'posix')
+  .option('--tool-cwd <path>', 'Caller-supplied client working directory for relative PATH entries')
+  .option('--tool-symlinks <policy>', 'Executable symlink policy: reject | follow', 'reject')
+  .option('--required-tools <names>', 'Selected tools explicitly required by the project')
   .option('--budget', 'Include attributed static sizes and explicit estimation methods')
   .option('--coverage', 'Include declared static coverage and support inventory')
   .option('--export <profile>', 'Versioned disclosure profile: portable')
   .option('--runtime-evidence <path>', 'Signed or timestamped runtime canary results')
   .option('--no-trend', 'Skip recording to trend history')
-  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string; export?: string; coverage?: boolean; budget?: boolean }) => {
+  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string; export?: string; coverage?: boolean; budget?: boolean; tools?: string; toolPath?: string; toolEnvironment?: string; toolPlatform?: string; toolCwd?: string; toolSymlinks?: string; requiredTools?: string }, command: Command) => {
     try {
       const cwd = process.cwd()
       const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
-      const agentConfigMode = opts.budget === true || opts.coverage === true || opts.export !== undefined || opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
+      const explicitToolOptions = ['tools', 'toolPath', 'toolEnvironment', 'toolPlatform', 'toolCwd', 'toolSymlinks', 'requiredTools'].some(name => command.getOptionValueSource(name) === 'cli')
+      const agentConfigMode = explicitToolOptions || opts.budget === true || opts.coverage === true || opts.export !== undefined || opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
 
       if (agentConfigMode) {
         if (opts.export !== undefined && opts.export !== 'portable') throw new Error('Unsupported export profile.')
         const hosts = parseHosts(opts.host)
         const scopes = parseScopes(opts.scope)
         const format = parseAgentDoctorFormat(opts.format)
-        const result = buildAgentDoctorReport({ root, home: resolve(homedir()), hosts, scopes, runtimeEvidencePath: opts.runtimeEvidence, cwd, includeCoverage: opts.coverage === true || opts.export === 'portable', includeBudget: opts.budget === true || opts.export === 'portable' })
+        if (explicitToolOptions && opts.tools === undefined) throw new Error('Tool diagnostics require an explicit tool list.')
+        if (opts.toolPlatform !== 'posix' && opts.toolPlatform !== 'win32') throw new Error('Unsupported tool platform.')
+        if (opts.toolSymlinks !== 'reject' && opts.toolSymlinks !== 'follow') throw new Error('Unsupported tool symlink policy.')
+        const tools = opts.tools?.split(',')
+        const required = opts.requiredTools?.split(',') ?? []
+        if (required.some(name => !tools?.includes(name))) throw new Error('Required tools must appear in the explicit tool list.')
+        const toolRequest: ToolAvailabilityOptions | undefined = tools === undefined ? undefined : {
+          tools,
+          ...(opts.toolPath === undefined || opts.toolEnvironment === undefined ? {} : { environment: { identity: opts.toolEnvironment, path: opts.toolPath, platform: opts.toolPlatform, ...(opts.toolCwd === undefined ? {} : { cwd: resolve(cwd, opts.toolCwd) }) } }),
+          symlinks: opts.toolSymlinks,
+          requirements: required.map(tool => ({ tool, kind: 'project-requirement' as const })),
+        }
+        const result = buildAgentDoctorReport({ root, home: resolve(homedir()), hosts, scopes, runtimeEvidencePath: opts.runtimeEvidence, cwd, includeCoverage: opts.coverage === true || opts.export === 'portable', includeBudget: opts.budget === true || opts.export === 'portable', ...(toolRequest === undefined ? {} : { toolRequest }) })
         if (opts.export === 'portable') process.stdout.write(JSON.stringify(projectPortableReport(result), null, 2) + '\n')
         else reportAgentDoctor(result, format)
         process.exitCode = result.summary.mandatoryFailures > 0 ? 1 : 0

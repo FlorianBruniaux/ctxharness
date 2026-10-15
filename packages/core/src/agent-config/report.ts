@@ -6,11 +6,13 @@ import { validateAgentConfigRelease } from './release.js'
 import { checkAgentConfigParity } from './parity.js'
 import type { AgentConfigFinding, AgentHost, AgentConfigScope } from './types.js'
 import { z } from 'zod'
+import { diagnoseToolAvailability, type ToolAvailabilityOptions } from './tool-availability.js'
 import { buildStaticBudget, StaticBudgetSchema, type StaticBudget } from './budget.js'
 import { buildConfigCoverage, ConfigCoverageSchema, type ConfigCoverage } from './coverage.js'
 import { ToolAvailabilitySchema, type ToolAvailability } from './tool-contract.js'
 
 export interface AgentDoctorOptions {
+  toolRequest?: ToolAvailabilityOptions
   includeCoverage?: boolean
   includeBudget?: boolean
   root: string
@@ -262,6 +264,9 @@ export function buildAgentDoctorReport(options: AgentDoctorOptions): AgentDoctor
   const count = (status: AgentDoctorStatus): number =>
     findings.filter((finding) => finding.status === status).length
   return {
+    ...(options.toolRequest === undefined
+      ? {}
+      : { toolAvailability: diagnoseToolAvailability(options.toolRequest) }),
     schemaVersion: 1,
     command: 'doctor',
     mode: 'agent-config',

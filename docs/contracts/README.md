@@ -73,6 +73,21 @@ Unknown fields, raw tool identities and personal environment data remain rejecte
 by the portable validator. The optional extension supplies diagnosis separately.
 
 
+## Optional tool availability extension
+
+`diagnoseToolAvailability` accepts explicit tools and a caller-declared environment.
+`ToolAvailabilitySchema` validates local results; `PortableToolsSchema` and
+`portableToolAvailability` retain only bounded resolution states/reasons, requirement
+kinds, generated `tN` references and unknown authentication/permissions. Neither
+PATH entries, tool names, environment identity nor raw failures are exported.
+The report builder's `toolRequest` option and doctor's `--tools` flag opt in.
+
+Schemas and projection come from the foundation `tool-contract` module. The
+extension supplies request validation and filesystem diagnosis only. Both
+`portable-v1.valid.json` and the foundation's `portable-tools-v1.valid.json`
+validate against the same v1 consumer contract.
+
+
 ## Optional snapshot artifact
 
 `ConfigSnapshotSchema` / `parseConfigSnapshot` validate the separate

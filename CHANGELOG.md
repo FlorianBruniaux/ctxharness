@@ -10,6 +10,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Added
 
+- Explicit tool availability diagnostics using caller-supplied PATH/environment, filesystem resolution only and bounded portable results (#9).
+
+
 - Separate opt-in configuration snapshots and deterministic structural comparisons, without changing documentation snapshot/diff policy (#8).
 
 - Attributed static context-size ledger with exact UTF-8 bytes, explicitly named historical character estimates, physical deduplication and completeness limits (#7).
@@ -23,6 +26,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 ### Fixed
 
 - Resolve relative imports at every hardlink location while measuring each physical body once (#2, review #11).
+- Require explicit tool lists for all caller-supplied tool options, while defaults preserve legacy doctor behavior; reuse the foundation v1 tools contract (#9, review #14).
+
+
 - Enforce static-only snapshot findings, canonicalize all physical aliases against selected roots and reject special-file snapshot inputs without blocking (#8, review #13).
 
 - Validate static ledger segments, references and completeness; retain every import attribution and local physical alias (#7, review #12).

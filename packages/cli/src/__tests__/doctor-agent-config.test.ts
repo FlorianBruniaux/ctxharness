@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -614,6 +614,35 @@ it('reports Unicode static bytes and named estimates through the real CLI',()=>{
     expect(b.methods.estimate).toBe('utf16-code-units-div-4-ceil')
   }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
 })
+
+it('diagnoses explicitly selected tools without execution and exports no personal PATH or tool name',()=>{
+ const root=makeTempDir('ctx-tools-cli-'),home=makeTempDir('ctx-tools-cli-home-')
+ try{
+  const bin=join(root,'private-bin');mkdirSync(bin)
+  write(join(bin,'HOSTILE-tool'),'#!/bin/sh\ntouch '+join(root,'SHOULD_NEVER_RUN')+'\n');chmodSync(join(bin,'HOSTILE-tool'),0o755)
+  const unknown=invoke(root,home,['doctor','--host','claude','--scope','project','--tools','HOSTILE-tool','--format','json'])
+  expect(unknown.status).toBe(0)
+  expect(JSON.parse(unknown.stdout).toolAvailability.results[0].state).toBe('unknown-client-environment')
+  const result=invoke(root,home,['doctor','--host','claude','--scope','project','--tools','HOSTILE-tool','--tool-path',bin,'--tool-environment','HOSTILE-client','--export','portable'])
+  expect(result.status).toBe(0);expect(result.stderr).toBe('')
+  expect(JSON.parse(result.stdout).toolAvailability.results[0]).toMatchObject({state:'installed',authentication:'unknown',permissions:'unknown'})
+  expect(result.stdout).not.toContain('HOSTILE');expect(result.stdout).not.toContain(bin)
+  expect(existsSync(join(root,'SHOULD_NEVER_RUN'))).toBe(false)
+ }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})
+
+it.each([['--tool-cwd', '.'], ['--tool-platform', 'win32'], ['--tool-symlinks', 'follow']])(
+ 'rejects %s without an explicit tool list', (flag, value) => {
+  const root = makeTempDir('ctx-tools-options-'), home = makeTempDir('ctx-tools-options-home-')
+  try {
+   const result = invoke(root, home, ['doctor', '--host', 'claude', '--scope', 'project', '--export', 'portable', flag, value])
+   expect(result.status).toBe(1)
+   expect(result.stdout).toBe('')
+   expect(JSON.parse(result.stderr)).toEqual({ schemaVersion: 1, kind: 'ctxharness-export-error', code: 'export-failed' })
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
+ },
+)
+
 
 it('creates explicit configuration snapshots and compares without rewriting baselines',()=>{
  const root=makeTempDir('ctx-config-snapshot-cli-'),home=makeTempDir('ctx-config-snapshot-home-')

@@ -111,6 +111,37 @@ are retained for deterministic structural consumers and omitted from exports.
 Budget validators reject inconsistent segments, references and completeness.
 
 
+## Optional tool availability
+
+`doctor --host claude --scope project --tools rg,gh --tool-path /opt/example/bin
+--tool-environment declared-client --format json` diagnoses only the requested
+names. Examples are optional, not installation requirements. Omit the declared
+client PATH or identity and results stay `unknown-client-environment`; this shell's
+PATH is never substituted. POSIX resolution is qualified on the current local
+filesystem; Windows client environments remain unsupported/unknown.
+
+The diagnostic only checks filesystem metadata and executable access. It never
+runs binaries, shell initialization, version/auth probes, installers or network
+requests. Spaces and metacharacters are literal names. Path-like/NUL names are
+rejected. Duplicate PATH entries are collapsed; relative entries require an
+explicit `--tool-cwd`. Symlinks are rejected by default; `--tool-symlinks follow`
+explicitly permits target metadata resolution. Missing, denied and non-executable
+paths remain distinct.
+
+Authentication and client permissions remain unknown even for `installed`.
+`--required-tools` links missing-tool advice to a caller-declared project
+requirement and must be a subset of `--tools`. Core additionally accepts explicit
+caller-failed-attempt requirements. There is no universal recommended-tools list
+or automatic installation advice. Portable output omits tool names, environment
+identity, personal PATH entries and resolved executable paths. No session is
+collected and no token or latency saving is inferred.
+
+Every explicitly supplied tool option requires `--tools`, including platform,
+working directory and symlink policy. Defaults alone preserve historical doctor
+behavior. The extension uses the foundation's shared v1 schemas and projector;
+its portable report is accepted by the foundation-only consumer.
+
+
 ## Optional configuration snapshots
 
 `config-snapshot --host claude --scope project --output first.json` explicitly
