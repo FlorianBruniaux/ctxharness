@@ -478,18 +478,19 @@ program
   .option('--export <profile>', 'Versioned disclosure profile: portable')
   .option('--runtime-evidence <path>', 'Signed or timestamped runtime canary results')
   .option('--no-trend', 'Skip recording to trend history')
-  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string; export?: string; coverage?: boolean; budget?: boolean; tools?: string; toolPath?: string; toolEnvironment?: string; toolPlatform?: string; toolCwd?: string; toolSymlinks?: string; requiredTools?: string }) => {
+  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string; export?: string; coverage?: boolean; budget?: boolean; tools?: string; toolPath?: string; toolEnvironment?: string; toolPlatform?: string; toolCwd?: string; toolSymlinks?: string; requiredTools?: string }, command: Command) => {
     try {
       const cwd = process.cwd()
       const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
-      const agentConfigMode = opts.tools !== undefined || opts.toolPath !== undefined || opts.toolEnvironment !== undefined || opts.requiredTools !== undefined || opts.budget === true || opts.coverage === true || opts.export !== undefined || opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
+      const explicitToolOptions = ['tools', 'toolPath', 'toolEnvironment', 'toolPlatform', 'toolCwd', 'toolSymlinks', 'requiredTools'].some(name => command.getOptionValueSource(name) === 'cli')
+      const agentConfigMode = explicitToolOptions || opts.budget === true || opts.coverage === true || opts.export !== undefined || opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
 
       if (agentConfigMode) {
         if (opts.export !== undefined && opts.export !== 'portable') throw new Error('Unsupported export profile.')
         const hosts = parseHosts(opts.host)
         const scopes = parseScopes(opts.scope)
         const format = parseAgentDoctorFormat(opts.format)
-        if ((opts.toolPath !== undefined || opts.toolEnvironment !== undefined || opts.requiredTools !== undefined) && opts.tools === undefined) throw new Error('Tool diagnostics require an explicit tool list.')
+        if (explicitToolOptions && opts.tools === undefined) throw new Error('Tool diagnostics require an explicit tool list.')
         if (opts.toolPlatform !== 'posix' && opts.toolPlatform !== 'win32') throw new Error('Unsupported tool platform.')
         if (opts.toolSymlinks !== 'reject' && opts.toolSymlinks !== 'follow') throw new Error('Unsupported tool symlink policy.')
         const tools = opts.tools?.split(',')

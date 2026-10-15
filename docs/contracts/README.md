@@ -81,3 +81,8 @@ by the portable validator. The optional extension supplies diagnosis separately.
 kinds, generated `tN` references and unknown authentication/permissions. Neither
 PATH entries, tool names, environment identity nor raw failures are exported.
 The report builder's `toolRequest` option and doctor's `--tools` flag opt in.
+
+Schemas and projection come from the foundation `tool-contract` module. The
+extension supplies request validation and filesystem diagnosis only. Both
+`portable-v1.valid.json` and the foundation's `portable-tools-v1.valid.json`
+validate against the same v1 consumer contract.

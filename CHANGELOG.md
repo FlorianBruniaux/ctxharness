@@ -23,6 +23,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 ### Fixed
 
 - Resolve relative imports at every hardlink location while measuring each physical body once (#2, review #11).
+- Require explicit tool lists for all caller-supplied tool options, while defaults preserve legacy doctor behavior; reuse the foundation v1 tools contract (#9, review #14).
+
 - Validate static ledger segments, references and completeness; retain every import attribution and local physical alias (#7, review #12).
 - Share the typed optional tools data contract in foundation v1 so extension exports remain consumable without enabling tool diagnosis (#5, review #14).
 

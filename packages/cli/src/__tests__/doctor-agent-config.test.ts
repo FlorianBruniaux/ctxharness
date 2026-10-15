@@ -630,3 +630,15 @@ it('diagnoses explicitly selected tools without execution and exports no persona
   expect(existsSync(join(root,'SHOULD_NEVER_RUN'))).toBe(false)
  }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
 })
+
+it.each([['--tool-cwd', '.'], ['--tool-platform', 'win32'], ['--tool-symlinks', 'follow']])(
+ 'rejects %s without an explicit tool list', (flag, value) => {
+  const root = makeTempDir('ctx-tools-options-'), home = makeTempDir('ctx-tools-options-home-')
+  try {
+   const result = invoke(root, home, ['doctor', '--host', 'claude', '--scope', 'project', '--export', 'portable', flag, value])
+   expect(result.status).toBe(1)
+   expect(result.stdout).toBe('')
+   expect(JSON.parse(result.stderr)).toEqual({ schemaVersion: 1, kind: 'ctxharness-export-error', code: 'export-failed' })
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
+ },
+)

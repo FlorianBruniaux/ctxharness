@@ -135,3 +135,8 @@ caller-failed-attempt requirements. There is no universal recommended-tools list
 or automatic installation advice. Portable output omits tool names, environment
 identity, personal PATH entries and resolved executable paths. No session is
 collected and no token or latency saving is inferred.
+
+Every explicitly supplied tool option requires `--tools`, including platform,
+working directory and symlink policy. Defaults alone preserve historical doctor
+behavior. The extension uses the foundation's shared v1 schemas and projector;
+its portable report is accepted by the foundation-only consumer.
