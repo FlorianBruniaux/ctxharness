@@ -1,0 +1,21 @@
+packages/core/src/agent-config/disclosure.ts
+  s_ff3dff62f4ff19::t_d9a79e0d803d72 103,125-127
+packages/core/src/agent-config/report.ts
+  s_ff3dff62f4ff19::t_14317fd4ff4072 9-14,271-273,399
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1a03d394d238028370e12edd8fdb7cfd79d12738",
+  "prompts": {},
+  "sessions": {
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
