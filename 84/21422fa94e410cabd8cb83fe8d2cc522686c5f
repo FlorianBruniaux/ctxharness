@@ -1,0 +1,185 @@
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_55325604fa8a73 19-20
+  s_ff3dff62f4ff19::t_66f792f4a9eb78 17-18
+  s_ff3dff62f4ff19::t_6a2b694d851c3a 15-16
+  s_ff3dff62f4ff19::t_0f054c2aabd81a 30-31
+  s_ff3dff62f4ff19::t_50b405646fab77 26-28
+  s_ff3dff62f4ff19::t_65866e8247a592 13-14
+docs/configuration-audit.md
+  s_ff3dff62f4ff19::t_f6807a9816ee4c 53-57
+  s_ff3dff62f4ff19::t_3ce88c4ccc0c80 58-81
+  s_64104967e715dd::t_812c66ef7b586c 82-106
+  s_ff3dff62f4ff19::t_50b405646fab77 107-111
+  s_ff3dff62f4ff19::t_7e7d1ef145fa7b 107,114-137
+docs/contracts/README.md
+  s_ff3dff62f4ff19::t_0c1dc29f59d812 1-13,21-42
+  s_ff3dff62f4ff19::t_afd1a0bcceffd1 43-51
+  s_64104967e715dd::t_2067a0b3d17efa 14-20,52-60
+  s_ff3dff62f4ff19::t_50b405646fab77 61-73
+  s_ff3dff62f4ff19::t_a49cdca94d1608 61,76-83
+docs/contracts/portable-v1.invalid.json
+  s_4d9bf9782c201f::t_dee6c3b7388e54 1-5,8-29
+  s_64104967e715dd::t_b08e578fc28b66 6-7,30
+docs/contracts/portable-v1.valid.json
+  s_4d9bf9782c201f::t_99d19d0483db84 1-4,9,95
+  s_ff3dff62f4ff19::t_2cf1ff97673440 5,8,10-47,49-53,94
+  s_64104967e715dd::t_82a03a0dd1eeec 6-7,48,54-73,95
+  s_ff3dff62f4ff19::t_f138a03cd26e35 74-93
+docs/contracts/portable.unsupported.json
+  s_4d9bf9782c201f::t_3be8d7625ddc05 1-5,8-29
+  s_64104967e715dd::t_c1f191cd86b333 6-7,30
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_3605cf53b51080::t_ba974bc7da1581 570-591
+  s_ff3dff62f4ff19::t_73c7772934c4d4 592-604
+  s_ff3dff62f4ff19::t_e1d375052ba48f 605-616
+  s_31673e08358932::t_c6eee748861185 1,617-632
+packages/cli/src/index.ts
+  s_fbb2579959ac64::t_75d769286cb5b8 23-24,34-36,85-86,478,488,505-506,641
+  s_ff3dff62f4ff19::t_4be20038cfb821 441,477
+  s_31673e08358932::t_5f9f960dd94a43 442,476
+  s_ff3dff62f4ff19::t_2b3e55e40283a2 33,443-446,469-475,481,485,492-504
+packages/core/src/agent-config/__tests__/report.test.ts
+  s_ff3dff62f4ff19::t_a53e3e27d2fc4e 1-6,10-15,18,25-30,45-49,69-73,83,91-93,95,98-103,108-111
+  s_64104967e715dd::t_4d367fe82ca9dd 7-9,16-17,19-24,31-44,50-68,74-82,84-90,94,96-97,104-107
+  s_ff3dff62f4ff19::t_713289ea1d08f8 112-118
+  s_ff3dff62f4ff19::t_071ca3cb742e68 119-136
+packages/core/src/agent-config/disclosure.ts
+  s_e827e256e15185::t_c3702658154548 1,15-17,79-80,116,120-124,138,144-151,156
+  s_b52f1819e29e6c::t_2d02617489851b 4,132
+  s_64104967e715dd::t_8331055840d54e 3,5-14,18-78,81-103,105-115,117-119,125-127,131,133-137,139-143,152-155
+  s_ff3dff62f4ff19::t_c28bd318bcec02 2,104,128
+  s_ff3dff62f4ff19::t_b274e0ac2572bd 129-130
+packages/core/src/agent-config/report.ts
+  s_e827e256e15185::t_d6ccba22fd1ac7 1-8,13-14,18-56,60-256,264-266,268-285,288-290,291-292,302,309,357,364-365,370,374,400-404
+  s_b52f1819e29e6c::t_78b82f669c06a2 11,16,58,392
+  s_64104967e715dd::t_9a82a139084635 10,17,59,257-263,286-287,293-301,303-308,310-356,358-363,366-369,371-373,375-391,393,395-399
+  s_ff3dff62f4ff19::t_c28bd318bcec02 12,57,394
+  s_ff3dff62f4ff19::t_56da754150e929 15,57,267,392
+packages/core/src/index.ts
+  s_e827e256e15185::t_598d17cd1492e8 84-87
+  s_b52f1819e29e6c::t_ef97c8f58857f9 88-90
+  s_31673e08358932::t_f0e9e97a99ec1d 91-93
+  s_ff3dff62f4ff19::t_c28bd318bcec02 94-95
+packages/core/src/agent-config/__tests__/coverage.test.ts
+  s_ff3dff62f4ff19::t_9f1cd2b937604b 1-6,24,26-27,63,78,95,97,110-111,118
+  s_64104967e715dd::t_8f23d421b697f9 7-23,25,28-62,64-77,79-94,96,98-109,112-117
+packages/core/src/agent-config/coverage.ts
+  s_ff3dff62f4ff19::t_75db566bb4340a 1-6,78-80,85-86,89,102-104,133-134,147-148,163,202-204,219
+  s_64104967e715dd::t_20f20d5e5c7982 7-77,81-84,87-88,90-101,105-132,135-146,149-162,164-201,205-218
+packages/core/src/agent-config/inventory.ts
+  s_ff3dff62f4ff19::t_7de6d937a1f858 87,95-96,127,129
+packages/core/src/agent-config/__tests__/budget.test.ts
+  s_64104967e715dd::t_d21ee52005f7cc 1,3-102
+  s_ff3dff62f4ff19::t_6e60a729ca0c99 103-117
+  s_ff3dff62f4ff19::t_713289ea1d08f8 2,118-158
+  s_ff3dff62f4ff19::t_42a998a2d10ec2 159-176
+packages/core/src/agent-config/budget.ts
+  s_64104967e715dd::t_798ff695a158c4 1-40,42-85,88,113-119,121-126,128-130,132-151,161-187,217-219,221-222,224-260,265-268,270-271,281-316
+  s_ff3dff62f4ff19::t_a6834a1d1274ae 152-160
+  s_ff3dff62f4ff19::t_9f804c53ba223d 41,86-87,89-112,120,127,131,188-206
+  s_ff3dff62f4ff19::t_cfdc3fe965402f 207-216,220,223,261-264,269,272-280
+packages/core/src/__tests__/read-boundary.test.ts
+  s_64104967e715dd::t_140738d1967f7f 19-21,79-106,138-140,149-164,177-181
+packages/core/src/agent-config/__tests__/hook-shape.test.ts
+  s_64104967e715dd::t_b3451acfc98ef2 9-11,13-20,23-36,39-46,49-59,63-65,67-70,75-78
+packages/core/src/agent-config/__tests__/mcp-credentials.test.ts
+  s_64104967e715dd::t_1b7c0c21a10a15 8-10,12-25,28-37,40-61
+packages/core/src/fs-boundary.ts
+  s_ae085abdb4f4d0::t_abfabb17045e90 4-11,18-33,52-67,86-89,102-105,107-116,121-124,128-134,140-147,155-158,166-170
+docs/contracts/portable-tools-v1.valid.json
+  s_ff3dff62f4ff19::t_ad7221f95a780a 1-95
+packages/core/src/agent-config/tool-contract.ts
+  s_ff3dff62f4ff19::t_cb7f69b265eafc 1-72
+packages/core/src/agent-config/__tests__/tool-availability.test.ts
+  s_ff3dff62f4ff19::t_b63af62dbc5afc 1-177
+packages/core/src/agent-config/tool-availability.ts
+  s_ff3dff62f4ff19::t_81654c4bd3d031 1-4,9-35,36-55,58-71,73-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8421422fa94e410cabd8cb83fe8d2cc522686c5f",
+  "prompts": {},
+  "sessions": {
+    "s_31673e08358932": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13b23-2ef0-7e51-96d0-0c6a5b2f3565",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_3605cf53b51080": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13694-acd3-7190-8d33-691c11d3d458",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_4d9bf9782c201f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c90f38ea-0a7a-4a51-ae4b-c61d7812de28",
+        "model": "unknown"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_64104967e715dd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f31-c9b6-7f52-adc8-1ffb8966e03b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_b52f1819e29e6c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f52-94b0-7320-881b-ba68586298ec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_e827e256e15185": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12567-61ab-7c62-8b43-ea0028444170",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_edae00164c4bc3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a135ea-f172-7f02-944f-04532cb53a51",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_fbb2579959ac64": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13eeb-f3c7-74d3-9458-f02898e43b16",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
