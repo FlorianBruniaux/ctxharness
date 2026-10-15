@@ -1,0 +1,27 @@
+docs/configuration-audit.md
+  s_ff3dff62f4ff19::t_8bc9559465384c 27-30
+packages/core/src/fs-boundary.ts
+  s_ff3dff62f4ff19::t_8d138e6a1a6ac0 1,4-11,18-33,52-67,73-82,85-88,93-96,98-107,110,112-115,117-132,140-143,149-151
+  s_ff3dff62f4ff19::t_2d01f844ab68bf 152-158,160-163
+packages/core/src/__tests__/read-boundary.test.ts
+  s_ff3dff62f4ff19::t_01bb72ea0bd73a 8-9,19-21,24,26-35,43,46,56,59,63,66,74,77
+  s_ff3dff62f4ff19::t_4e191438d27fe8 36-42,47-55,57-58,60-62,64-65,67-73,75-76,78-86,117-119,128-143,156-160
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_8bc9559465384c 17-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b97a190b2ddafbac71826fe71a9d4976436280f1",
+  "prompts": {},
+  "sessions": {
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
