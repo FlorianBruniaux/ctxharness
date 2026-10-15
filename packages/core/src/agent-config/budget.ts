@@ -38,7 +38,7 @@ const File = z
     physicalRef: z.string().regex(/^p[1-9][0-9]{0,5}$/),
     contentGroup: z.string().regex(/^g[1-9][0-9]{0,5}$/),
     measurement: Size,
-    segments: z.array(Segment).max(2),
+    segments: z.array(Segment).min(1).max(2),
     attribution: z.array(Attribution).max(1000),
   })
   .strict()
@@ -83,12 +83,33 @@ const envelope = {
   totals: Size,
   edges: z.array(Edge).max(4097),
 }
-const totalsMatch = (r: {
+const ledgerConsistent = (r: {
+  complete: boolean
   totals: z.infer<typeof Size>
-  files: { measurement: z.infer<typeof Size> }[]
-}) =>
-  r.totals.utf8Bytes === r.files.reduce((n, f) => n + f.measurement.utf8Bytes, 0) &&
-  r.totals.utf16CodeUnits === r.files.reduce((n, f) => n + f.measurement.utf16CodeUnits, 0)
+  files: z.infer<typeof File>[]
+  edges: z.infer<typeof Edge>[]
+}) => {
+  const physical = new Set(r.files.map((f) => f.physicalRef))
+  return (
+    new Set(r.files.map((f) => f.ref)).size === r.files.length &&
+    physical.size === r.files.length &&
+    r.totals.utf8Bytes === r.files.reduce((n, f) => n + f.measurement.utf8Bytes, 0) &&
+    r.totals.utf16CodeUnits === r.files.reduce((n, f) => n + f.measurement.utf16CodeUnits, 0) &&
+    r.files.every(
+      (f) =>
+        f.measurement.utf8Bytes === f.segments.reduce((n, s) => n + s.measurement.utf8Bytes, 0) &&
+        f.measurement.utf16CodeUnits ===
+          f.segments.reduce((n, s) => n + s.measurement.utf16CodeUnits, 0),
+    ) &&
+    r.edges.every(
+      (e) =>
+        (e.from === undefined || physical.has(e.from)) &&
+        (e.to === undefined || physical.has(e.to)) &&
+        ((e.status !== 'included' && e.status !== 'duplicate') || e.to !== undefined) &&
+        (!r.complete || e.status === 'included' || e.status === 'duplicate'),
+    )
+  )
+}
 export const StaticBudgetSchema = z
   .object({
     ...envelope,
@@ -96,17 +117,18 @@ export const StaticBudgetSchema = z
       .array(
         File.extend({
           path: z.string(),
+          paths: z.array(z.string()).min(1).max(4096).optional(),
           contentDigest: z.string().regex(/^[a-f0-9]{64}$/),
         }).strict(),
       )
       .max(256),
   })
   .strict()
-  .refine(totalsMatch, 'Inconsistent static totals.')
+  .refine(ledgerConsistent, 'Inconsistent static ledger.')
 export const PortableBudgetSchema = z
   .object({ ...envelope, files: z.array(File).max(256) })
   .strict()
-  .refine(totalsMatch, 'Inconsistent static totals.')
+  .refine(ledgerConsistent, 'Inconsistent static ledger.')
 export type StaticBudget = z.infer<typeof StaticBudgetSchema>
 function measure(content: string, bytes = Buffer.byteLength(content, 'utf8')) {
   return {
@@ -163,29 +185,42 @@ export function buildStaticBudget(
   const groups = new Map<string, string>()
   const files: StaticBudget['files'] = []
   const rejected = new Set<string>()
-  const attributionsByPath = new Map<string, z.infer<typeof Attribution>[]>()
+  const attributions = new Map<string, Map<string, z.infer<typeof Attribution>>>()
+  for (const ref of identityToRef.values()) attributions.set(ref, new Map())
+  for (const source of sources) {
+    try {
+      const stat = statSync(source.path)
+      const ref = identityToRef.get(stat.dev + ':' + stat.ino)
+      const a = { host: source.host, scope: source.scope, layer: source.layer }
+      if (ref) attributions.get(ref)!.set(JSON.stringify(a), a)
+    } catch {
+      /* Missing evidence is already represented by the read edges. */
+    }
+  }
+  // Union every parent, including duplicate/hardlink edges and cycles.
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const edge of read.edges) {
+      const from = edge.from === undefined ? undefined : paths.get(edge.from)
+      const to = paths.get(edge.to)
+      if (from === undefined || to === undefined) continue
+      for (const [key, a] of attributions.get(from)!) {
+        const target = attributions.get(to)!
+        if (!target.has(key)) {
+          target.set(key, a)
+          changed = true
+        }
+      }
+    }
+  }
   for (const [index, file] of read.files.entries()) {
     if (file.content.includes('\0') || Buffer.byteLength(file.content, 'utf8') !== file.bytes) {
       read.complete = false
-      rejected.add(file.path)
+      rejected.add(identityToRef.get(file.identity)!)
       continue
     }
-    const attribution = sources
-      .filter((s) => {
-        try {
-          const t = statSync(s.path)
-          return t.dev + ':' + t.ino === file.identity
-        } catch {
-          return false
-        }
-      })
-      .map((s) => ({ host: s.host, scope: s.scope, layer: s.layer }))
-    if (attribution.length === 0) {
-      const parent = read.edges.find((e) => e.to === file.path && e.from !== undefined)?.from
-      if (parent) attribution.push(...(attributionsByPath.get(parent) ?? []))
-    }
-    const uniqueAttribution = [...new Map(attribution.map((a) => [JSON.stringify(a), a])).values()]
-    attributionsByPath.set(file.path, uniqueAttribution)
+    const attribution = [...attributions.get(identityToRef.get(file.identity)!)!.values()]
     const layers = new Set(attribution.map((a) => a.layer))
     const category: z.infer<typeof Category> =
       layers.size > 1
@@ -223,18 +258,26 @@ export function buildStaticBudget(
       ref: 'b' + (index + 1),
       physicalRef: 'p' + (index + 1),
       path: file.path,
+      paths: [...paths]
+        .filter(([, ref]) => ref === identityToRef.get(file.identity))
+        .map(([path]) => path)
+        .sort(),
       contentDigest,
       contentGroup: groups.get(contentDigest)!,
       measurement: measure(file.content, file.bytes),
       segments,
-      attribution: uniqueAttribution,
+      attribution,
     })
   }
-  const edges: StaticBudget['edges'] = read.edges.map((e) => ({
-    ...(e.from === undefined || !paths.has(e.from) ? {} : { from: paths.get(e.from)! }),
-    ...(!paths.has(e.to) ? {} : { to: paths.get(e.to)! }),
-    status: rejected.has(e.to) ? 'non-text' : e.status,
-  }))
+  const edges: StaticBudget['edges'] = read.edges.map((e) => {
+    const from = e.from === undefined ? undefined : paths.get(e.from),
+      to = paths.get(e.to)
+    return {
+      ...(from === undefined || rejected.has(from) ? {} : { from }),
+      ...(to === undefined || rejected.has(to) ? {} : { to }),
+      status: to !== undefined && rejected.has(to) ? 'non-text' : e.status,
+    }
+  })
   const utf16CodeUnits = files.reduce((n, f) => n + f.measurement.utf16CodeUnits, 0)
   return StaticBudgetSchema.parse({
     profileVersion: 1,

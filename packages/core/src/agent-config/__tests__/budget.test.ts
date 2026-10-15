@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vitest'
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { linkSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import * as core from '../../index.js'
@@ -114,4 +114,63 @@ it('marks a discovered source that disappears after inventory incomplete', () =>
   const ledger = core.buildStaticBudget(inventory)
   expect(ledger.complete).toBe(false)
   expect(ledger.edges.some((e) => e.status === 'unavailable')).toBe(true)
+})
+
+it.each([
+  'empty-segments',
+  'segment-sum',
+  'dangling-edge',
+  'duplicate-file',
+  'duplicate-physical',
+  'blocked-complete',
+])('rejects an internally inconsistent portable budget: %s', (defect) => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), 'inert')
+  const b = core.portableBudget(
+    core.buildStaticBudget(
+      core.inventoryAgentConfig({ root, home: root, hosts: ['claude'], scopes: ['project'] }),
+    ),
+  )
+  const file = b.files[0]!
+  if (defect === 'empty-segments') file.segments = []
+  if (defect === 'segment-sum')
+    file.segments[0]!.measurement = { utf8Bytes: 1, utf16CodeUnits: 1, estimatedTokens: 1 }
+  if (defect === 'dangling-edge') b.edges.push({ status: 'duplicate', to: 'p999' })
+  if (defect === 'blocked-complete') b.edges.push({ status: 'outside-boundary' })
+  if (defect === 'duplicate-file' || defect === 'duplicate-physical') {
+    b.files.push({
+      ...file,
+      ...(defect === 'duplicate-physical' ? { ref: 'b2' } : { physicalRef: 'p2' }),
+    })
+    b.totals = { utf8Bytes: 10, utf16CodeUnits: 10, estimatedTokens: 3 }
+  }
+  expect(core.PortableBudgetSchema.safeParse(b).success).toBe(false)
+})
+
+it('retains every imported scope attribution and local physical alias', () => {
+  const root = fixture(),
+    home = fixture()
+  write(join(root, 'CLAUDE.md'), '@shared.md')
+  write(join(root, 'shared.md'), 'inert')
+  write(join(home, '.claude/CLAUDE.md'), '@shared.md')
+  linkSync(join(root, 'shared.md'), join(home, '.claude/shared.md'))
+  const b = core.buildStaticBudget(
+    core.inventoryAgentConfig({ root, home, hosts: ['claude'], scopes: ['project', 'global'] }),
+  )
+  const file = b.files.find((f) => f.path.endsWith('/shared.md'))!
+  expect(file.attribution.map((a) => a.scope).sort()).toEqual(['global', 'project'])
+  expect(Reflect.get(file, 'paths')).toHaveLength(2)
+  expect(JSON.stringify(core.portableBudget(b))).not.toContain('paths')
+})
+
+it('keeps non-text rejection edges valid without dangling physical references', () => {
+  const root = fixture()
+  write(join(root, 'CLAUDE.md'), '@binary.md')
+  write(join(root, 'binary.md'), '\0inert')
+  const b = core.buildStaticBudget(
+    core.inventoryAgentConfig({ root, home: root, hosts: ['claude'], scopes: ['project'] }),
+  )
+  expect(b.complete).toBe(false)
+  expect(b.edges.find((e) => e.status === 'non-text')?.to).toBeUndefined()
+  expect(core.PortableBudgetSchema.safeParse(core.portableBudget(b)).success).toBe(true)
 })
