@@ -55,6 +55,27 @@ describe('caller-owned import boundaries', () => {
     expect(result.complete).toBe(true)
   })
 
+  it('resolves relative imports from every hardlink location while measuring content once', () => {
+    const f = fixture()
+    mkdirSync(join(f.root, 'a'))
+    mkdirSync(join(f.root, 'b'))
+    writeFileSync(join(f.root, 'a/root.md'), '@child.md')
+    linkSync(join(f.root, 'a/root.md'), join(f.root, 'b/root.md'))
+    writeFileSync(join(f.root, 'a/child.md'), 'first child')
+    writeFileSync(join(f.root, 'b/child.md'), 'second child')
+    const result = readContext([join(f.root, 'a/root.md'), join(f.root, 'b/root.md')], {
+      allowedRoots: [f.root],
+      maxDepth: 3,
+    })
+    expect(result.files.map((file) => file.content).sort()).toEqual([
+      '@child.md',
+      'first child',
+      'second child',
+    ])
+    expect(result.edges.filter((edge) => edge.status === 'duplicate')).toHaveLength(1)
+    expect(result.complete).toBe(true)
+  })
+
   it.each(['@../outside.md', 'absolute', 'symlink'])(
     'rejects %s before measuring its content',
     (reference) => {

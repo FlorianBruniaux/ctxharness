@@ -27,6 +27,8 @@ fixtures. No imported content is executed.
 Special files (including named pipes) are rejected without waiting for a writer.
 Imports are traversed in breadth-first order, so a physical file first reached
 through a longer chain cannot hide descendants reachable through a shorter one.
+Hardlinks share one measured body, while imports are resolved from each distinct
+location. Repeated locations and cycles terminate without discarding alias edges.
 
 The historical `contextBudget` output strings and configurable threshold (default
 3000) remain local policy. The estimate is `ceil(UTF-16 code units / 4)`, not an

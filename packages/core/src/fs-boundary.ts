@@ -69,7 +69,8 @@ export function readContext(
   const maxBytes = cap(policy.maxBytes, 4 * 1024 * 1024)
   const maxDepth = cap(policy.maxDepth, 32)
   const result: ContextRead = { files: [], edges: [], complete: true }
-  const seen = new Set<string>()
+  const seen = new Map<string, ContextFile>()
+  const expandedPaths = new Set<string>()
   const queue: { candidate: string; depth: number; from?: string }[] = []
   let truncated = false
   const enqueue = (candidate: string, depth: number, from?: string) => {
@@ -88,6 +89,14 @@ export function readContext(
     }
     result.edges.push({ ...(from === undefined ? {} : { from }), to, status })
     if (status !== 'included' && status !== 'duplicate') result.complete = false
+  }
+  const expand = (path: string, content: string, depth: number) => {
+    if (!followImports) return
+    expandedPaths.add(path)
+    for (const ref of contextReferences(content)) {
+      if (!ref.supported) edge(path, ref.reference, 'unsupported-reference')
+      else enqueue(resolve(dirname(path), ref.reference), depth - 1, path)
+    }
   }
   const visit = (candidate: string, depth: number, from?: string): void => {
     if (result.edges.length >= 4096) {
@@ -114,12 +123,18 @@ export function readContext(
         return
       }
       const identity = `${stat.dev}:${stat.ino}`
-      if (seen.has(identity)) {
+      const cached = seen.get(identity)
+      if (cached !== undefined && (!followImports || expandedPaths.has(path))) {
         edge(from, path, 'duplicate')
         return
       }
       if (depth <= 0) {
         edge(from, path, 'depth-limit')
+        return
+      }
+      if (cached !== undefined) {
+        edge(from, path, 'duplicate')
+        expand(path, cached.content, depth)
         return
       }
       if (result.files.length >= maxFiles) {
@@ -142,15 +157,12 @@ export function readContext(
         return
       }
       const content = buffer.subarray(0, length).toString('utf8')
-      seen.add(identity)
       bytes += length
-      result.files.push({ path, identity, content, bytes: length })
+      const file = { path, identity, content, bytes: length }
+      seen.set(identity, file)
+      result.files.push(file)
       edge(from, path, 'included')
-      if (followImports)
-        for (const ref of contextReferences(content)) {
-          if (!ref.supported) edge(path, ref.reference, 'unsupported-reference')
-          else enqueue(resolve(dirname(path), ref.reference), depth - 1, path)
-        }
+      expand(path, content, depth)
     } catch {
       edge(from, candidate, 'unavailable')
     } finally {
