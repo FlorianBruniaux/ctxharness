@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "kind": "ctxharness-portable",
+  "profileVersion": 1,
+  "selection": {
+    "hosts": ["claude"],
+    "scopes": ["project"]
+  },
+  "runtimeEvidence": "not-provided",
+  "summary": {
+    "pass": 1,
+    "warn": 0,
+    "fail": 0,
+    "unknown": 0,
+    "notApplicable": 0,
+    "mandatoryFailures": 0
+  },
+  "findings": [
+    {
+      "ref": "f1",
+      "code": "instruction-valid",
+      "status": "pass",
+      "source": "static",
+      "mandatory": false,
+      "host": "claude",
+      "scope": "project",
+      "layer": "instructions"
+    }
+  ],
+  "coverage": {
+    "profileVersion": 1,
+    "resolution": "partial",
+    "nativeClient": "unobserved",
+    "platform": "unqualified",
+    "support": [
+      {
+        "host": "claude",
+        "surface": "memory",
+        "status": "unsupported"
+      }
+    ],
+    "items": [
+      {
+        "ref": "c1",
+        "host": "claude",
+        "scope": "project",
+        "layer": "instructions",
+        "states": ["discovered", "declared", "statically-applicable"],
+        "loaded": "unknown",
+        "executed": "unknown",
+        "beneficial": "unknown"
+      }
+    ]
+  },
+  "budget": {
+    "profileVersion": 1,
+    "scope": "discovered-content-only",
+    "methods": {
+      "bytes": "utf8-bytes",
+      "characters": "utf16-code-units",
+      "estimate": "utf16-code-units-div-4-ceil"
+    },
+    "loading": "unknown",
+    "hiddenSystemPrompts": "unknown",
+    "requestAssembly": "unknown",
+    "complete": true,
+    "totals": {
+      "utf8Bytes": 0,
+      "utf16CodeUnits": 0,
+      "estimatedTokens": 0
+    },
+    "files": [],
+    "edges": []
+  },
+  "toolAvailability": {
+    "profileVersion": 1,
+    "environment": {
+      "source": "caller-declared",
+      "platform": "posix",
+      "symlinks": "reject"
+    },
+    "results": [
+      {
+        "ref": "t1",
+        "state": "not-found",
+        "reason": "no-path-match",
+        "requirement": "project-requirement",
+        "advice": "review-requirement",
+        "authentication": "unknown",
+        "permissions": "unknown",
+        "pathEntriesChecked": 1
+      }
+    ]
+  }
+}

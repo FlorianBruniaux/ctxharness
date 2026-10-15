@@ -41,9 +41,9 @@ Agents work from the context window. Pointing an agent to `package.json` works, 
 
 **No migration needed.** Works on your existing CLAUDE.md, AGENTS.md, and .cursorrules files as-is.
 
-CTX Harness owns documentation drift, passive configuration checks, static measurements and the reusable export planned in [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10). Session analysis, before/after experiments and adopting optimization candidates belong to a separate project. Existing local helpers such as `fix --apply` keep their documentation-drift behavior.
+CTX Harness owns documentation drift, passive configuration checks, static measurements and a reusable portable export, as defined in [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10). Session analysis, before/after experiments and adopting optimization candidates belong to a separate project. Existing local helpers such as `fix --apply` keep their documentation-drift behavior.
 
-See the [documentation index](docs/README.md), [configuration doctor guide](docs/doctor.md) and [delivery roadmap](docs/roadmap.md). The roadmap distinguishes code on `main` from the open draft PRs; it is not a release announcement.
+See the [documentation index](docs/README.md), [configuration doctor guide](docs/doctor.md) and [delivery roadmap](docs/roadmap.md). These describe current source on `main`, including integrated PRs #11 to #14. The package version remains `0.4.6`; these unreleased additions are not a release announcement.
 
 ## Install
 
@@ -304,7 +304,7 @@ Options:
 -w, --watch            Re-run on file changes (run command only)
 ```
 
-These common options are command-specific. The configuration doctor uses `--format human|json|gha`, while `run` uses `--format text|json|gha`. Selecting `--host`, `--scope`, `--format` or `--runtime-evidence` switches `doctor` to configuration mode; bare `doctor` retains its YAML assertion workflow. Use `ctxharness <command> --help` for the exact options.
+These common options are command-specific. The configuration doctor uses `--format human|json|gha`, while `run` uses `--format text|json|gha`. Selecting `--host`, `--scope`, `--format`, `--runtime-evidence`, `--coverage`, `--budget`, `--export` or any tool option switches `doctor` to configuration mode; bare `doctor` retains its YAML assertion workflow. Use `ctxharness <command> --help` for the exact options.
 
 ### Configuration doctor
 
@@ -316,7 +316,25 @@ ctxharness doctor --host codex --scope project --format gha
 
 This mode does not require `.ctxharness.yml` and does not run hooks, skills, MCP servers or host clients. It reports `PASS`, `WARN`, `FAIL`, `UNKNOWN` and `N/A`; missing evidence stays unknown. Exit status is 1 for mandatory static failures or command errors and 0 otherwise. Exit 0 can therefore include warnings and unknowns.
 
-Local JSON includes source paths and diagnostic details. Review it before sharing. A validated portable export, declared coverage and an attributed static budget are proposed in [PR #12](https://github.com/FlorianBruniaux/ctxharness/pull/12); their CLI flags are not available on `main` yet. See the [full guide](docs/doctor.md) and [PR dependencies](docs/roadmap.md).
+Local JSON includes source paths and diagnostic details. Review it before sharing. Use the versioned portable profile to omit paths, names, raw messages and credentials. It includes declared coverage and static sizes by default:
+
+```bash
+ctxharness doctor --host both --scope project --export portable > doctor.portable.json
+ctxharness doctor --host claude --scope project --coverage --budget --format json
+```
+
+Byte counts measure discovered source content; the named character estimate does not establish model input or savings. Validate artifacts with the [core contracts and fixtures](docs/contracts/README.md). Opaque references do not guarantee anonymization.
+
+The optional extensions have separate entry points:
+
+```bash
+ctxharness config-snapshot --host claude --scope project --output first.json
+ctxharness config-snapshot --host claude --scope project --output second.json
+ctxharness config-diff first.json second.json
+ctxharness doctor --host claude --scope project --tools rg,gh --tool-path /opt/example/bin --tool-environment declared-client --format json
+```
+
+Snapshot output never overwrites an existing file; structural comparison does not update the baseline or measure performance. The example tool PATH is caller-supplied: absent environment evidence stays unknown, and no tool is executed or installed. Authentication and client permissions remain unknown. See the [full guide](docs/doctor.md) and [delivery status](docs/roadmap.md).
 
 `ctxharness fix` finds every assertion where the actual version differs from expected on a specific line and shows what it would change. Pass `--apply` to write the files:
 
@@ -592,3 +610,5 @@ These projects extend the workflow without duplicating this tool:
 ## License
 
 MIT
+
+Configuration audit scope and import boundaries: [configuration audit](docs/configuration-audit.md).

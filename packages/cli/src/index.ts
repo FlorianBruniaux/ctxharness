@@ -15,14 +15,17 @@ import {
   findLatestSnapshot,
   diffSnapshots,
   scanFile,
+  scanFileWithCoverage,
   detectIncludes,
   appendTrendRecord,
   populateFromConfig,
   assertionsToYaml,
-  inventoryAgentConfig,
-  scanAgentConfig,
-  validateAgentConfigRelease,
-  checkAgentConfigParity,
+  buildConfigSnapshot,
+  saveConfigSnapshot,
+  loadConfigSnapshot,
+  compareConfigSnapshots,
+  buildAgentDoctorReport,
+  projectPortableReport,
 } from '@florianbruniaux/ctxharness-core'
 import type {
   OutputFormat,
@@ -31,7 +34,10 @@ import type {
   HeuristicClaim,
   TrendRecord,
   RunResult,
-  AgentConfigFinding,
+  ToolAvailabilityOptions,
+  AgentDoctorReport,
+  AgentDoctorFinding,
+  AgentDoctorStatus,
   AgentHost,
   AgentConfigScope,
 } from '@florianbruniaux/ctxharness-core'
@@ -80,6 +86,8 @@ function recordTrend(result: RunResult, root: string): void {
 }
 
 const program = new Command()
+const portableInvocation = process.argv.some(arg => arg === '--export' || arg.startsWith('--export='))
+program.configureOutput({ writeErr: text => process.stderr.write(portableInvocation ? '{"schemaVersion":1,"kind":"ctxharness-export-error","code":"export-failed"}\n' : text) })
 
 program
   .name('ctxharness')
@@ -372,62 +380,6 @@ function getLayer(scanner: string): string {
 }
 
 type AgentDoctorFormat = 'human' | 'json' | 'gha'
-type AgentDoctorStatus = AgentConfigFinding['status']
-
-type AgentDoctorFinding = AgentConfigFinding & {
-  source: 'static' | 'runtime'
-  mandatory: boolean
-}
-
-interface RuntimeEvidenceMetadata {
-  path: string
-  kind: 'timestamped' | 'declared-signature'
-  generatedAt?: string
-  signature?: {
-    algorithm: string
-    keyId: string
-  }
-}
-
-interface RuntimeEvidenceResult {
-  host: AgentHost
-  scope?: AgentConfigScope
-  capability: string
-  status: AgentDoctorStatus
-  message: string
-}
-
-interface RuntimeEvidenceLoadResult {
-  metadata?: RuntimeEvidenceMetadata
-  findings: AgentDoctorFinding[]
-}
-
-interface AgentDoctorReport {
-  schemaVersion: 1
-  command: 'doctor'
-  mode: 'agent-config'
-  generatedAt: string
-  root: string
-  selection: {
-    hosts: AgentHost[]
-    scopes: AgentConfigScope[]
-  }
-  runtimeEvidence: RuntimeEvidenceMetadata | null
-  summary: {
-    pass: number
-    warn: number
-    fail: number
-    unknown: number
-    notApplicable: number
-    mandatoryFailures: number
-  }
-  findings: AgentDoctorFinding[]
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 function parseHosts(value: string | undefined): AgentHost[] {
   if (value === undefined || value === 'both') return ['claude', 'codex']
   if (value === 'claude' || value === 'codex') return [value]
@@ -444,208 +396,6 @@ function parseAgentDoctorFormat(value: string | undefined): AgentDoctorFormat {
   if (value === undefined || value === 'human') return 'human'
   if (value === 'json' || value === 'gha') return value
   throw new Error(`Invalid --format value: ${value}. Expected human, json, or gha.`)
-}
-
-function runtimeEvidenceUnknown(path: string, message: string): RuntimeEvidenceLoadResult {
-  return {
-    findings: [
-      {
-        code: 'runtime-evidence-unavailable',
-        status: 'unknown',
-        reason: 'missing-evidence',
-        message,
-        path,
-        source: 'runtime',
-        mandatory: false,
-      },
-    ],
-  }
-}
-
-function isValidTimestamp(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0 && Number.isFinite(Date.parse(value))
-}
-
-function parseRuntimeResult(value: unknown): RuntimeEvidenceResult | null {
-  if (!isRecord(value)) return null
-  const { host, scope, capability, status, message } = value
-  if (host !== 'claude' && host !== 'codex') return null
-  if (scope !== undefined && scope !== 'project' && scope !== 'global') return null
-  if (typeof capability !== 'string' || capability.length === 0) return null
-  if (
-    status !== 'pass' &&
-    status !== 'warn' &&
-    status !== 'fail' &&
-    status !== 'unknown' &&
-    status !== 'not-applicable'
-  )
-    return null
-  if (typeof message !== 'string' || message.length === 0) return null
-  return {
-    host,
-    ...(scope === undefined ? {} : { scope }),
-    capability,
-    status,
-    message,
-  }
-}
-
-function loadRuntimeEvidence(
-  requestedPath: string,
-  cwd: string,
-  hosts: AgentHost[],
-  scopes: AgentConfigScope[],
-): RuntimeEvidenceLoadResult {
-  const path = resolve(cwd, requestedPath)
-  let parsed: unknown
-  try {
-    if (statSync(path).size > 1_000_000) {
-      return runtimeEvidenceUnknown(path, 'Runtime evidence exceeds the 1 MB local input limit.')
-    }
-    const contents = readFileSync(path, 'utf8')
-    parsed = JSON.parse(contents)
-  } catch {
-    return runtimeEvidenceUnknown(path, 'Runtime evidence is missing, unreadable, or invalid JSON.')
-  }
-
-  if (!isRecord(parsed) || parsed.schemaVersion !== 1 || !Array.isArray(parsed.results)) {
-    return runtimeEvidenceUnknown(path, 'Runtime evidence does not match schema version 1.')
-  }
-
-  let metadata: RuntimeEvidenceMetadata
-  if (isValidTimestamp(parsed.generatedAt)) {
-    metadata = { path, kind: 'timestamped', generatedAt: parsed.generatedAt }
-  } else if (
-    isRecord(parsed.signature) &&
-    typeof parsed.signature.algorithm === 'string' &&
-    parsed.signature.algorithm.length > 0 &&
-    typeof parsed.signature.keyId === 'string' &&
-    parsed.signature.keyId.length > 0 &&
-    typeof parsed.signature.value === 'string' &&
-    parsed.signature.value.length > 0
-  ) {
-    metadata = {
-      path,
-      kind: 'declared-signature',
-      signature: {
-        algorithm: parsed.signature.algorithm,
-        keyId: parsed.signature.keyId,
-      },
-    }
-  } else {
-    return runtimeEvidenceUnknown(
-      path,
-      'Runtime evidence must declare a valid generatedAt timestamp or signature metadata.',
-    )
-  }
-
-  const results = parsed.results.map(parseRuntimeResult)
-  if (results.some((result) => result === null)) {
-    return runtimeEvidenceUnknown(path, 'Runtime evidence contains an invalid canary result.')
-  }
-
-  const findings = (results as RuntimeEvidenceResult[])
-    .filter((result) => hosts.includes(result.host))
-    .filter((result) => result.scope === undefined || scopes.includes(result.scope))
-    .map(
-      (result): AgentDoctorFinding => ({
-        code: 'runtime-canary-result',
-        status: result.status,
-        ...(result.status === 'unknown' ? { reason: 'missing-evidence' as const } : {}),
-        message: result.message,
-        host: result.host,
-        ...(result.scope === undefined ? {} : { scope: result.scope }),
-        capability: result.capability,
-        source: 'runtime',
-        mandatory: false,
-      }),
-    )
-
-  return { metadata, findings }
-}
-
-function includeSelectedFinding(
-  finding: AgentConfigFinding,
-  hosts: AgentHost[],
-  scopes: AgentConfigScope[],
-): boolean {
-  if (finding.host !== undefined && !hosts.includes(finding.host)) return false
-  if (finding.scope !== undefined && !scopes.includes(finding.scope)) return false
-  return true
-}
-
-function staticFinding(finding: AgentConfigFinding): AgentDoctorFinding {
-  return {
-    ...finding,
-    source: 'static',
-    mandatory: finding.status === 'fail',
-  }
-}
-
-function buildAgentDoctorReport(
-  root: string,
-  home: string,
-  hosts: AgentHost[],
-  scopes: AgentConfigScope[],
-  runtimeEvidencePath: string | undefined,
-  cwd: string,
-): AgentDoctorReport {
-  const inventory = inventoryAgentConfig({ root, home, hosts, scopes })
-  const findings = scanAgentConfig(inventory)
-    .filter((finding) => includeSelectedFinding(finding, hosts, scopes))
-    .map(staticFinding)
-
-  if (scopes.includes('global')) {
-    const releaseResult = validateAgentConfigRelease({
-      configRoot: join(home, '.config', 'ai-agents'),
-    })
-    findings.push(
-      ...releaseResult.findings
-        .filter((finding) => includeSelectedFinding(finding, hosts, scopes))
-        .map(staticFinding),
-    )
-    if (releaseResult.release !== undefined) {
-      findings.push(
-        ...checkAgentConfigParity({
-          release: releaseResult.release,
-          home,
-          policy: { undeclaredDivergence: 'fail' },
-        })
-          .filter((finding) => includeSelectedFinding(finding, hosts, scopes))
-          .map(staticFinding),
-      )
-    }
-  }
-
-  let runtimeEvidence: RuntimeEvidenceMetadata | null = null
-  if (runtimeEvidencePath !== undefined) {
-    const loaded = loadRuntimeEvidence(runtimeEvidencePath, cwd, hosts, scopes)
-    runtimeEvidence = loaded.metadata ?? null
-    findings.push(...loaded.findings)
-  }
-
-  const count = (status: AgentDoctorStatus): number =>
-    findings.filter((finding) => finding.status === status).length
-  return {
-    schemaVersion: 1,
-    command: 'doctor',
-    mode: 'agent-config',
-    generatedAt: new Date().toISOString(),
-    root,
-    selection: { hosts, scopes },
-    runtimeEvidence,
-    summary: {
-      pass: count('pass'),
-      warn: count('warn'),
-      fail: count('fail'),
-      unknown: count('unknown'),
-      notApplicable: count('not-applicable'),
-      mandatoryFailures: findings.filter(
-        (finding) => finding.status === 'fail' && finding.mandatory,
-      ).length,
-    },
-    findings,
-  }
 }
 
 function statusLabel(status: AgentDoctorStatus): string {
@@ -692,6 +442,12 @@ function reportAgentDoctor(result: AgentDoctorReport, format: AgentDoctorFormat)
   process.stdout.write(`Hosts       ${result.selection.hosts.join(', ')}\n`)
   process.stdout.write(`Scopes      ${result.selection.scopes.join(', ')}\n`)
   process.stdout.write(`Root        ${result.root}\n`)
+  if (result.coverage !== undefined) process.stdout.write('Coverage    partial; ' + result.coverage.items.length + ' source entries; native loading unknown\n')
+  if (result.budget !== undefined) process.stdout.write('Static size ' + result.budget.totals.utf8Bytes + ' UTF-8 bytes; ' + result.budget.totals.estimatedTokens + ' estimated tokens (UTF-16 chars/4); complete=' + result.budget.complete + '\n')
+  if (result.toolAvailability !== undefined) {
+    process.stdout.write('Tools       caller-selected filesystem resolution; authentication unknown\n')
+    for (const tool of result.toolAvailability.results) process.stdout.write('  ' + tool.tool + ': ' + tool.state + ' (' + tool.reason + ')\n')
+  }
   if (result.runtimeEvidence !== null) {
     process.stdout.write(`Runtime     ${result.runtimeEvidence.kind} evidence loaded separately\n`)
   }
@@ -714,20 +470,45 @@ program
   .option('--host <host>', 'Agent host: claude | codex | both')
   .option('--scope <scope>', 'Configuration scope: project | global | both')
   .option('--format <format>', 'Agent configuration output: human | json | gha')
+  .option('--tools <names>', 'Explicit comma-separated tool names; resolution only')
+  .option('--tool-path <path>', 'Caller-supplied client PATH (never inferred from this shell)')
+  .option('--tool-environment <identity>', 'Caller-declared client environment identity')
+  .option('--tool-platform <platform>', 'Client platform: posix | win32', 'posix')
+  .option('--tool-cwd <path>', 'Caller-supplied client working directory for relative PATH entries')
+  .option('--tool-symlinks <policy>', 'Executable symlink policy: reject | follow', 'reject')
+  .option('--required-tools <names>', 'Selected tools explicitly required by the project')
+  .option('--budget', 'Include attributed static sizes and explicit estimation methods')
+  .option('--coverage', 'Include declared static coverage and support inventory')
+  .option('--export <profile>', 'Versioned disclosure profile: portable')
   .option('--runtime-evidence <path>', 'Signed or timestamped runtime canary results')
   .option('--no-trend', 'Skip recording to trend history')
-  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string }) => {
+  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string; export?: string; coverage?: boolean; budget?: boolean; tools?: string; toolPath?: string; toolEnvironment?: string; toolPlatform?: string; toolCwd?: string; toolSymlinks?: string; requiredTools?: string }, command: Command) => {
     try {
       const cwd = process.cwd()
       const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
-      const agentConfigMode = opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
+      const explicitToolOptions = ['tools', 'toolPath', 'toolEnvironment', 'toolPlatform', 'toolCwd', 'toolSymlinks', 'requiredTools'].some(name => command.getOptionValueSource(name) === 'cli')
+      const agentConfigMode = explicitToolOptions || opts.budget === true || opts.coverage === true || opts.export !== undefined || opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
 
       if (agentConfigMode) {
+        if (opts.export !== undefined && opts.export !== 'portable') throw new Error('Unsupported export profile.')
         const hosts = parseHosts(opts.host)
         const scopes = parseScopes(opts.scope)
         const format = parseAgentDoctorFormat(opts.format)
-        const result = buildAgentDoctorReport(root, resolve(homedir()), hosts, scopes, opts.runtimeEvidence, cwd)
-        reportAgentDoctor(result, format)
+        if (explicitToolOptions && opts.tools === undefined) throw new Error('Tool diagnostics require an explicit tool list.')
+        if (opts.toolPlatform !== 'posix' && opts.toolPlatform !== 'win32') throw new Error('Unsupported tool platform.')
+        if (opts.toolSymlinks !== 'reject' && opts.toolSymlinks !== 'follow') throw new Error('Unsupported tool symlink policy.')
+        const tools = opts.tools?.split(',')
+        const required = opts.requiredTools?.split(',') ?? []
+        if (required.some(name => !tools?.includes(name))) throw new Error('Required tools must appear in the explicit tool list.')
+        const toolRequest: ToolAvailabilityOptions | undefined = tools === undefined ? undefined : {
+          tools,
+          ...(opts.toolPath === undefined || opts.toolEnvironment === undefined ? {} : { environment: { identity: opts.toolEnvironment, path: opts.toolPath, platform: opts.toolPlatform, ...(opts.toolCwd === undefined ? {} : { cwd: resolve(cwd, opts.toolCwd) }) } }),
+          symlinks: opts.toolSymlinks,
+          requirements: required.map(tool => ({ tool, kind: 'project-requirement' as const })),
+        }
+        const result = buildAgentDoctorReport({ root, home: resolve(homedir()), hosts, scopes, runtimeEvidencePath: opts.runtimeEvidence, cwd, includeCoverage: opts.coverage === true || opts.export === 'portable', includeBudget: opts.budget === true || opts.export === 'portable', ...(toolRequest === undefined ? {} : { toolRequest }) })
+        if (opts.export === 'portable') process.stdout.write(JSON.stringify(projectPortableReport(result), null, 2) + '\n')
+        else reportAgentDoctor(result, format)
         process.exitCode = result.summary.mandatoryFailures > 0 ? 1 : 0
         return
       }
@@ -862,7 +643,7 @@ program
 
       process.exit(result.totalFail > 0 || result.totalError > 0 ? 1 : 0)
     } catch (e) {
-      process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
+      process.stderr.write(opts.export !== undefined ? '{"schemaVersion":1,"kind":"ctxharness-export-error","code":"export-failed"}\n' : 'Error: ' + (e instanceof Error ? e.message : String(e)) + '\n')
       process.exit(1)
     }
   })
@@ -1263,15 +1044,22 @@ program
       process.stdout.write(`Scanning ${targetFile} for verifiable claims...\n\n`)
 
       let results: HeuristicResult[]
+      let complete = true
       try {
-        results = scanFile(filePath, root)
+        const scanned = scanFileWithCoverage(filePath, root)
+        results = scanned.results
+        complete = scanned.coverage.complete
+        if (!complete) {
+          const reasons = [...new Set(scanned.coverage.edges.filter(e => e.status !== 'included' && e.status !== 'duplicate').map(e => e.status))]
+          process.stdout.write('Incomplete import coverage: ' + reasons.join(', ') + '\n')
+        }
       } catch (err) {
         process.stderr.write(`Error reading file: ${err instanceof Error ? err.message : String(err)}\n`)
         process.exit(1)
       }
 
       if (results.length === 0) {
-        const includes = detectIncludes(filePath)
+        const includes = complete ? detectIncludes(filePath) : []
         if (includes.length > 0) {
           process.stdout.write(`No verifiable claims found directly in ${targetFile}.\n`)
           process.stdout.write(`Included files were also scanned: ${includes.join(', ')}\n`)
@@ -1506,6 +1294,39 @@ program
     } catch (e) {
       process.stderr.write(`Error: ${e instanceof Error ? e.message : String(e)}\n`)
       process.exit(1)
+    }
+  })
+
+program
+  .command('config-snapshot')
+  .description('Write an explicit structural configuration snapshot')
+  .option('-r, --root <dir>', 'Project root directory', '')
+  .option('--host <host>', 'Agent host: claude | codex | both')
+  .option('--scope <scope>', 'Configuration scope: project | global | both', 'project')
+  .requiredOption('--output <path>', 'New snapshot artifact path (never overwritten)')
+  .action((opts: {root:string;host?:string;scope?:string;output:string}) => {
+    try {
+      const cwd=process.cwd(),root=opts.root!==''?resolve(cwd,opts.root):cwd,home=resolve(homedir())
+      const report=buildAgentDoctorReport({root,home,hosts:parseHosts(opts.host),scopes:parseScopes(opts.scope),includeCoverage:true,includeBudget:true})
+      saveConfigSnapshot(buildConfigSnapshot(report,{home}),resolve(cwd,opts.output))
+      process.stdout.write('Configuration snapshot saved.\n')
+    } catch {
+      process.stderr.write('Error: configuration snapshot could not be created.\n')
+      process.exitCode=1
+    }
+  })
+
+program
+  .command('config-diff <baseline> <candidate>')
+  .description('Compare configuration artifacts without writing a baseline')
+  .action((baseline:string,candidate:string)=>{
+    try {
+      const result=compareConfigSnapshots(loadConfigSnapshot(resolve(baseline)),loadConfigSnapshot(resolve(candidate)))
+      process.stdout.write(JSON.stringify(result,null,2)+'\n')
+      process.exitCode=result.status==='incomparable'?2:0
+    } catch {
+      process.stdout.write('{"status":"incomparable","evidence":"incomplete","reason":"unsupported-or-invalid-input","changes":[],"findingsChanged":false,"generationChanged":false}\n')
+      process.exitCode=2
     }
   })
 

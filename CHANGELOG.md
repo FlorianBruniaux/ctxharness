@@ -10,11 +10,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Added
 
-- Documentation (2026-10-15): add an index, configuration doctor guide and delivery roadmap distinguishing current commands from draft PRs #11 to #14; clarify static evidence, local JSON disclosure and the separate optimizer boundary.
+- Documentation (2026-10-15): add an index, configuration doctor guide and delivery roadmap covering integrated PRs #11 to #14, portable contracts and optional extensions; distinguish source behavior from published releases and static evidence from runtime observations.
+
+- Explicit tool availability diagnostics using caller-supplied PATH/environment, filesystem resolution only and bounded portable results (#9).
+
+- Separate opt-in configuration snapshots and deterministic structural comparisons, without changing documentation snapshot/diff policy (#8).
+
+- Attributed static context-size ledger with exact UTF-8 bytes, explicitly named historical character estimates, physical deduplication and completeness limits (#7).
+
+- Opt-in declared configuration coverage with source states and explicit unsupported/unobserved surfaces; portable exports include bounded coverage (#6).
+
+- Reusable validated doctor v1 report and separately versioned portable export, with closed vocabularies and importable contract fixtures (#5).
 
 - `doctor` hooks layer: `hook-event-unknown` checks event names per host (33 Claude Code events, 12 Codex events), `hook-matcher-ignored` flags a matcher on an event that ignores it, and `hook-handler-unsupported` flags a handler type the event does not run (Codex `prompt` and `agent`, Claude `agent` on `PermissionRequest`). All three report `warn`.
 
 ### Fixed
+
+- Resolve relative imports at every hardlink location while measuring each physical body once (#2, review #11).
+- Require explicit tool lists for all caller-supplied tool options, while defaults preserve legacy doctor behavior; reuse the foundation v1 tools contract (#9, review #14).
+
+- Enforce static-only snapshot findings, canonicalize all physical aliases against selected roots and reject special-file snapshot inputs without blocking (#8, review #13).
+
+- Validate static ledger segments, references and completeness; retain every import attribution and local physical alias (#7, review #12).
+- Share the typed optional tools data contract in foundation v1 so extension exports remain consumable without enabling tool diagnosis (#5, review #14).
+
+- Reject special files without blocking and traverse imports in breadth-first order so physical deduplication preserves all descendants reachable within the depth cap (#2, review #11).
+- Keep static budgets incomplete when a discovered instruction disappears or becomes unreadable after inventory (#7).
+
+- Treat only exact numeric `--max-tokens` and `--token-budget` MCP arguments as resource limits; preserve literal credential and environment-fallback detection (#4).
+
+- Validate malformed hook containers, groups and supported handler fields before event semantics; keep omitted, empty and unsupported declarations distinct (#3).
+
+- Bound context imports to caller-selected roots before reading; deduplicate physical files and expose incomplete traversal instead of claiming a complete static budget (#2).
 
 - `doctor` rules layer: `paths` written as a comma-separated string is accepted, and unparsable rule frontmatter reports `claude-rule-frontmatter-invalid` as `warn`, since Claude Code loads such a rule without `paths`.
 - `doctor` skills layer: `name` is optional for Claude Code skills (the folder name applies) and required for Codex; name collisions use the effective name; a Claude skill without `description` reports `skill-description-missing` as `warn`.

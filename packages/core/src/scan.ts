@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { runExtractor } from './extractors/index.js'
+import { readContext, type ContextRead, type ReadPolicy } from './fs-boundary.js'
 import { normalizeMatch } from './scanners/index.js'
 
 // ─── Public types ─────────────────────────────────────────────────────────────
@@ -306,26 +307,18 @@ const IMPORT_PATTERN = /@([\w./\-]+\.md)/g
  * Follows @file.md includes (Claude/Gemini/Cursor convention) up to depth 3.
  */
 export function scanFile(filePath: string, root: string, _visited?: Set<string>, _depth?: number): HeuristicResult[] {
-  const visited = _visited ?? new Set<string>()
-  const depth = _depth ?? 3
+  return scanFileWithCoverage(filePath, root, { allowedRoots: [root], maxDepth: _depth ?? 3 }, _visited).results
+}
 
-  if (depth <= 0 || visited.has(filePath) || !existsSync(filePath)) return []
-  visited.add(filePath)
-
-  const content = readFileSync(filePath, 'utf-8')
-  const claims = detectClaims(content)
-  const results = claims.map((claim) => verifyClaim(claim, root))
-
-  // Follow @file.md includes
-  const dir = dirname(filePath)
-  IMPORT_PATTERN.lastIndex = 0
-  let match: RegExpExecArray | null
-  while ((match = IMPORT_PATTERN.exec(content)) !== null) {
-    const included = resolve(dir, match[1]!)
-    results.push(...scanFile(included, root, visited, depth - 1))
-  }
-
-  return results
+/** Same verification with explicit completeness and import provenance. */
+export function scanFileWithCoverage(filePath: string, root: string, policy: ReadPolicy = { allowedRoots: [root], maxDepth: 3 }, visited?: Set<string>): { results: HeuristicResult[]; coverage: ContextRead } {
+  const coverage = readContext([filePath], policy)
+  const results = coverage.files.flatMap((file) => {
+    if (visited?.has(file.path)) return []
+    visited?.add(file.path)
+    return detectClaims(file.content).map((claim) => verifyClaim(claim, root))
+  })
+  return { results, coverage }
 }
 
 /**

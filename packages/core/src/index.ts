@@ -77,3 +77,25 @@ export type {
   AgentConfigInventory,
   AgentConfigInventoryOptions,
 } from './agent-config/types.js'
+
+export { readContext } from './fs-boundary.js'
+export type { ReadPolicy, ReadReason, ContextRead, ContextFile, ImportEdge } from './fs-boundary.js'
+export { scanFileWithCoverage } from './scan.js'
+export { buildAgentDoctorReport, parseAgentDoctorReport, AgentDoctorReportSchema } from './agent-config/report.js'
+export type { AgentDoctorReport, AgentDoctorFinding, AgentDoctorStatus, AgentDoctorOptions } from './agent-config/report.js'
+export { projectPortableReport, parsePortableReport, PortableReportSchema, buildPrivateSourceMap } from './agent-config/disclosure.js'
+export type { PortableReport } from './agent-config/disclosure.js'
+
+export { buildConfigCoverage, ConfigCoverageSchema, portableCoverage, PortableCoverageSchema } from './agent-config/coverage.js'
+export type { ConfigCoverage } from './agent-config/coverage.js'
+
+export { buildStaticBudget, StaticBudgetSchema, portableBudget, PortableBudgetSchema } from './agent-config/budget.js'
+export type { StaticBudget } from './agent-config/budget.js'
+export { ToolAvailabilitySchema, PortableToolsSchema, portableToolAvailability } from './agent-config/tool-contract.js'
+export type { ToolAvailability } from './agent-config/tool-contract.js'
+export { diagnoseToolAvailability } from './agent-config/tool-availability.js'
+export type { ToolAvailabilityOptions } from './agent-config/tool-availability.js'
+
+
+export { buildConfigSnapshot, compareConfigSnapshots, saveConfigSnapshot, loadConfigSnapshot, parseConfigSnapshot, ConfigSnapshotSchema } from './agent-config/snapshot.js'
+export type { ConfigSnapshot, ConfigSnapshotDiff } from './agent-config/snapshot.js'

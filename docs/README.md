@@ -1,10 +1,12 @@
 # Documentation
 
-Updated: 2026-10-15. Status: documentation for current `main`, with proposed features identified separately.
+Updated: 2026-10-15. Status: documentation for current `main`, including integrated audit/export foundations and optional extensions. Source availability does not establish publication in a package release.
 
 - [Project README](../README.md): installation, documentation-drift workflow and CLI entry points.
 - [Configuration doctor](doctor.md): current modes, selected roots, output formats, exit codes and evidence limits. Updated 2026-10-15; does not establish native-client loading.
-- [Delivery roadmap](roadmap.md): issue order, draft PR dependencies and optional extensions. Checked 2026-10-15; an open PR is not a release.
+- [Configuration audit](configuration-audit.md): read boundaries, hook/MCP checks, coverage, static sizes and optional extensions.
+- [Versioned contracts](contracts/README.md): local and portable schemas, importable fixtures, snapshot format and disclosure limits.
+- [Delivery roadmap](roadmap.md): integrated issues, dependency order and optional extensions. Checked 2026-10-15; a merged PR is not a release.
 - [Changelog](../CHANGELOG.md): unreleased changes and package history.
 - [Contributor instructions](../CLAUDE.md): repository layout, checks and implementation boundaries.
 

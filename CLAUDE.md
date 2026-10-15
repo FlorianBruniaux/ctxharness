@@ -25,20 +25,20 @@ pnpm fmt:check       # check formatting, including existing fixture limitations
 
 ## Key files
 
-| File                                    | Purpose                                                                                                 |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `packages/core/src/config.ts`           | Zod schema, `.ctxharness.yml` format                                                                    |
-| `packages/core/src/extractors/index.ts` | 20 extractors (ground truth from code)                                                                  |
-| `packages/core/src/scanners/index.ts`   | 15 scanners (find mentions in docs)                                                                     |
-| `packages/core/src/runner.ts`           | Orchestrates run, returns `RunResult`                                                                   |
-| `packages/core/src/reporter.ts`         | text / json / gha output formats                                                                        |
-| `packages/core/src/trend.ts`            | Trend history, appendTrendRecord, loadTrendHistory, summarizeTrend                                      |
-| `packages/core/src/snapshot.ts`         | Snapshot save / load / diff for trend tracking                                                          |
-| `packages/core/src/populate.ts`         | `populateFromConfig` + `assertionsToYaml`, claim→Assertion mapping                                      |
-| `packages/core/src/plugin.ts`           | Plugin API, register custom extractors/scanners                                                         |
-| `packages/core/src/agent-config/`       | Host adapters, inventory, passive scanners, release validation and parity                               |
-| `packages/cli/src/index.ts`             | CLI entry point (run / check / scan / score / fix / doctor / init / snapshot / diff / trend / populate) |
-| `packages/core/src/__tests__/fixtures/` | Test fixture files                                                                                      |
+| File                                    | Purpose                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `packages/core/src/config.ts`           | Zod schema, `.ctxharness.yml` format                                                       |
+| `packages/core/src/extractors/index.ts` | 20 extractors (ground truth from code)                                                     |
+| `packages/core/src/scanners/index.ts`   | 15 scanners (find mentions in docs)                                                        |
+| `packages/core/src/runner.ts`           | Orchestrates run, returns `RunResult`                                                      |
+| `packages/core/src/reporter.ts`         | text / json / gha output formats                                                           |
+| `packages/core/src/trend.ts`            | Trend history, appendTrendRecord, loadTrendHistory, summarizeTrend                         |
+| `packages/core/src/snapshot.ts`         | Snapshot save / load / diff for trend tracking                                             |
+| `packages/core/src/populate.ts`         | `populateFromConfig` + `assertionsToYaml`, claim→Assertion mapping                         |
+| `packages/core/src/plugin.ts`           | Plugin API, register custom extractors/scanners                                            |
+| `packages/core/src/agent-config/`       | Host adapters, inventory, passive scanners, release validation and parity                  |
+| `packages/cli/src/index.ts`             | CLI entry point, including separate documentation and configuration snapshot/diff commands |
+| `packages/core/src/__tests__/fixtures/` | Test fixture files                                                                         |
 
 ## Architecture rules
 
@@ -109,10 +109,12 @@ Semver. `CHANGELOG.md` updated before every release.
 - `init` auto-scans existing AI doc files and generates assertions from detected claims
 - `packageScript` extractor, validates npm script references in AI docs
 - Extractors and scanners are listed in `config.ts` and their registries; obtain test counts from the current run
-- 11 CLI commands: run / check / scan / score / fix / doctor / init / snapshot / diff / trend / populate
+- Documentation commands: run / check / scan / score / fix / doctor / init / snapshot / diff / trend / populate
 - Plugin API, stack presets (T3, Next App Router), GitHub Action
 - `--no-trend` flag on run/check/score/doctor to skip history recording
 
 ### Active delivery
 
-Follow [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10) and [docs/roadmap.md](docs/roadmap.md): correctness fixes (#2 to #4), contract/export (#5), declared coverage (#6), then static budget (#7). Configuration snapshots (#8) and explicit tool availability (#9) are separate optional extensions. The older design notes are historical context, not the current delivery checklist. Do not revive an expanded optimization backlog.
+PRs #11 to #14 are integrated on `main`: correctness fixes (#2 to #4), reusable contract/portable export (#5), declared coverage (#6) and static budget (#7). Configuration `config-snapshot`/`config-diff` (#8) and explicit tool availability (#9) remain separate opt-in extensions. These source additions are unreleased; version `0.4.6` alone does not establish their presence in a published installation.
+
+Follow [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10), [docs/roadmap.md](docs/roadmap.md) and the [contract reference](docs/contracts/README.md). The older design notes are historical context, not the current delivery checklist. Do not revive an expanded optimization backlog.

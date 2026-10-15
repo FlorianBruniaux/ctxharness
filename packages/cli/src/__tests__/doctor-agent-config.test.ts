@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -22,7 +22,7 @@ beforeAll(() => {
       )
     }
   }
-})
+}, 120_000)
 
 function makeTempDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix))
@@ -537,3 +537,138 @@ describe('doctor agent configuration mode', () => {
     expect(result.stdout).not.toContain('agent-config')
   })
 })
+
+
+it('reports bounded import coverage without claiming rejected files were scanned', () => {
+  const root = makeTempDir('ctx-import-cli-')
+  const home = makeTempDir('ctx-import-home-')
+  try {
+    write(join(root, 'CLAUDE.md'), '@../outside.md')
+    const result = invoke(root, home, ['scan', 'CLAUDE.md'])
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('Incomplete import coverage: unavailable')
+    expect(result.stdout).not.toContain('Included files were also scanned:')
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
+})
+
+it('includes malformed hooks and unrelated valid layers with consistent mandatory counts', () => {
+  const root = makeTempDir('ctx-hook-cli-')
+  const home = makeTempDir('ctx-hook-home-')
+  try {
+    write(join(root, 'CLAUDE.md'), 'Inert fixture')
+    write(join(root, '.claude/settings.json'), JSON.stringify({ hooks: { PreToolUse: 'bad' } }))
+    const result = invoke(root, home, ['doctor', '--host', 'claude', '--scope', 'project', '--format', 'json'])
+    const report = JSON.parse(result.stdout)
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe('')
+    expect(report.findings).toContainEqual(expect.objectContaining({ code: 'hook-config-invalid', status: 'fail', mandatory: true }))
+    expect(report.findings).toContainEqual(expect.objectContaining({ code: 'instruction-valid', status: 'pass' }))
+    expect(report.summary.fail).toBe(report.findings.filter((f: {status: string}) => f.status === 'fail').length)
+    expect(report.summary.mandatoryFailures).toBe(report.findings.filter((f: {status: string; mandatory: boolean}) => f.status === 'fail' && f.mandatory).length)
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
+})
+
+it('exports bounded portable JSON and suppresses raw strings on export failures', () => {
+  const root = makeTempDir('ctx-portable-cli-')
+  const home = makeTempDir('ctx-portable-home-')
+  try {
+    write(join(root, '.mcp.json'), JSON.stringify({ mcpServers: { 'HOSTILE-private-name': { args: ['--api-key=HOSTILE-synthetic-secret'] } } }))
+    const result = invoke(root, home, ['doctor', '--host', 'claude', '--scope', 'project', '--export', 'portable'])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe('')
+    expect(JSON.parse(result.stdout).kind).toBe('ctxharness-portable')
+    expect(result.stdout).not.toContain('HOSTILE')
+    expect(result.stdout).not.toContain(root)
+    const bad = invoke(root, home, ['doctor', '--host', 'HOSTILE-secret', '--export', 'portable'])
+    expect(bad.status).toBe(1)
+    expect(bad.stdout).toBe('')
+    expect(bad.stderr).toBe('{"schemaVersion":1,"kind":"ctxharness-export-error","code":"export-failed"}\n')
+    const parserFailure = invoke(root, home, ['doctor', '--export', 'portable', '--HOSTILE-private-option'])
+    expect(parserFailure.status).toBe(1)
+    expect(parserFailure.stdout).toBe('')
+    expect(parserFailure.stderr).not.toContain('HOSTILE')
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
+})
+
+it('keeps legacy fields unchanged and exposes opt-in coverage in JSON and human output', () => {
+  const root=makeTempDir('ctx-coverage-cli-'),home=makeTempDir('ctx-coverage-cli-home-')
+  try {
+    write(join(root,'CLAUDE.md'),'fixture')
+    const legacy=invoke(root,home,['doctor','--host','claude','--scope','project','--format','json'])
+    expect(JSON.parse(legacy.stdout)).not.toHaveProperty('coverage')
+    const json=invoke(root,home,['doctor','--host','claude','--scope','project','--coverage','--format','json'])
+    expect(JSON.parse(json.stdout).coverage.resolution).toBe('partial')
+    const human=invoke(root,home,['doctor','--host','claude','--scope','project','--coverage'])
+    expect(human.stdout).toContain('Coverage    partial')
+  } finally {rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})
+it('reports Unicode static bytes and named estimates through the real CLI',()=>{
+  const root=makeTempDir('ctx-budget-cli-'),home=makeTempDir('ctx-budget-cli-home-')
+  try{
+    write(join(root,'CLAUDE.md'),'é😊')
+    const result=invoke(root,home,['doctor','--host','claude','--scope','project','--budget','--format','json'])
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+    const b=JSON.parse(result.stdout).budget
+    expect(b.totals).toEqual({utf8Bytes:6,utf16CodeUnits:3,estimatedTokens:1})
+    expect(b.methods.estimate).toBe('utf16-code-units-div-4-ceil')
+  }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})
+
+it('diagnoses explicitly selected tools without execution and exports no personal PATH or tool name',()=>{
+ const root=makeTempDir('ctx-tools-cli-'),home=makeTempDir('ctx-tools-cli-home-')
+ try{
+  const bin=join(root,'private-bin');mkdirSync(bin)
+  write(join(bin,'HOSTILE-tool'),'#!/bin/sh\ntouch '+join(root,'SHOULD_NEVER_RUN')+'\n');chmodSync(join(bin,'HOSTILE-tool'),0o755)
+  const unknown=invoke(root,home,['doctor','--host','claude','--scope','project','--tools','HOSTILE-tool','--format','json'])
+  expect(unknown.status).toBe(0)
+  expect(JSON.parse(unknown.stdout).toolAvailability.results[0].state).toBe('unknown-client-environment')
+  const result=invoke(root,home,['doctor','--host','claude','--scope','project','--tools','HOSTILE-tool','--tool-path',bin,'--tool-environment','HOSTILE-client','--export','portable'])
+  expect(result.status).toBe(0);expect(result.stderr).toBe('')
+  expect(JSON.parse(result.stdout).toolAvailability.results[0]).toMatchObject({state:'installed',authentication:'unknown',permissions:'unknown'})
+  expect(result.stdout).not.toContain('HOSTILE');expect(result.stdout).not.toContain(bin)
+  expect(existsSync(join(root,'SHOULD_NEVER_RUN'))).toBe(false)
+ }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})
+
+it.each([['--tool-cwd', '.'], ['--tool-platform', 'win32'], ['--tool-symlinks', 'follow']])(
+ 'rejects %s without an explicit tool list', (flag, value) => {
+  const root = makeTempDir('ctx-tools-options-'), home = makeTempDir('ctx-tools-options-home-')
+  try {
+   const result = invoke(root, home, ['doctor', '--host', 'claude', '--scope', 'project', '--export', 'portable', flag, value])
+   expect(result.status).toBe(1)
+   expect(result.stdout).toBe('')
+   expect(JSON.parse(result.stderr)).toEqual({ schemaVersion: 1, kind: 'ctxharness-export-error', code: 'export-failed' })
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
+ },
+)
+
+
+it('creates explicit configuration snapshots and compares without rewriting baselines',()=>{
+ const root=makeTempDir('ctx-config-snapshot-cli-'),home=makeTempDir('ctx-config-snapshot-home-')
+ try{
+  write(join(root,'CLAUDE.md'),'one')
+  const first=invoke(root,home,['config-snapshot','--host','claude','--scope','project','--output','first.json'])
+  expect(first.status).toBe(0);expect(first.stderr).toBe('')
+  write(join(root,'CLAUDE.md'),'two')
+  const second=invoke(root,home,['config-snapshot','--host','claude','--scope','project','--output','second.json'])
+  expect(second.status).toBe(0)
+  const before=readFileSync(join(root,'first.json'),'utf8')
+  const diff=invoke(root,home,['config-diff','first.json','second.json'])
+  expect(diff.status).toBe(0);expect(JSON.parse(diff.stdout).status).toBe('changed')
+  expect(readFileSync(join(root,'first.json'),'utf8')).toBe(before)
+  expect(invoke(root,home,['config-snapshot','--host','claude','--scope','project','--output','first.json']).status).toBe(1)
+ }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})
+
+it('rejects a special-file snapshot input without blocking config-diff', () => {
+ const root = makeTempDir('ctx-snapshot-pipe-')
+ try {
+  const pipe = join(root, 'inert.json')
+  expect(spawnSync('mkfifo', [pipe]).status).toBe(0)
+  const result = spawnSync(process.execPath, [cliPath, 'config-diff', pipe, pipe], { cwd: root, env: { ...process.env, HOME: root }, encoding: 'utf8', timeout: 5000 })
+  expect(result.error).toBeUndefined()
+  expect(result.status).toBe(2)
+  expect(JSON.parse(result.stdout).status).toBe('incomparable')
+ } finally { rmSync(root, { recursive: true, force: true }) }
+}, 10000)
