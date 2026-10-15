@@ -10,6 +10,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Added
 
+- Documentation (2026-10-15): add an index, configuration doctor guide and delivery roadmap distinguishing current commands from draft PRs #11 to #14; clarify static evidence, local JSON disclosure and the separate optimizer boundary.
+
 - `doctor` hooks layer: `hook-event-unknown` checks event names per host (33 Claude Code events, 12 Codex events), `hook-matcher-ignored` flags a matcher on an event that ignores it, and `hook-handler-unsupported` flags a handler type the event does not run (Codex `prompt` and `agent`, Claude `agent` on `PermissionRequest`). All three report `warn`.
 
 ### Fixed
