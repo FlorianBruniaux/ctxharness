@@ -264,7 +264,9 @@ export function buildAgentDoctorReport(options: AgentDoctorOptions): AgentDoctor
   const count = (status: AgentDoctorStatus): number =>
     findings.filter((finding) => finding.status === status).length
   return {
-    ...(options.toolRequest === undefined ? {} : { toolAvailability: diagnoseToolAvailability(options.toolRequest) }),
+    ...(options.toolRequest === undefined
+      ? {}
+      : { toolAvailability: diagnoseToolAvailability(options.toolRequest) }),
     schemaVersion: 1,
     command: 'doctor',
     mode: 'agent-config',
@@ -389,7 +391,7 @@ export const AgentDoctorReportSchema = z
       })
       .strict()
       .nullable(),
-  coverage: ConfigCoverageSchema.optional(),
+    coverage: ConfigCoverageSchema.optional(),
     budget: StaticBudgetSchema.optional(),
     toolAvailability: ToolAvailabilitySchema.optional(),
     summary: SummarySchema,

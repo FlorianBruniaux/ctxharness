@@ -3,7 +3,11 @@ import { isAbsolute, join, resolve } from 'node:path'
 import { z } from 'zod'
 
 import { ToolAvailabilitySchema, type ToolAvailability } from './tool-contract.js'
-export { ToolAvailabilitySchema, PortableToolsSchema, portableToolAvailability } from './tool-contract.js'
+export {
+  ToolAvailabilitySchema,
+  PortableToolsSchema,
+  portableToolAvailability,
+} from './tool-contract.js'
 export type { ToolAvailability } from './tool-contract.js'
 
 const Request = z
