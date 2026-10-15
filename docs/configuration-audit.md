@@ -55,3 +55,27 @@ Findings never serialize the matched credential. No MCP server is executed.
 
 See the [versioned configuration contracts](contracts/README.md) for the local
 report, portable projection, schemas, sanitized fixtures and disclosure limits.
+
+## Declared coverage
+
+`doctor --coverage --host both --scope project --format json` adds a versioned
+coverage extension. Portable exports include it by default. Core callers opt in
+with `includeCoverage: true` or use `buildConfigCoverage(inventory)` directly.
+The legacy report without these options retains its fields.
+
+Items carry source provenance and explicit discovered, declared, statically
+applicable, conditional, shadowed, invalid, outside-selection or unresolved
+states. Root instructions and Codex override shadowing use the existing static
+host profiles. Directory-specific instructions, rule globs, skills and agents
+remain conditional; a rare glob with no current file match remains useful.
+Hooks/MCP declarations do not establish trust or invocation. Project/global
+sources retain their provenance; repeated requested roots are deduplicated.
+Skill checks cover manifest metadata and declared reference existence, not a
+native client's resource loading or effective catalog serialization.
+
+The support inventory explicitly marks memory, Output Styles, plugin manifests,
+command manifests and managed settings unsupported. Codex imports and Claude-style
+rule globs are unsupported by this profile. Release support is unobserved here.
+Resolution remains partial; native client and platform qualification are
+unobserved/unqualified. Every item's loaded, executed and beneficial states remain
+unknown. No session trace is collected or needed to retain a conditional rule.

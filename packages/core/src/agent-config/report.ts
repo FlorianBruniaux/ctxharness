@@ -6,8 +6,10 @@ import { validateAgentConfigRelease } from './release.js'
 import { checkAgentConfigParity } from './parity.js'
 import type { AgentConfigFinding, AgentHost, AgentConfigScope } from './types.js'
 import { z } from 'zod'
+import { buildConfigCoverage, ConfigCoverageSchema, type ConfigCoverage } from './coverage.js'
 
 export interface AgentDoctorOptions {
+  includeCoverage?: boolean
   root: string
   home: string
   hosts: AgentHost[]
@@ -47,6 +49,7 @@ interface RuntimeEvidenceLoadResult {
 }
 
 export interface AgentDoctorReport {
+  coverage?: ConfigCoverage
   schemaVersion: 1
   command: 'doctor'
   mode: 'agent-config'
@@ -265,6 +268,7 @@ export function buildAgentDoctorReport(options: AgentDoctorOptions): AgentDoctor
       ).length,
     },
     findings,
+    ...(options.includeCoverage ? { coverage: buildConfigCoverage(inventory, findings.filter(f=>f.source==='static')) } : {}),
   }
 }
 
@@ -306,6 +310,7 @@ export const AgentDoctorReportSchema = z.object({
   schemaVersion: z.literal(1), command: z.literal('doctor'), mode: z.literal('agent-config'),
   generatedAt: z.string().datetime(), root: z.string(), selection: SelectionSchema,
   runtimeEvidence: z.object({ path: z.string(), kind: z.enum(['timestamped', 'declared-signature']), generatedAt: z.string().optional(), signature: z.object({ algorithm: z.string(), keyId: z.string() }).strict().optional() }).strict().nullable(),
+  coverage: ConfigCoverageSchema.optional(),
   summary: SummarySchema, findings: z.array(DoctorFindingSchema).max(100_000),
 }).strict().refine(countsMatch, 'Inconsistent finding counts.')
 

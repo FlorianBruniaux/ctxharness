@@ -589,3 +589,16 @@ it('exports bounded portable JSON and suppresses raw strings on export failures'
     expect(parserFailure.stderr).not.toContain('HOSTILE')
   } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
 })
+
+it('keeps legacy fields unchanged and exposes opt-in coverage in JSON and human output', () => {
+  const root=makeTempDir('ctx-coverage-cli-'),home=makeTempDir('ctx-coverage-cli-home-')
+  try {
+    write(join(root,'CLAUDE.md'),'fixture')
+    const legacy=invoke(root,home,['doctor','--host','claude','--scope','project','--format','json'])
+    expect(JSON.parse(legacy.stdout)).not.toHaveProperty('coverage')
+    const json=invoke(root,home,['doctor','--host','claude','--scope','project','--coverage','--format','json'])
+    expect(JSON.parse(json.stdout).coverage.resolution).toBe('partial')
+    const human=invoke(root,home,['doctor','--host','claude','--scope','project','--coverage'])
+    expect(human.stdout).toContain('Coverage    partial')
+  } finally {rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})

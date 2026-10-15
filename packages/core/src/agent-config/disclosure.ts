@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { portableCoverage, PortableCoverageSchema } from './coverage.js'
 import { countsMatch, LayerSchema, parseAgentDoctorReport, SelectionSchema, StatusSchema, SummarySchema, HostSchema, ScopeSchema } from './report.js'
 
 /** Closed vocabulary: new unknown codes are projected to unrecognized-finding. */
@@ -22,6 +23,7 @@ export const PortableFindingSchema = z.object({
 }).strict().refine(f => f.source !== 'runtime' || !f.mandatory, 'Runtime results are imported declarations.')
 export const PortableReportSchema = z.object({
   schemaVersion: z.literal(1), kind: z.literal('ctxharness-portable'), profileVersion: z.literal(1),
+  coverage: PortableCoverageSchema.optional(),
   selection: SelectionSchema, summary: SummarySchema,
   runtimeEvidence: z.enum(['not-provided', 'unavailable', 'timestamped', 'declared-signature']),
   findings: z.array(PortableFindingSchema).max(100_000),
@@ -34,6 +36,7 @@ export function projectPortableReport(value: unknown): PortableReport {
   const report = parseAgentDoctorReport(value)
   return parsePortableReport({
     schemaVersion: 1, kind: 'ctxharness-portable', profileVersion: 1,
+    ...(report.coverage === undefined ? {} : { coverage: portableCoverage(report.coverage) }),
     selection: report.selection, summary: report.summary,
     runtimeEvidence: report.runtimeEvidence?.kind ?? (report.findings.some(f => f.source === 'runtime') ? 'unavailable' : 'not-provided'),
     findings: report.findings.map((f, index) => ({

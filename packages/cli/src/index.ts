@@ -437,6 +437,7 @@ function reportAgentDoctor(result: AgentDoctorReport, format: AgentDoctorFormat)
   process.stdout.write(`Hosts       ${result.selection.hosts.join(', ')}\n`)
   process.stdout.write(`Scopes      ${result.selection.scopes.join(', ')}\n`)
   process.stdout.write(`Root        ${result.root}\n`)
+  if (result.coverage !== undefined) process.stdout.write('Coverage    partial; ' + result.coverage.items.length + ' source entries; native loading unknown\n')
   if (result.runtimeEvidence !== null) {
     process.stdout.write(`Runtime     ${result.runtimeEvidence.kind} evidence loaded separately\n`)
   }
@@ -459,21 +460,22 @@ program
   .option('--host <host>', 'Agent host: claude | codex | both')
   .option('--scope <scope>', 'Configuration scope: project | global | both')
   .option('--format <format>', 'Agent configuration output: human | json | gha')
+  .option('--coverage', 'Include declared static coverage and support inventory')
   .option('--export <profile>', 'Versioned disclosure profile: portable')
   .option('--runtime-evidence <path>', 'Signed or timestamped runtime canary results')
   .option('--no-trend', 'Skip recording to trend history')
-  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string; export?: string }) => {
+  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string; export?: string; coverage?: boolean }) => {
     try {
       const cwd = process.cwd()
       const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
-      const agentConfigMode = opts.export !== undefined || opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
+      const agentConfigMode = opts.coverage === true || opts.export !== undefined || opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
 
       if (agentConfigMode) {
         if (opts.export !== undefined && opts.export !== 'portable') throw new Error('Unsupported export profile.')
         const hosts = parseHosts(opts.host)
         const scopes = parseScopes(opts.scope)
         const format = parseAgentDoctorFormat(opts.format)
-        const result = buildAgentDoctorReport({ root, home: resolve(homedir()), hosts, scopes, runtimeEvidencePath: opts.runtimeEvidence, cwd })
+        const result = buildAgentDoctorReport({ root, home: resolve(homedir()), hosts, scopes, runtimeEvidencePath: opts.runtimeEvidence, cwd, includeCoverage: opts.coverage === true || opts.export === 'portable' })
         if (opts.export === 'portable') process.stdout.write(JSON.stringify(projectPortableReport(result), null, 2) + '\n')
         else reportAgentDoctor(result, format)
         process.exitCode = result.summary.mandatoryFailures > 0 ? 1 : 0

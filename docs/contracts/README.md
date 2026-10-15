@@ -40,3 +40,12 @@ Portable CLI failures write only the bounded export error envelope to stderr and
 return 1. A valid report also returns 1 when static mandatory failures exist.
 Reports describe static observations and imported declarations; they establish no
 native loading, authentication, task quality, resource saving or cache benefit.
+
+## Coverage extension
+
+Optional `coverage` uses profile version 1 and partial resolution. Its portable
+items contain generated `cN` references, host/scope/layer enums, bounded state
+arrays and unknown loaded/executed/beneficial states. The support matrix uses
+closed surface/status enums. Local paths and provenance are omitted. Schemas are
+`ConfigCoverageSchema` and `PortableCoverageSchema`; unsupported native/platform
+qualification remains explicit.
