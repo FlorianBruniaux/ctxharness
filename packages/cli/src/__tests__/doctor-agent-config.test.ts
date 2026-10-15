@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -614,3 +614,32 @@ it('reports Unicode static bytes and named estimates through the real CLI',()=>{
     expect(b.methods.estimate).toBe('utf16-code-units-div-4-ceil')
   }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
 })
+
+it('creates explicit configuration snapshots and compares without rewriting baselines',()=>{
+ const root=makeTempDir('ctx-config-snapshot-cli-'),home=makeTempDir('ctx-config-snapshot-home-')
+ try{
+  write(join(root,'CLAUDE.md'),'one')
+  const first=invoke(root,home,['config-snapshot','--host','claude','--scope','project','--output','first.json'])
+  expect(first.status).toBe(0);expect(first.stderr).toBe('')
+  write(join(root,'CLAUDE.md'),'two')
+  const second=invoke(root,home,['config-snapshot','--host','claude','--scope','project','--output','second.json'])
+  expect(second.status).toBe(0)
+  const before=readFileSync(join(root,'first.json'),'utf8')
+  const diff=invoke(root,home,['config-diff','first.json','second.json'])
+  expect(diff.status).toBe(0);expect(JSON.parse(diff.stdout).status).toBe('changed')
+  expect(readFileSync(join(root,'first.json'),'utf8')).toBe(before)
+  expect(invoke(root,home,['config-snapshot','--host','claude','--scope','project','--output','first.json']).status).toBe(1)
+ }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})
+
+it('rejects a special-file snapshot input without blocking config-diff', () => {
+ const root = makeTempDir('ctx-snapshot-pipe-')
+ try {
+  const pipe = join(root, 'inert.json')
+  expect(spawnSync('mkfifo', [pipe]).status).toBe(0)
+  const result = spawnSync(process.execPath, [cliPath, 'config-diff', pipe, pipe], { cwd: root, env: { ...process.env, HOME: root }, encoding: 'utf8', timeout: 5000 })
+  expect(result.error).toBeUndefined()
+  expect(result.status).toBe(2)
+  expect(JSON.parse(result.stdout).status).toBe('incomparable')
+ } finally { rmSync(root, { recursive: true, force: true }) }
+}, 10000)
