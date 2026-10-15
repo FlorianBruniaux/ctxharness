@@ -3,12 +3,8 @@
   "kind": "ctxharness-portable",
   "profileVersion": 1,
   "selection": {
-    "hosts": [
-      "claude"
-    ],
-    "scopes": [
-      "project"
-    ]
+    "hosts": ["claude"],
+    "scopes": ["project"]
   },
   "runtimeEvidence": "not-provided",
   "summary": {
