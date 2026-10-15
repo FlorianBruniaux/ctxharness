@@ -37,3 +37,10 @@ a nonempty command and optional string-array args; HTTP requires a URL string,
 MCP handlers require server/tool strings, prompt/agent handlers require a prompt.
 Unsupported types/events remain warnings about unresolved applicability. Discovery
 and path resolution do not establish trust, activation or native effect.
+
+## MCP credentials
+
+Numeric `--max-tokens` and `--token-budget` args (separate or `=` forms) are
+resource limits. Other token-like options, nonnumeric values, literal keys, bearer
+headers and literal environment fallbacks still undergo credential checks.
+Findings never serialize the matched credential. No MCP server is executed.
