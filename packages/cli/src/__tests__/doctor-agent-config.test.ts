@@ -567,3 +567,25 @@ it('includes malformed hooks and unrelated valid layers with consistent mandator
     expect(report.summary.mandatoryFailures).toBe(report.findings.filter((f: {status: string; mandatory: boolean}) => f.status === 'fail' && f.mandatory).length)
   } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
 })
+
+it('exports bounded portable JSON and suppresses raw strings on export failures', () => {
+  const root = makeTempDir('ctx-portable-cli-')
+  const home = makeTempDir('ctx-portable-home-')
+  try {
+    write(join(root, '.mcp.json'), JSON.stringify({ mcpServers: { 'HOSTILE-private-name': { args: ['--api-key=HOSTILE-synthetic-secret'] } } }))
+    const result = invoke(root, home, ['doctor', '--host', 'claude', '--scope', 'project', '--export', 'portable'])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe('')
+    expect(JSON.parse(result.stdout).kind).toBe('ctxharness-portable')
+    expect(result.stdout).not.toContain('HOSTILE')
+    expect(result.stdout).not.toContain(root)
+    const bad = invoke(root, home, ['doctor', '--host', 'HOSTILE-secret', '--export', 'portable'])
+    expect(bad.status).toBe(1)
+    expect(bad.stdout).toBe('')
+    expect(bad.stderr).toBe('{"schemaVersion":1,"kind":"ctxharness-export-error","code":"export-failed"}\n')
+    const parserFailure = invoke(root, home, ['doctor', '--export', 'portable', '--HOSTILE-private-option'])
+    expect(parserFailure.status).toBe(1)
+    expect(parserFailure.stdout).toBe('')
+    expect(parserFailure.stderr).not.toContain('HOSTILE')
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(home, { recursive: true, force: true }) }
+})

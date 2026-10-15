@@ -50,3 +50,8 @@ Numeric `--max-tokens` and `--token-budget` args (separate or `=` forms) are
 resource limits. Other token-like options, nonnumeric values, literal keys, bearer
 headers and literal environment fallbacks still undergo credential checks.
 Findings never serialize the matched credential. No MCP server is executed.
+
+## Reusable export
+
+See the [versioned configuration contracts](contracts/README.md) for the local
+report, portable projection, schemas, sanitized fixtures and disclosure limits.

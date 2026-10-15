@@ -10,6 +10,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Added
 
+- Reusable validated doctor v1 report and separately versioned portable export, with closed vocabularies and importable contract fixtures (#5).
+
 - `doctor` hooks layer: `hook-event-unknown` checks event names per host (33 Claude Code events, 12 Codex events), `hook-matcher-ignored` flags a matcher on an event that ignores it, and `hook-handler-unsupported` flags a handler type the event does not run (Codex `prompt` and `agent`, Claude `agent` on `PermissionRequest`). All three report `warn`.
 
 ### Fixed

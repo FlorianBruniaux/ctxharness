@@ -81,3 +81,7 @@ export type {
 export { readContext } from './fs-boundary.js'
 export type { ReadPolicy, ReadReason, ContextRead, ContextFile, ImportEdge } from './fs-boundary.js'
 export { scanFileWithCoverage } from './scan.js'
+export { buildAgentDoctorReport, parseAgentDoctorReport, AgentDoctorReportSchema } from './agent-config/report.js'
+export type { AgentDoctorReport, AgentDoctorFinding, AgentDoctorStatus, AgentDoctorOptions } from './agent-config/report.js'
+export { projectPortableReport, parsePortableReport, PortableReportSchema, buildPrivateSourceMap } from './agent-config/disclosure.js'
+export type { PortableReport } from './agent-config/disclosure.js'

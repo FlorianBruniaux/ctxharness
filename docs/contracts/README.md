@@ -1,0 +1,42 @@
+# Configuration contracts
+
+Core exports `buildAgentDoctorReport(options)`, `AgentDoctorReportSchema` and
+`parseAgentDoctorReport(unknown)`. Options explicitly select root, home, hosts and
+scopes. The local doctor v1 fields, findings, summary and mandatory-failure exit
+policy remain unchanged. The library needs no CLI process. Runtime input is still
+optional, bounded to 1 MB, and separate from static findings. Declared signatures
+are metadata, never verified signatures or proof of native effects.
+
+`doctor --host claude --scope project --export portable` writes portable JSON.
+`PortableReportSchema`, `parsePortableReport(unknown)` and
+`projectPortableReport(localReport)` expose the same contract in core.
+
+| Field | Contract |
+| --- | --- |
+| schemaVersion / kind / profileVersion | `1` / `ctxharness-portable` / `1` |
+| selection | Unique supported host and scope enums |
+| summary | Nonnegative integer counts recomputed against findings |
+| runtimeEvidence | `not-provided`, `unavailable`, `timestamped`, `declared-signature` |
+| findings | Unique opaque `fN` reference, bounded code, status, source, mandatory, optional host/scope/layer |
+
+The closed code vocabulary lives in `PortableCodeSchema`; unrecognized local codes
+map to `unrecognized-finding`. All objects reject extra keys, unsupported versions,
+inconsistent counts and mandatory imported-runtime findings. An unknown local
+finding must state its evidence reason. Portable strings are enums or generated
+references. Paths, names, arbitrary messages, credentials, command arguments and
+signature metadata are excluded by construction. `buildPrivateSourceMap` is an
+explicit local-only helper. Never share it with the portable payload. Opaque
+references do not guarantee anonymization: counts and configuration patterns may
+still identify an installation.
+
+The sanitized JSON fixtures here are importable without invoking the CLI:
+[valid v1](portable-v1.valid.json), [inconsistent counts](portable-v1.invalid.json)
+and [unsupported version](portable.unsupported.json). Consumers must validate
+before use. Unsupported versions are rejected, with no implicit migration.
+Changes to existing semantics require a new schema/profile version; additive
+optional extensions must be documented. There is no dependency on an optimizer.
+
+Portable CLI failures write only the bounded export error envelope to stderr and
+return 1. A valid report also returns 1 when static mandatory failures exist.
+Reports describe static observations and imported declarations; they establish no
+native loading, authentication, task quality, resource saving or cache benefit.
