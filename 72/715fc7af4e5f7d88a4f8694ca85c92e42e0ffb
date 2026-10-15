@@ -1,0 +1,34 @@
+docs/contracts/README.md
+  s_ff3dff62f4ff19::t_fe74dcef67356d 86-91
+packages/cli/src/__tests__/doctor-agent-config.test.ts
+  s_ff3dff62f4ff19::t_35f45a5b5e92d4 634-645
+docs/configuration-audit.md
+  s_ff3dff62f4ff19::t_fe74dcef67356d 137-141
+packages/core/src/agent-config/snapshot.ts
+  s_ff3dff62f4ff19::t_a47d2d66fb3f02 2,29
+  s_ff3dff62f4ff19::t_395ae50a3268fd 30-39,78-94,116,179-196
+packages/core/src/agent-config/__tests__/snapshot.test.ts
+  s_ff3dff62f4ff19::t_f8c4a1337dffd1 125,135-136,143-151,164-165,170-173,178-181,194
+  s_ff3dff62f4ff19::t_1d9cb7a3c5ba80 2-10,126-134,137-142,152-163,166-169,174-177,182-193
+  s_ff3dff62f4ff19::t_e171143afc7259 113-115,195-224
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_fe74dcef67356d 25-26
+docs/contracts/config-snapshot.runtime.invalid.json
+  s_ff3dff62f4ff19::t_5a7fd20552a262 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "72715fc7af4e5f7d88a4f8694ca85c92e42e0ffb",
+  "prompts": {},
+  "sessions": {
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
