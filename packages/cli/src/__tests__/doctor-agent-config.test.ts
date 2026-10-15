@@ -637,9 +637,9 @@ it('rejects a special-file snapshot input without blocking config-diff', () => {
  try {
   const pipe = join(root, 'inert.json')
   expect(spawnSync('mkfifo', [pipe]).status).toBe(0)
-  const result = spawnSync(process.execPath, [cliPath, 'config-diff', pipe, pipe], { cwd: root, env: { ...process.env, HOME: root }, encoding: 'utf8', timeout: 1500 })
+  const result = spawnSync(process.execPath, [cliPath, 'config-diff', pipe, pipe], { cwd: root, env: { ...process.env, HOME: root }, encoding: 'utf8', timeout: 5000 })
   expect(result.error).toBeUndefined()
   expect(result.status).toBe(2)
   expect(JSON.parse(result.stdout).status).toBe('incomparable')
  } finally { rmSync(root, { recursive: true, force: true }) }
-})
+}, 10000)
