@@ -3,12 +3,8 @@
   "kind": "ctxharness-portable",
   "profileVersion": 1,
   "selection": {
-    "hosts": [
-      "claude"
-    ],
-    "scopes": [
-      "project"
-    ]
+    "hosts": ["claude"],
+    "scopes": ["project"]
   },
   "runtimeEvidence": "not-provided",
   "summary": {
@@ -49,15 +45,31 @@
         "host": "claude",
         "scope": "project",
         "layer": "instructions",
-        "states": [
-          "discovered",
-          "declared",
-          "statically-applicable"
-        ],
+        "states": ["discovered", "declared", "statically-applicable"],
         "loaded": "unknown",
         "executed": "unknown",
         "beneficial": "unknown"
       }
     ]
+  },
+  "budget": {
+    "profileVersion": 1,
+    "scope": "discovered-content-only",
+    "methods": {
+      "bytes": "utf8-bytes",
+      "characters": "utf16-code-units",
+      "estimate": "utf16-code-units-div-4-ceil"
+    },
+    "loading": "unknown",
+    "hiddenSystemPrompts": "unknown",
+    "requestAssembly": "unknown",
+    "complete": true,
+    "totals": {
+      "utf8Bytes": 0,
+      "utf16CodeUnits": 0,
+      "estimatedTokens": 0
+    },
+    "files": [],
+    "edges": []
   }
 }

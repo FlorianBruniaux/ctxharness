@@ -11,13 +11,13 @@ are metadata, never verified signatures or proof of native effects.
 `PortableReportSchema`, `parsePortableReport(unknown)` and
 `projectPortableReport(localReport)` expose the same contract in core.
 
-| Field | Contract |
-| --- | --- |
-| schemaVersion / kind / profileVersion | `1` / `ctxharness-portable` / `1` |
-| selection | Unique supported host and scope enums |
-| summary | Nonnegative integer counts recomputed against findings |
-| runtimeEvidence | `not-provided`, `unavailable`, `timestamped`, `declared-signature` |
-| findings | Unique opaque `fN` reference, bounded code, status, source, mandatory, optional host/scope/layer |
+| Field                                 | Contract                                                                                         |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| schemaVersion / kind / profileVersion | `1` / `ctxharness-portable` / `1`                                                                |
+| selection                             | Unique supported host and scope enums                                                            |
+| summary                               | Nonnegative integer counts recomputed against findings                                           |
+| runtimeEvidence                       | `not-provided`, `unavailable`, `timestamped`, `declared-signature`                               |
+| findings                              | Unique opaque `fN` reference, bounded code, status, source, mandatory, optional host/scope/layer |
 
 The closed code vocabulary lives in `PortableCodeSchema`; unrecognized local codes
 map to `unrecognized-finding`. All objects reject extra keys, unsupported versions,
@@ -49,3 +49,12 @@ arrays and unknown loaded/executed/beneficial states. The support matrix uses
 closed surface/status enums. Local paths and provenance are omitted. Schemas are
 `ConfigCoverageSchema` and `PortableCoverageSchema`; unsupported native/platform
 qualification remains explicit.
+
+## Static budget extension
+
+Optional `budget` uses profile 1 and `discovered-content-only` scope. Every size
+contains UTF-8 bytes, UTF-16 code units and their named chars/4 estimate. Portable
+files carry bounded segments/attributions and opaque physical/content group refs;
+raw paths, content and content digests are excluded. `StaticBudgetSchema` and
+`PortableBudgetSchema` reject inconsistent totals and estimates. `complete` refers
+to bounded traversal, not complete model request observation.

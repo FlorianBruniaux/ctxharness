@@ -6,10 +6,12 @@ import { validateAgentConfigRelease } from './release.js'
 import { checkAgentConfigParity } from './parity.js'
 import type { AgentConfigFinding, AgentHost, AgentConfigScope } from './types.js'
 import { z } from 'zod'
+import { buildStaticBudget, StaticBudgetSchema, type StaticBudget } from './budget.js'
 import { buildConfigCoverage, ConfigCoverageSchema, type ConfigCoverage } from './coverage.js'
 
 export interface AgentDoctorOptions {
   includeCoverage?: boolean
+  includeBudget?: boolean
   root: string
   home: string
   hosts: AgentHost[]
@@ -50,6 +52,7 @@ interface RuntimeEvidenceLoadResult {
 
 export interface AgentDoctorReport {
   coverage?: ConfigCoverage
+  budget?: StaticBudget
   schemaVersion: 1
   command: 'doctor'
   mode: 'agent-config'
@@ -247,6 +250,13 @@ export function buildAgentDoctorReport(options: AgentDoctorOptions): AgentDoctor
     findings.push(...loaded.findings)
   }
 
+  const coverage =
+    options.includeCoverage || options.includeBudget
+      ? buildConfigCoverage(
+          inventory,
+          findings.filter((f) => f.source === 'static'),
+        )
+      : undefined
   const count = (status: AgentDoctorStatus): number =>
     findings.filter((finding) => finding.status === status).length
   return {
@@ -268,51 +278,119 @@ export function buildAgentDoctorReport(options: AgentDoctorOptions): AgentDoctor
       ).length,
     },
     findings,
-    ...(options.includeCoverage ? { coverage: buildConfigCoverage(inventory, findings.filter(f=>f.source==='static')) } : {}),
+    ...(options.includeCoverage && coverage !== undefined ? { coverage } : {}),
+    ...(options.includeBudget ? { budget: buildStaticBudget(inventory, {}, coverage) } : {}),
   }
 }
-
 
 export const HostSchema = z.enum(['claude', 'codex'])
 export const ScopeSchema = z.enum(['project', 'global'])
-export const LayerSchema = z.enum(['instructions', 'skills', 'rules', 'agents', 'hooks', 'mcp', 'release'])
+export const LayerSchema = z.enum([
+  'instructions',
+  'skills',
+  'rules',
+  'agents',
+  'hooks',
+  'mcp',
+  'release',
+])
 export const StatusSchema = z.enum(['pass', 'warn', 'fail', 'unknown', 'not-applicable'])
-export const SelectionSchema = z.object({ hosts: z.array(HostSchema).min(1).max(2), scopes: z.array(ScopeSchema).min(1).max(2) }).strict().refine(s => new Set(s.hosts).size === s.hosts.length && new Set(s.scopes).size === s.scopes.length)
+export const SelectionSchema = z
+  .object({ hosts: z.array(HostSchema).min(1).max(2), scopes: z.array(ScopeSchema).min(1).max(2) })
+  .strict()
+  .refine(
+    (s) => new Set(s.hosts).size === s.hosts.length && new Set(s.scopes).size === s.scopes.length,
+  )
 const count = z.number().int().nonnegative().safe()
-export const SummarySchema = z.object({ pass: count, warn: count, fail: count, unknown: count, notApplicable: count, mandatoryFailures: count }).strict()
-const EvidenceSchema = z.object({ host: HostSchema, scope: ScopeSchema, layer: LayerSchema, root: z.string(), path: z.string() }).strict()
-export const DoctorFindingSchema = z.object({
-  code: z.string(), message: z.string(), status: StatusSchema,
-  source: z.enum(['static', 'runtime']), mandatory: z.boolean(),
-  reason: z.enum(['missing-evidence', 'outside-boundary']).optional(),
-  host: HostSchema.optional(), scope: ScopeSchema.optional(), layer: LayerSchema.optional(),
-  path: z.string().optional(), evidence: z.array(EvidenceSchema).optional(), server: z.string().optional(),
-  capability: z.string().optional(), expected: z.string().optional(), observed: z.string().optional(),
-}).strict().superRefine((f, ctx) => {
-  if (f.status === 'unknown' && f.reason === undefined) ctx.addIssue({ code: 'custom', message: 'Unknown requires a reason.' })
-  if (f.source === 'runtime' && f.mandatory) ctx.addIssue({ code: 'custom', message: 'Imported runtime results cannot be mandatory.' })
-})
-export function summarizeFindings(findings: readonly {status: AgentDoctorStatus; mandatory: boolean}[]): AgentDoctorReport['summary'] {
+export const SummarySchema = z
+  .object({
+    pass: count,
+    warn: count,
+    fail: count,
+    unknown: count,
+    notApplicable: count,
+    mandatoryFailures: count,
+  })
+  .strict()
+const EvidenceSchema = z
+  .object({
+    host: HostSchema,
+    scope: ScopeSchema,
+    layer: LayerSchema,
+    root: z.string(),
+    path: z.string(),
+  })
+  .strict()
+export const DoctorFindingSchema = z
+  .object({
+    code: z.string(),
+    message: z.string(),
+    status: StatusSchema,
+    source: z.enum(['static', 'runtime']),
+    mandatory: z.boolean(),
+    reason: z.enum(['missing-evidence', 'outside-boundary']).optional(),
+    host: HostSchema.optional(),
+    scope: ScopeSchema.optional(),
+    layer: LayerSchema.optional(),
+    path: z.string().optional(),
+    evidence: z.array(EvidenceSchema).optional(),
+    server: z.string().optional(),
+    capability: z.string().optional(),
+    expected: z.string().optional(),
+    observed: z.string().optional(),
+  })
+  .strict()
+  .superRefine((f, ctx) => {
+    if (f.status === 'unknown' && f.reason === undefined)
+      ctx.addIssue({ code: 'custom', message: 'Unknown requires a reason.' })
+    if (f.source === 'runtime' && f.mandatory)
+      ctx.addIssue({ code: 'custom', message: 'Imported runtime results cannot be mandatory.' })
+  })
+export function summarizeFindings(
+  findings: readonly { status: AgentDoctorStatus; mandatory: boolean }[],
+): AgentDoctorReport['summary'] {
   return {
-    pass: findings.filter(f => f.status === 'pass').length,
-    warn: findings.filter(f => f.status === 'warn').length,
-    fail: findings.filter(f => f.status === 'fail').length,
-    unknown: findings.filter(f => f.status === 'unknown').length,
-    notApplicable: findings.filter(f => f.status === 'not-applicable').length,
-    mandatoryFailures: findings.filter(f => f.status === 'fail' && f.mandatory).length,
+    pass: findings.filter((f) => f.status === 'pass').length,
+    warn: findings.filter((f) => f.status === 'warn').length,
+    fail: findings.filter((f) => f.status === 'fail').length,
+    unknown: findings.filter((f) => f.status === 'unknown').length,
+    notApplicable: findings.filter((f) => f.status === 'not-applicable').length,
+    mandatoryFailures: findings.filter((f) => f.status === 'fail' && f.mandatory).length,
   }
 }
-export function countsMatch(report: {summary: AgentDoctorReport['summary']; findings: {status: AgentDoctorStatus; mandatory: boolean}[]}): boolean {
+export function countsMatch(report: {
+  summary: AgentDoctorReport['summary']
+  findings: { status: AgentDoctorStatus; mandatory: boolean }[]
+}): boolean {
   const expected = summarizeFindings(report.findings)
-  return (Object.keys(expected) as (keyof typeof expected)[]).every(k => report.summary[k] === expected[k])
+  return (Object.keys(expected) as (keyof typeof expected)[]).every(
+    (k) => report.summary[k] === expected[k],
+  )
 }
-export const AgentDoctorReportSchema = z.object({
-  schemaVersion: z.literal(1), command: z.literal('doctor'), mode: z.literal('agent-config'),
-  generatedAt: z.string().datetime(), root: z.string(), selection: SelectionSchema,
-  runtimeEvidence: z.object({ path: z.string(), kind: z.enum(['timestamped', 'declared-signature']), generatedAt: z.string().optional(), signature: z.object({ algorithm: z.string(), keyId: z.string() }).strict().optional() }).strict().nullable(),
-  coverage: ConfigCoverageSchema.optional(),
-  summary: SummarySchema, findings: z.array(DoctorFindingSchema).max(100_000),
-}).strict().refine(countsMatch, 'Inconsistent finding counts.')
+export const AgentDoctorReportSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    command: z.literal('doctor'),
+    mode: z.literal('agent-config'),
+    generatedAt: z.string().datetime(),
+    root: z.string(),
+    selection: SelectionSchema,
+    runtimeEvidence: z
+      .object({
+        path: z.string(),
+        kind: z.enum(['timestamped', 'declared-signature']),
+        generatedAt: z.string().optional(),
+        signature: z.object({ algorithm: z.string(), keyId: z.string() }).strict().optional(),
+      })
+      .strict()
+      .nullable(),
+    coverage: ConfigCoverageSchema.optional(),
+    budget: StaticBudgetSchema.optional(),
+    summary: SummarySchema,
+    findings: z.array(DoctorFindingSchema).max(100_000),
+  })
+  .strict()
+  .refine(countsMatch, 'Inconsistent finding counts.')
 
 /** Validates local untrusted input without elevating imported evidence. */
 export function parseAgentDoctorReport(value: unknown): AgentDoctorReport {

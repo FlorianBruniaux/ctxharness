@@ -79,3 +79,28 @@ rule globs are unsupported by this profile. Release support is unobserved here.
 Resolution remains partial; native client and platform qualification are
 unobserved/unqualified. Every item's loaded, executed and beneficial states remain
 unknown. No session trace is collected or needed to retain a conditional rule.
+
+## Static source sizes
+
+`doctor --budget --host claude --scope project --format json` adds the static
+ledger; portable export includes it by default. Core exposes
+`buildStaticBudget(inventory, limits)` and report option `includeBudget: true`.
+Sizes cover discovered content only, under the same caller-owned read boundaries.
+
+The ledger separately labels exact UTF-8 bytes, JavaScript UTF-16 code units and
+`ceil(codeUnits / 4)`. It preserves the historical character estimate rather than
+substituting bytes/4. Each physical artifact is traversed once, with import edges
+retained. Different files with equal content share a content-group marker; this
+is an equality signal, not proof of duplicate injection.
+
+Attribution separates instruction bodies, conditional rules, skill manifest
+metadata and bodies, agent bodies, hook configuration and discoverable MCP
+metadata. Catalog metadata measures source frontmatter, not native prompt
+serialization. A server declaration reveals no full tool-schema payload. Shared
+physical configurations retain multiple host/scope/layer attributions. Missing,
+non-text, inaccessible and capped content makes the traversal incomplete.
+
+Portable ledgers contain bounded categories, methods, counts and opaque group/file
+references. Local paths and content digests stay local. Hidden prompts, loading and
+request assembly remain unknown. The ledger calculates no saved tokens, money,
+quality, provider cache effect or before/after result.

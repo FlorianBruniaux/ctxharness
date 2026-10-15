@@ -602,3 +602,15 @@ it('keeps legacy fields unchanged and exposes opt-in coverage in JSON and human 
     expect(human.stdout).toContain('Coverage    partial')
   } finally {rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
 })
+it('reports Unicode static bytes and named estimates through the real CLI',()=>{
+  const root=makeTempDir('ctx-budget-cli-'),home=makeTempDir('ctx-budget-cli-home-')
+  try{
+    write(join(root,'CLAUDE.md'),'é😊')
+    const result=invoke(root,home,['doctor','--host','claude','--scope','project','--budget','--format','json'])
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+    const b=JSON.parse(result.stdout).budget
+    expect(b.totals).toEqual({utf8Bytes:6,utf16CodeUnits:3,estimatedTokens:1})
+    expect(b.methods.estimate).toBe('utf16-code-units-div-4-ceil')
+  }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
+})

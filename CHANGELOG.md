@@ -10,6 +10,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Added
 
+- Attributed static context-size ledger with exact UTF-8 bytes, explicitly named historical character estimates, physical deduplication and completeness limits (#7).
+
 - Opt-in declared configuration coverage with source states and explicit unsupported/unobserved surfaces; portable exports include bounded coverage (#6).
 
 - Reusable validated doctor v1 report and separately versioned portable export, with closed vocabularies and importable contract fixtures (#5).

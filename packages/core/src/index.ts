@@ -88,3 +88,6 @@ export type { PortableReport } from './agent-config/disclosure.js'
 
 export { buildConfigCoverage, ConfigCoverageSchema, portableCoverage, PortableCoverageSchema } from './agent-config/coverage.js'
 export type { ConfigCoverage } from './agent-config/coverage.js'
+
+export { buildStaticBudget, StaticBudgetSchema, portableBudget, PortableBudgetSchema } from './agent-config/budget.js'
+export type { StaticBudget } from './agent-config/budget.js'
