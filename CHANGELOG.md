@@ -14,6 +14,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Fixed
 
+- Reject special files without blocking and traverse imports in breadth-first order so physical deduplication preserves all descendants reachable within the depth cap (#2, review #11).
+
 - Treat only exact numeric `--max-tokens` and `--token-budget` MCP arguments as resource limits; preserve literal credential and environment-fallback detection (#4).
 
 - Validate malformed hook containers, groups and supported handler fields before event semantics; keep omitted, empty and unsupported declarations distinct (#3).

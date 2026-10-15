@@ -24,6 +24,10 @@ These checks require a stable tree. They are not an OS sandbox against hostile
 concurrent writers between path resolution and opening. Qualification uses inert
 fixtures. No imported content is executed.
 
+Special files (including named pipes) are rejected without waiting for a writer.
+Imports are traversed in breadth-first order, so a physical file first reached
+through a longer chain cannot hide descendants reachable through a shorter one.
+
 The historical `contextBudget` output strings and configurable threshold (default
 3000) remain local policy. The estimate is `ceil(UTF-16 code units / 4)`, not an
 observed model request or a universal quality threshold.
