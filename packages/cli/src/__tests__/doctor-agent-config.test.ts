@@ -631,3 +631,15 @@ it('creates explicit configuration snapshots and compares without rewriting base
   expect(invoke(root,home,['config-snapshot','--host','claude','--scope','project','--output','first.json']).status).toBe(1)
  }finally{rmSync(root,{recursive:true,force:true});rmSync(home,{recursive:true,force:true})}
 })
+
+it('rejects a special-file snapshot input without blocking config-diff', () => {
+ const root = makeTempDir('ctx-snapshot-pipe-')
+ try {
+  const pipe = join(root, 'inert.json')
+  expect(spawnSync('mkfifo', [pipe]).status).toBe(0)
+  const result = spawnSync(process.execPath, [cliPath, 'config-diff', pipe, pipe], { cwd: root, env: { ...process.env, HOME: root }, encoding: 'utf8', timeout: 1500 })
+  expect(result.error).toBeUndefined()
+  expect(result.status).toBe(2)
+  expect(JSON.parse(result.stdout).status).toBe('incomparable')
+ } finally { rmSync(root, { recursive: true, force: true }) }
+})

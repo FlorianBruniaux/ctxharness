@@ -136,3 +136,8 @@ They contain no raw paths or file contents; digests are not an anonymization
 promise and may reveal equality or permit guessing. Imported runtime results are
 excluded. Reduced static size is not a performance result. No application,
 promotion, benchmark, recovery or baseline update is performed by comparison.
+
+The parser enforces the static finding namespace for imported artifacts as well
+as generated ones. Content identities use selected scope roots and all physical
+aliases retained by the foundation ledger. Global-only snapshots ignore the
+unselected project root. Special-file inputs are rejected without blocking.

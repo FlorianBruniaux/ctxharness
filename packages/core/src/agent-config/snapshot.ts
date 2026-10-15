@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { readFileSync, statSync, writeFileSync } from 'node:fs'
+import { closeSync, constants, fstatSync, openSync, readSync, writeFileSync } from 'node:fs'
 import { relative } from 'node:path'
 import { z } from 'zod'
 import { parseAgentDoctorReport, SelectionSchema } from './report.js'
@@ -26,7 +26,17 @@ export const ConfigSnapshotSchema = z
     sourceGeneration: z.union([z.literal('unknown'), Digest]),
     complete: z.boolean(),
     sources: z.array(Source).max(100_000),
-    findings: z.array(PortableFindingSchema.innerType().omit({ ref: true })).max(100_000),
+    findings: z
+      .array(
+        PortableFindingSchema.innerType()
+          .omit({ ref: true })
+          .extend({ source: z.literal('static') })
+          .refine(
+            (f) => !f.code.startsWith('runtime-'),
+            'Runtime evidence is excluded from static snapshots.',
+          ),
+      )
+      .max(100_000),
   })
   .strict()
   .refine(
@@ -65,13 +75,23 @@ export function buildConfigSnapshot(value: unknown, options: { home: string }): 
     contentDigest: null,
     states: [...new Set(s.states)].sort(),
   }))
-  for (const file of report.budget.files)
-    sources.push({
-      ref: digest(JSON.stringify(['content', relative(report.root, file.path)])),
-      kind: 'content',
-      contentDigest: file.contentDigest,
-      states: ['discovered'],
-    })
+  for (const file of report.budget.files) {
+    const scopes = new Set(file.attribution.map((a) => a.scope))
+    for (const scope of selection.scopes.filter((scope) => scopes.size === 0 || scopes.has(scope)))
+      for (const path of file.paths ?? [file.path])
+        sources.push({
+          ref: digest(
+            JSON.stringify([
+              'content',
+              scope,
+              relative(scope === 'project' ? report.root : options.home, path),
+            ]),
+          ),
+          kind: 'content',
+          contentDigest: file.contentDigest,
+          states: ['discovered'],
+        })
+  }
   const generation = report.findings.find(
     (f) =>
       f.source === 'static' &&
@@ -93,7 +113,7 @@ export function buildConfigSnapshot(value: unknown, options: { home: string }): 
     ),
     sourceGeneration: generation ?? 'unknown',
     complete: report.budget.complete,
-    sources: ordered(sources),
+    sources: ordered([...new Map(sources.map((source) => [source.ref, source])).values()]),
     findings: ordered(
       portable.findings.filter((f) => f.source === 'static').map(({ ref: _ref, ...f }) => f),
     ),
@@ -156,7 +176,22 @@ export function saveConfigSnapshot(value: unknown, path: string): void {
   writeFileSync(path, text, { flag: 'wx', mode: 0o600 })
 }
 export function loadConfigSnapshot(path: string): ConfigSnapshot {
-  if (statSync(path).size > 8 * 1024 * 1024)
-    throw new Error('Configuration snapshot exceeds the 8 MiB input limit.')
-  return parseConfigSnapshot(JSON.parse(readFileSync(path, 'utf8')) as unknown)
+  const fd = openSync(path, constants.O_RDONLY | constants.O_NONBLOCK)
+  try {
+    const stat = fstatSync(fd)
+    if (!stat.isFile()) throw new Error('Configuration snapshot must be a regular file.')
+    if (stat.size > 8 * 1024 * 1024)
+      throw new Error('Configuration snapshot exceeds the 8 MiB input limit.')
+    const buffer = Buffer.alloc(stat.size + 1)
+    let length = 0
+    while (length < buffer.length) {
+      const count = readSync(fd, buffer, length, buffer.length - length, null)
+      if (count === 0) break
+      length += count
+    }
+    if (length > stat.size) throw new Error('Configuration snapshot changed during reading.')
+    return parseConfigSnapshot(JSON.parse(buffer.subarray(0, length).toString('utf8')) as unknown)
+  } finally {
+    closeSync(fd)
+  }
 }

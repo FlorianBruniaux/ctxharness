@@ -1,5 +1,13 @@
 import { afterEach, expect, it } from 'vitest'
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  linkSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as core from '../../index.js'
@@ -103,6 +111,9 @@ it('validates exported snapshot fixtures and rejects hostile source references',
   expect(api('parseConfigSnapshot')(valid)).toHaveProperty('kind', 'ctxharness-config-snapshot')
   expect(() => api('parseConfigSnapshot')(fixture('config-snapshot.unsupported.json'))).toThrow()
   expect(() =>
+    api('parseConfigSnapshot')(fixture('config-snapshot.runtime.invalid.json')),
+  ).toThrow()
+  expect(() =>
     api('parseConfigSnapshot')({
       ...(valid as object),
       sources: [
@@ -110,4 +121,104 @@ it('validates exported snapshot fixtures and rejects hostile source references',
       ],
     }),
   ).toThrow()
+})
+
+it('accepts shared tool data in local reports without folding it into static snapshots', () => {
+  const root = fixture()
+  const report = core.buildAgentDoctorReport({
+    root,
+    home: root,
+    hosts: ['claude'],
+    scopes: ['project'],
+    includeCoverage: true,
+    includeBudget: true,
+  })
+  const toolAvailability = core.ToolAvailabilitySchema.parse({
+    profileVersion: 1,
+    environment: {
+      source: 'unspecified',
+      platform: 'unspecified',
+      symlinks: 'reject',
+      identity: null,
+    },
+    results: [
+      {
+        tool: 'private-tool',
+        state: 'unknown-client-environment',
+        reason: 'missing-environment',
+        requirement: 'none',
+        advice: 'none',
+        authentication: 'unknown',
+        permissions: 'unknown',
+        pathEntriesChecked: 0,
+      },
+    ],
+  })
+  const withTools = core.buildConfigSnapshot({ ...report, toolAvailability }, { home: root })
+  expect(
+    core.compareConfigSnapshots(core.buildConfigSnapshot(report, { home: root }), withTools).status,
+  ).toBe('equal')
+  expect(JSON.stringify(withTools)).not.toContain('private-tool')
+})
+
+it('rejects imported runtime findings instead of treating them as static snapshot changes', () => {
+  const a = snapshot(fixture())
+  const invalid = {
+    ...a,
+    findings: [
+      { code: 'runtime-canary-result', status: 'fail', source: 'runtime', mandatory: true },
+    ],
+  }
+  expect(() => core.parseConfigSnapshot(invalid)).toThrow()
+  expect(core.compareConfigSnapshots(a, invalid).status).toBe('incomparable')
+})
+
+it('is independent of hardlink inventory enumeration', () => {
+  const root = fixture()
+  mkdirSync(join(root, '.claude'))
+  linkSync(join(root, 'CLAUDE.md'), join(root, '.claude/CLAUDE.md'))
+  const options = { root, home: root, hosts: ['claude'] as const, scopes: ['project'] as const }
+  const report = core.buildAgentDoctorReport({
+    ...options,
+    hosts: [...options.hosts],
+    scopes: [...options.scopes],
+    includeCoverage: true,
+    includeBudget: true,
+  })
+  const inventory = core.inventoryAgentConfig({
+    ...options,
+    hosts: [...options.hosts],
+    scopes: [...options.scopes],
+  })
+  inventory.capabilities.reverse()
+  const before = core.buildConfigSnapshot(report, { home: root })
+  const after = core.buildConfigSnapshot(
+    { ...report, budget: core.buildStaticBudget(inventory) },
+    { home: root },
+  )
+  expect(core.compareConfigSnapshots(before, after).status).toBe('equal')
+})
+
+it('ignores unselected project roots when snapshotting global content', () => {
+  const base = fixture(),
+    home = join(base, 'home'),
+    root = join(base, 'project'),
+    other = join(base, 'nested/project')
+  mkdirSync(join(home, '.claude'), { recursive: true })
+  mkdirSync(root)
+  mkdirSync(other, { recursive: true })
+  writeFileSync(join(home, '.claude/CLAUDE.md'), 'inert')
+  const make = (root: string) =>
+    core.buildConfigSnapshot(
+      core.buildAgentDoctorReport({
+        root,
+        home,
+        hosts: ['claude'],
+        scopes: ['global'],
+        includeBudget: true,
+        includeCoverage: true,
+      }),
+      { home },
+    )
+  expect(core.compareConfigSnapshots(make(root), make(other)).status).toBe('equal')
 })

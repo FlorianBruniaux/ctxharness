@@ -83,3 +83,9 @@ content/root identities are SHA-256 digests, not personal paths or an anonymity
 guarantee. Unsupported versions are rejected without migration. Comparisons
 return incomparable for incompatible selections/profile versions and expose
 incomplete traversal separately from structural equality.
+
+Snapshot findings must have `source: static`; runtime finding codes are rejected
+even if relabeled static. `config-snapshot.runtime.invalid.json` is a rejected
+consumer fixture. Content identities include selected scope and every local
+physical alias, so enumeration order and unselected project roots have no effect.
+Snapshot loading accepts bounded regular files only and never waits on a FIFO.
