@@ -1,0 +1,29 @@
+docs/contracts/config-snapshot-v1.valid.json
+  s_31673e08358932::t_51bf8119634c55 1-15
+docs/contracts/config-snapshot.runtime.invalid.json
+  s_31673e08358932::t_dba796ce2a4818 1-22
+docs/contracts/config-snapshot.unsupported.json
+  s_31673e08358932::t_08f9474e482803 1-15
+packages/cli/src/index.ts
+  s_31673e08358932::t_2af51f24a1c206 23-26,1300-1332
+packages/core/src/agent-config/__tests__/snapshot.test.ts
+  s_31673e08358932::t_0ca97313744769 1-224
+packages/core/src/agent-config/snapshot.ts
+  s_31673e08358932::t_6347d4f179a9d9 1-197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7aff886c7a161a1240056ec0482c255a9a0d559f",
+  "prompts": {},
+  "sessions": {
+    "s_31673e08358932": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13b23-2ef0-7e51-96d0-0c6a5b2f3565",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
