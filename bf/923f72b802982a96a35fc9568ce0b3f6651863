@@ -1,0 +1,27 @@
+docs/assets/README.md
+  s_ff3dff62f4ff19::t_16ece3de35f09a 1-23
+CHANGELOG.md
+  s_ff3dff62f4ff19::t_16ece3de35f09a 13-14
+README.md
+  s_ff3dff62f4ff19::t_ba5ddee5771147 365-367,377-380,386-395,399-404,416-417,420,426-428,441,463-464,467-470,482-483,486-488,522-523,528-530,541-542,545-547,570-571,574-577,606-608,612-615,625,628,631,649-651,663,665,677,679,681,683,687-688,709-710,726
+  s_ff3dff62f4ff19::t_16ece3de35f09a 639
+  s_ff3dff62f4ff19::t_871cbf4766c8af 38-45,667-675
+  s_ff3dff62f4ff19::t_c484126a64f4d0 15,17,19,21-23,25-32,34,47,49,51,53,56,59,61,64-66,69-70,72,94-136,139-143,187-188,190
+  s_ff3dff62f4ff19::t_052d75c3485ae7 632
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf923f72b802982a96a35fc9568ce0b3f6651863",
+  "prompts": {},
+  "sessions": {
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
