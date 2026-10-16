@@ -10,6 +10,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Added
 
+- README workflow infographic, direct product description, quick-start paths and collapsible reference sections; preserve the distinction between unreleased source and published packages.
+
 - Documentation (2026-10-15): add an index, configuration doctor guide and delivery roadmap covering integrated PRs #11 to #14, portable contracts and optional extensions; distinguish source behavior from published releases and static evidence from runtime observations.
 
 - Explicit tool availability diagnostics using caller-supplied PATH/environment, filesystem resolution only and bounded portable results (#9).
