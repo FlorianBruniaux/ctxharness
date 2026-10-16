@@ -10,11 +10,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ## [0.5.0] - 2026-10-16
 
+Configuration diagnosis and reusable static evidence for Claude Code and Codex. This version adds portable exports, declared coverage, attributed source sizes and two opt-in extensions while preserving the documentation-drift commands and historical output formats.
+
+[Source tag](https://github.com/FlorianBruniaux/ctxharness/tree/v0.5.0) at commit [`ba963c5`](https://github.com/FlorianBruniaux/ctxharness/commit/ba963c5298926c283b2269bab1c119e57904a3b5). [Changes since v0.4.6](https://github.com/FlorianBruniaux/ctxharness/compare/v0.4.6...v0.5.0).
+
+### Release status
+
+Checked 2026-10-16: the source tag is available. The [binary release workflow](https://github.com/FlorianBruniaux/ctxharness/actions/runs/38861835164) stopped before creating jobs with `startup_failure`. GitHub reported: `Event 'push' is not allowed to trigger Actions workflows.` No GitHub release or downloadable release binaries were created by this run.
+
+Source tagging and npm publication are separate operations. The release workflow contains no npm publishing step; this changelog does not establish npm package availability.
+
+### Validation
+
+- 398 tests passed across 20 suites, including 31 compiled CLI tests; build and TypeScript checks passed on the tagged source tree.
+- The locally compiled macOS ARM64 binary reported `0.5.0` and passed 8 inert-fixture CLI checks. The binary-version gate accepted the matching tag and rejected a stale tag.
+- Linux and Windows binary builds remain unverified for this tag because the GitHub jobs did not start. Static checks and fixture results do not establish native-host loading, authentication or runtime gains.
+
 ### Added
 
 - Passive Claude Code/Codex configuration diagnosis with caller-selected project/global inventory, host profiles, shared-release integrity/parity checks and separately imported runtime declarations.
 
-- README workflow infographic, direct product description, quick-start paths and collapsible reference sections; preserve the distinction between unreleased source and published packages.
+- README workflow infographic, direct product description, quick-start paths and collapsible reference sections; preserve the distinction between tagged source and published packages.
 
 - Documentation (2026-10-15): add an index, configuration doctor guide and delivery roadmap covering integrated PRs #11 to #14, portable contracts and optional extensions; distinguish source behavior from published releases and static evidence from runtime observations.
 
