@@ -39,12 +39,21 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build core library
+        run: bun run --cwd packages/core build
+
       - name: Build binary
         run: >
           bun build packages/cli/src/index.ts
           --compile
           --target bun-${{ matrix.target }}
           --outfile dist/ctxharness-${{ matrix.target }}${{ matrix.exe }}
+
+      - name: Verify binary version
+        shell: bash
+        run: |
+          actual="$(./dist/ctxharness-${{ matrix.target }}${{ matrix.exe }} --version)"
+          test "v$actual" = "$GITHUB_REF_NAME"
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2

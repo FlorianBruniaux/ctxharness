@@ -101,7 +101,7 @@ Semver. `CHANGELOG.md` updated before every release.
 
 ## Roadmap
 
-### Current package version: v0.4.6
+### Current source version: v0.5.0
 
 - `scan` command, zero-config heuristic claim detection (semver, paths, npm scripts)
 - `trend` command, cross-run drift score history with sparkline and direction detection
@@ -115,6 +115,6 @@ Semver. `CHANGELOG.md` updated before every release.
 
 ### Active delivery
 
-PRs #11 to #14 are integrated on `main`: correctness fixes (#2 to #4), reusable contract/portable export (#5), declared coverage (#6) and static budget (#7). Configuration `config-snapshot`/`config-diff` (#8) and explicit tool availability (#9) remain separate opt-in extensions. These source additions are unreleased; version `0.4.6` alone does not establish their presence in a published installation.
+Version `0.5.0` includes PRs #11 to #14: correctness fixes (#2 to #4), reusable contract/portable export (#5), declared coverage (#6) and static budget (#7). Configuration `config-snapshot`/`config-diff` (#8) and explicit tool availability (#9) remain separate opt-in extensions. Tagging source and publishing npm packages are separate operations; an installed `0.4.6` does not establish the presence of these additions.
 
 Follow [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10), [docs/roadmap.md](docs/roadmap.md) and the [contract reference](docs/contracts/README.md). The older design notes are historical context, not the current delivery checklist. Do not revive an expanded optimization backlog.

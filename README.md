@@ -44,7 +44,7 @@ The diagram shows static diagnosis and export. Loading, trust, execution and run
 | **Reusable evidence**              | Validated, versioned portable JSON that omits raw paths, messages and credentials.                | `doctor --export portable`                           |
 | **Optional extensions**            | Separate structural snapshots/diffs and caller-selected filesystem tool availability.             | `config-snapshot`, `config-diff`, `doctor --tools …` |
 
-**Source status:** the audit/export foundations and both extensions are integrated on `main` and remain unreleased. Package manifests still declare `0.4.6`; installing that version does not establish that it contains these additions. Use the source workflow below for the current implementation. [Delivery status](docs/roadmap.md).
+**Release source:** `v0.5.0` includes the audit/export foundations and both optional extensions. A Git tag does not publish the npm packages; an existing npm installation may still contain `0.4.6`. Check `ctxharness --version` and use the source workflow below for this implementation. [Delivery status](docs/roadmap.md).
 
 ## Quick start
 
@@ -95,10 +95,10 @@ typecheck-script        CLAUDE.md:34   true        false
 
 ### Inspect current configuration and export evidence
 
-Build the source checkout to use the unreleased audit/export features. This installs dependencies in the checkout and compiles the CLI:
+Build the versioned source checkout to use the audit/export features. This installs dependencies in the checkout and compiles the CLI:
 
 ```bash
-git clone https://github.com/FlorianBruniaux/ctxharness.git
+git clone --branch v0.5.0 https://github.com/FlorianBruniaux/ctxharness.git
 cd ctxharness
 pnpm install --frozen-lockfile --ignore-scripts
 pnpm build
@@ -109,7 +109,7 @@ node packages/cli/dist/index.js doctor --root /path/to/project --host both --sco
 
 Replace `/path/to/project` with the directory to inspect. These examples select project configuration only. `--scope global` explicitly selects personal configuration; `--scope both` includes both scopes. No selected hook, skill, agent, MCP server or tool is executed by configuration diagnosis.
 
-In the reference below, `ctxharness` denotes your installed CLI. For unreleased features, substitute `node /path/to/ctxharness/packages/cli/dist/index.js` from the source build. See [doctor modes, formats and exit codes](docs/doctor.md).
+In the reference below, `ctxharness` denotes your installed CLI. If its version predates `0.5.0`, substitute `node /path/to/ctxharness/packages/cli/dist/index.js` from the source build. See [doctor modes, formats and exit codes](docs/doctor.md).
 
 ## Install
 
@@ -123,7 +123,7 @@ pnpm add -D ctxharness
 pnpm exec ctxharness --help
 ```
 
-The CLI uses Node.js even when checking a Python, Go or Rust project. The [source workflow](#inspect-current-configuration-and-export-evidence) gives access to the current unreleased features.
+The CLI uses Node.js even when checking a Python, Go or Rust project. The [source workflow](#inspect-current-configuration-and-export-evidence) gives access to the tagged `v0.5.0` implementation independently of npm publication.
 
 </details>
 
@@ -636,7 +636,7 @@ GitHub Actions:
 
 ```yaml
 - name: Check AI doc drift
-  uses: FlorianBruniaux/ctxharness@v0.4.6
+  uses: FlorianBruniaux/ctxharness@v0.5.0
   with:
     config: .ctxharness.yml
     format: gha

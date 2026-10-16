@@ -9,7 +9,7 @@
 3. **Measure:** report source bytes and named estimates.
 4. **Export:** produce validated portable JSON.
 
-The example command is `ctxharness doctor --host both --scope project --export portable`. The four footer labels are local checks, static evidence, portable JSON and unknown stays unknown. This depicts the unreleased source implementation described in [the doctor guide](../doctor.md), not proof of native loading, execution or performance gains. Selection and inspection also cover the supported instruction, skill, rule and agent surfaces listed in [the audit reference](../configuration-audit.md).
+The example command is `ctxharness doctor --host both --scope project --export portable`. The four footer labels are local checks, static evidence, portable JSON and unknown stays unknown. This depicts the source implementation included in `v0.5.0` and described in [the doctor guide](../doctor.md), not proof of native loading, execution or performance gains. Selection and inspection also cover the supported instruction, skill, rule and agent surfaces listed in [the audit reference](../configuration-audit.md).
 
 The README provides alt text and equivalent capability descriptions. Keep the generated image text consistent with those descriptions; do not add release versions, test counts or measured-savings claims to the image without their own evidence.
 
