@@ -1,12 +1,12 @@
 # Configuration audit and export roadmap
 
-Updated: 2026-10-15. Status checked against [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10) and its PRs on that date. [Documentation index](README.md).
+Updated: 2026-10-16. Status checked against [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10), its merged PRs and release source `v0.5.0`. [Documentation index](README.md).
 
 ## Current delivery status
 
-`main` contains documentation-drift commands and passive Claude Code/Codex configuration diagnosis. Both packages declare version `0.4.6`; this alone does not establish which unreleased commits a published installation contains. Consult [the doctor guide](doctor.md) for the current source behavior and [the changelog](../CHANGELOG.md) for release history.
+Version `0.5.0` contains documentation-drift commands, passive Claude Code/Codex configuration diagnosis, the portable export and both optional extensions. Both package manifests and the CLI declare `0.5.0`. A source tag does not establish npm package publication; check an installed CLI's version before using new options. Consult [the doctor guide](doctor.md) for behavior and [the changelog](../CHANGELOG.md) for release history.
 
-The following PRs were merged into `main` on 2026-10-15. The additions remain unreleased; a merge does not establish availability in a published package:
+The following PRs were merged into `main` on 2026-10-15 and are included in the `v0.5.0` source tag. Published package availability remains a separate fact:
 
 | Order              | Issues                                                                                                                                                                                   | Integrated behavior                                                                                              | PR and dependency                                                             |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |

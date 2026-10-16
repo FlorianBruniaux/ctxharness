@@ -8,7 +8,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-16
+
 ### Added
+
+- Passive Claude Code/Codex configuration diagnosis with caller-selected project/global inventory, host profiles, shared-release integrity/parity checks and separately imported runtime declarations.
 
 - README workflow infographic, direct product description, quick-start paths and collapsible reference sections; preserve the distinction between unreleased source and published packages.
 
@@ -27,6 +31,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 - `doctor` hooks layer: `hook-event-unknown` checks event names per host (33 Claude Code events, 12 Codex events), `hook-matcher-ignored` flags a matcher on an event that ignores it, and `hook-handler-unsupported` flags a handler type the event does not run (Codex `prompt` and `agent`, Claude `agent` on `PermissionRequest`). All three report `warn`.
 
 ### Fixed
+
+- Build the core library before compiling release binaries, and verify each binary's reported version against its source tag before uploading.
 
 - Resolve relative imports at every hardlink location while measuring each physical body once (#2, review #11).
 - Require explicit tool lists for all caller-supplied tool options, while defaults preserve legacy doctor behavior; reuse the foundation v1 tools contract (#9, review #14).

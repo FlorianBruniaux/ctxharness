@@ -92,7 +92,7 @@ program.configureOutput({ writeErr: text => process.stderr.write(portableInvocat
 program
   .name('ctxharness')
   .description('Detect AI documentation drift — L1/L2/L3 context engineering testing')
-  .version('0.4.6')
+  .version('0.5.0')
 
 // ─── run command ──────────────────────────────────────────────────────────────
 

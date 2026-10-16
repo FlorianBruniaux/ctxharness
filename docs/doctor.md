@@ -1,6 +1,6 @@
 # Configuration doctor
 
-Updated: 2026-10-15. Status: behavior present on `main`; this guide does not claim that unreleased changes are available in the published package. [Documentation index](README.md).
+Updated: 2026-10-16. Status: behavior included in source version `0.5.0`. A Git tag does not establish npm package publication; verify the version of an installed CLI. [Documentation index](README.md).
 
 ## Choose the doctor mode
 
