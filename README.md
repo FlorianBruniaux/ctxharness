@@ -12,68 +12,64 @@
   </tr>
 </table>
 
-**AI documentation drift detection and passive configuration diagnosis.**
+**Check the context your coding agents rely on.**
 
-Your `CLAUDE.md` says the auth config lives at `src/config/auth.ts`. That file moved to `src/modules/auth/config.ts` six months ago. Your agent tries to import from a path that no longer exists, silently, on every session.
+Catch stale paths, scripts and versions in your AI docs. Inspect Claude Code and Codex configuration, measure static source sizes and export validated evidence for other tools.
 
-Or: `CLAUDE.md` says `npm run typecheck`. The script was renamed to `npm run type-check` during a cleanup sprint. The agent runs a command that doesn't exist.
+CTX Harness is a local CLI and TypeScript library. It reads your existing `CLAUDE.md`, `AGENTS.md` and `.cursorrules`, compares documented claims with your codebase and makes missing evidence explicit.
 
-ctxharness catches this before it reaches your agents.
+<p align="center">
+  <img src="docs/assets/ctxharness-workflow.png" width="1100" alt="CTX Harness static workflow: select project or global scope, inspect documentation and configuration declarations, measure source bytes and named estimates, then export validated portable JSON. Missing evidence stays unknown." />
+</p>
 
-```bash
-npx ctxharness scan CLAUDE.md   # zero-config — detect drift instantly
-# or, with full config:
-npx ctxharness init              # scaffold .ctxharness.yml
-npx ctxharness run               # check all assertions
-```
+<p align="center">
+  <a href="#quick-start">Quick start</a> &middot;
+  <a href="#what-it-checks">Capabilities</a> &middot;
+  <a href="#configuration-doctor">Configuration doctor</a> &middot;
+  <a href="#cli">CLI reference</a> &middot;
+  <a href="#ci-integration">CI integration</a> &middot;
+  <a href="#documentation">Documentation</a>
+</p>
 
-## Why put facts in CLAUDE.md at all?
-
-Agents work from the context window. Pointing an agent to `package.json` works, but it means reading that file on every session, and many facts can't be read from a single source file: architectural patterns, team conventions, file locations, which ORM you're using and why. ctxharness is for facts you've already decided to state explicitly. It keeps those statements accurate.
+The diagram shows static diagnosis and export. Loading, trust, execution and runtime benefit need separate evidence. [Image description and generation notes](docs/assets/README.md).
 
 ## What it checks
 
-**L1: Fact drift.** Compare file paths, npm scripts, versions, counts and regex captures against claims in AI documentation, including CLAUDE.md, AGENTS.md and .cursorrules.
+| Need                               | What you get                                                                                      | Start with                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| **Documentation drift (L1)**       | Paths, npm scripts, versions, counts and regex captures checked against local code.               | `scan`, `init`, `run`                                |
+| **Static instruction checks (L2)** | Vague-language heuristics, instruction ratios and a named context-size estimate.                  | YAML assertions, `score`                             |
+| **Configuration diagnosis (L3)**   | Supported instruction, skill, rule, agent, hook and MCP declarations for Claude Code and Codex.   | `doctor --host … --scope …`                          |
+| **Coverage and source sizes**      | Declared applicability, unsupported surfaces, exact bytes and explicit estimates with provenance. | `doctor --coverage --budget`                         |
+| **Reusable evidence**              | Validated, versioned portable JSON that omits raw paths, messages and credentials.                | `doctor --export portable`                           |
+| **Optional extensions**            | Separate structural snapshots/diffs and caller-selected filesystem tool availability.             | `config-snapshot`, `config-diff`, `doctor --tools …` |
 
-**L2: Static instruction checks.** Flag vague language, inspect instruction ratios and estimate context size. These heuristics do not measure task quality or agent reliability.
-
-**L3: Configuration diagnosis.** Inspect supported Claude Code and Codex instructions, skills, rules, agents, hooks and MCP declarations. Discovery and valid syntax do not establish native loading, trust or execution.
-
-**No migration needed.** Works on your existing CLAUDE.md, AGENTS.md, and .cursorrules files as-is.
-
-CTX Harness owns documentation drift, passive configuration checks, static measurements and a reusable portable export, as defined in [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10). Session analysis, before/after experiments and adopting optimization candidates belong to a separate project. Existing local helpers such as `fix --apply` keep their documentation-drift behavior.
-
-See the [documentation index](docs/README.md), [configuration doctor guide](docs/doctor.md) and [delivery roadmap](docs/roadmap.md). These describe current source on `main`, including integrated PRs #11 to #14. The package version remains `0.4.6`; these unreleased additions are not a release announcement.
-
-## Install
-
-**npm/pnpm (Node.js projects):**
-
-```bash
-npm install -g ctxharness
-# or
-pnpm add -D ctxharness
-```
-
-> **Standalone binary** for Python, Go, Rust and other non-Node projects: planned for v1.0.
+**Source status:** the audit/export foundations and both extensions are integrated on `main` and remain unreleased. Package manifests still declare `0.4.6`; installing that version does not establish that it contains these additions. Use the source workflow below for the current implementation. [Delivery status](docs/roadmap.md).
 
 ## Quick start
 
-```bash
-ctxharness init          # creates .ctxharness.yml
-ctxharness doctor        # full health check with L1/L2/L3 breakdown
-```
+### Find drift without a config file
 
-To inspect agent configuration without `.ctxharness.yml`, select a host and scope:
+Run from the project you want to check, with Node.js available:
 
 ```bash
-ctxharness doctor --host claude --scope project
-ctxharness doctor --host codex --scope project --format json
+npx ctxharness scan CLAUDE.md
 ```
 
-These examples target the project only. `--scope global` explicitly selects personal configuration; `--scope both` includes both scopes. See [doctor modes, formats and exit codes](docs/doctor.md).
+`scan` discovers supported path, script and version claims. It exits 1 when it finds drift; `--exit-zero` makes drift warning-only.
 
-Example output:
+### Keep documentation checks repeatable
+
+```bash
+npx ctxharness init              # generate .ctxharness.yml from existing docs
+npx ctxharness run               # check configured assertions
+npx ctxharness doctor            # documentation report with L1/L2/L3 breakdown
+```
+
+<details>
+<summary>See an illustrative documentation-drift report</summary>
+
+Synthetic example, not a measured project result:
 
 ```
 AI Context Test — 5 assertions
@@ -95,7 +91,55 @@ typecheck-script        CLAUDE.md:34   true        false
 ✗ 2 mismatch(es) — update the file(s) listed above
 ```
 
+</details>
+
+### Inspect current configuration and export evidence
+
+Build the source checkout to use the unreleased audit/export features. This installs dependencies in the checkout and compiles the CLI:
+
+```bash
+git clone https://github.com/FlorianBruniaux/ctxharness.git
+cd ctxharness
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm build
+
+node packages/cli/dist/index.js doctor --root /path/to/project --host both --scope project --coverage --budget --format json
+node packages/cli/dist/index.js doctor --root /path/to/project --host both --scope project --export portable
+```
+
+Replace `/path/to/project` with the directory to inspect. These examples select project configuration only. `--scope global` explicitly selects personal configuration; `--scope both` includes both scopes. No selected hook, skill, agent, MCP server or tool is executed by configuration diagnosis.
+
+In the reference below, `ctxharness` denotes your installed CLI. For unreleased features, substitute `node /path/to/ctxharness/packages/cli/dist/index.js` from the source build. See [doctor modes, formats and exit codes](docs/doctor.md).
+
+## Install
+
+<details>
+<summary>Install the package globally or as a project dependency</summary>
+
+```bash
+npm install -g ctxharness
+# or, inside your project:
+pnpm add -D ctxharness
+pnpm exec ctxharness --help
+```
+
+The CLI uses Node.js even when checking a Python, Go or Rust project. The [source workflow](#inspect-current-configuration-and-export-evidence) gives access to the current unreleased features.
+
+</details>
+
+<details>
+<summary>Why keep explicit facts in CLAUDE.md or AGENTS.md?</summary>
+
+Some instructions belong in documentation: architecture choices, team conventions and where to find code. When you choose to state a fact explicitly, CTX Harness can compare supported claims with their local sources. It does not decide which instructions belong in your context.
+
+</details>
+
 ## Configuration
+
+Configure repeatable documentation assertions in `.ctxharness.yml`. Configuration diagnosis via `doctor --host … --scope …` works without this file.
+
+<details>
+<summary>Starter YAML: paths, scripts, instruction checks and hooks</summary>
 
 `.ctxharness.yml`, minimal starter (one assertion per layer):
 
@@ -140,8 +184,10 @@ assertions:
     scanner: hookValidity
 ```
 
+</details>
+
 <details>
-<summary>Advanced config, allowlist, scopeFiles, multi-version assertions</summary>
+<summary>Advanced YAML: intentional mismatches and per-assertion file scope</summary>
 
 ```yaml
 assertions:
@@ -316,6 +362,9 @@ ctxharness doctor --host codex --scope project --format gha
 
 This mode does not require `.ctxharness.yml` and does not run hooks, skills, MCP servers or host clients. It reports `PASS`, `WARN`, `FAIL`, `UNKNOWN` and `N/A`; missing evidence stays unknown. Exit status is 1 for mandatory static failures or command errors and 0 otherwise. Exit 0 can therefore include warnings and unknowns.
 
+<details>
+<summary>Export portable JSON, declared coverage and static sizes</summary>
+
 Local JSON includes source paths and diagnostic details. Review it before sharing. Use the versioned portable profile to omit paths, names, raw messages and credentials. It includes declared coverage and static sizes by default:
 
 ```bash
@@ -325,16 +374,34 @@ ctxharness doctor --host claude --scope project --coverage --budget --format jso
 
 Byte counts measure discovered source content; the named character estimate does not establish model input or savings. Validate artifacts with the [core contracts and fixtures](docs/contracts/README.md). Opaque references do not guarantee anonymization.
 
-The optional extensions have separate entry points:
+</details>
+
+<details>
+<summary>Compare configuration snapshots without updating a baseline</summary>
 
 ```bash
 ctxharness config-snapshot --host claude --scope project --output first.json
 ctxharness config-snapshot --host claude --scope project --output second.json
 ctxharness config-diff first.json second.json
+```
+
+Snapshot output never overwrites an existing file; structural comparison does not update the baseline or measure performance. These are separate from the documentation `snapshot` and `diff` commands. See the [full guide](docs/doctor.md#optional-configuration-snapshots).
+
+</details>
+
+<details>
+<summary>Check explicitly selected tools in a declared client environment</summary>
+
+```bash
 ctxharness doctor --host claude --scope project --tools rg,gh --tool-path /opt/example/bin --tool-environment declared-client --format json
 ```
 
-Snapshot output never overwrites an existing file; structural comparison does not update the baseline or measure performance. The example tool PATH is caller-supplied: absent environment evidence stays unknown, and no tool is executed or installed. Authentication and client permissions remain unknown. See the [full guide](docs/doctor.md) and [delivery status](docs/roadmap.md).
+The example PATH is caller-supplied. Absent environment evidence stays unknown, and no tool is executed or installed. Authentication and client permissions remain unknown even when an executable is found. See [tool options and limits](docs/doctor.md#optional-tool-availability).
+
+</details>
+
+<details>
+<summary>Preview and apply documentation-version fixes</summary>
 
 `ctxharness fix` finds every assertion where the actual version differs from expected on a specific line and shows what it would change. Pass `--apply` to write the files:
 
@@ -346,13 +413,18 @@ CLAUDE.md:42  next-version    15.2.0 → 15.3.1
 Run ctxharness fix --apply to write changes.
 ```
 
+</details>
+
 ### Zero-config scan
 
-Before setting up a full `.ctxharness.yml`, you can scan any AI instruction file for verifiable claims:
+Scan a Markdown instruction file for supported claims before setting up `.ctxharness.yml`:
 
 ```bash
 npx ctxharness scan CLAUDE.md
 ```
+
+<details>
+<summary>Read scan output, import traversal, config suggestions and hook behavior</summary>
 
 This detects file paths, npm scripts, and version numbers mentioned in the file and checks each against your codebase. Paths and scripts first, because those are the claims most likely to silently break agent behavior when they drift.
 
@@ -366,7 +438,7 @@ Scanning CLAUDE.md...
 2 issues found. Run with --suggest-config to generate .ctxharness.yml.
 ```
 
-Since v0.4.2, `scan` follows `@file.md` includes (Claude/Gemini/Cursor convention) up to depth 3. Claims in included files are detected and verified, a drift in `@agents.md` referenced from `CLAUDE.md` is no longer invisible.
+`scan` follows supported local `@file.md` imports up to depth 3 within caller-selected roots. Physical files are deduplicated, with provenance edges retained. Unsupported, missing, out-of-boundary or capped reads remain incomplete. See [read boundaries](docs/configuration-audit.md#selected-filesystem-reads).
 
 ```bash
 npx ctxharness scan CLAUDE.md --suggest-config   # generate a starter .ctxharness.yml
@@ -388,9 +460,14 @@ else
 fi
 ```
 
+</details>
+
 ### Snapshot workflow
 
-Track quality over time and block regressions in CI:
+Save documentation-score baselines and flag score regressions in CI. These scores do not measure agent task quality.
+
+<details>
+<summary>Save and compare documentation-score snapshots</summary>
 
 ```bash
 # Save baseline after initial setup
@@ -402,7 +479,12 @@ ctxharness diff     # exit 1 if score dropped
 
 Snapshots are saved to `.ctxharness/snapshots/` with timestamp. Commit the latest snapshot file to use `diff` in CI.
 
+</details>
+
 ### Trend history
+
+<details>
+<summary>Read historical documentation scores and control history recording</summary>
 
 `run`, `check`, `score`, and the YAML assertion mode of `doctor` auto-record a drift score to `~/.ctxharness/history.jsonl`. The configuration doctor does not record a trend entry. The `trend` command shows your documentation score history:
 
@@ -437,9 +519,14 @@ In CI, use `--no-trend` to skip recording, useful when you only want trend data 
 ctxharness run --no-trend
 ```
 
+</details>
+
 ### populate
 
 Scan your already-declared files for verifiable claims (semver, paths, scripts) and suggest assertions for any claims not yet in your config.
+
+<details>
+<summary>Preview new assertions or append them explicitly</summary>
 
 ```bash
 # Dry-run (default): preview what would be added
@@ -451,7 +538,12 @@ ctxharness populate --apply
 
 Typical workflow: run `ctxharness init` once to bootstrap the config, then run `ctxharness populate --apply` any time you update your AI docs and want to capture new claims.
 
+</details>
+
 ### warn status
+
+<details>
+<summary>Interpret documentation warnings and the layered doctor report</summary>
 
 Assertions can return three states: `pass`, `warn`, or `fail`. `warn` is counted as 0.5 in the score, useful for staleness checks where you want early signal without blocking CI:
 
@@ -475,9 +567,14 @@ Issues:
   L3  hook-validity        .claude/settings.json   hook entry has empty matcher
 ```
 
+</details>
+
 ## Plugin API
 
-Register custom extractors and scanners programmatically:
+Extend the TypeScript core with custom extractors and scanners.
+
+<details>
+<summary>Register a plugin and reference it in YAML</summary>
 
 ```typescript
 import { definePlugin, loadPlugin } from '@florianbruniaux/ctxharness-core'
@@ -506,11 +603,16 @@ const myPlugin = definePlugin({
 loadPlugin(myPlugin)
 ```
 
-Use `name: myExtractor` and `scanner: myScanner` in your `.ctxharness.yml` like any built-in.
+Use `extractor: myExtractor` and `scanner: myScanner` in your `.ctxharness.yml` like any built-in.
+
+</details>
 
 ## Stack presets
 
-Ready-to-use config templates for common stacks:
+Start from a template for T3, Next.js App Router, Python, Go or Rust.
+
+<details>
+<summary>Choose and copy a preset from the source checkout</summary>
 
 | Preset                       | Path                                    | Covers                                                                |
 | ---------------------------- | --------------------------------------- | --------------------------------------------------------------------- |
@@ -520,11 +622,13 @@ Ready-to-use config templates for common stacks:
 | Go                           | `templates/presets/go.yml`              | go toolchain version, go.mod deps + quality assertions                |
 | Rust                         | `templates/presets/rust.yml`            | crate version, Cargo.toml deps + quality assertions (workspace-aware) |
 
-Copy a preset as your `.ctxharness.yml` starting point:
+From a source checkout, copy a preset into the project you want to check:
 
 ```bash
-cp node_modules/ctxharness/templates/presets/t3.yml .ctxharness.yml
+cp templates/presets/t3.yml /path/to/project/.ctxharness.yml
 ```
+
+</details>
 
 ## CI integration
 
@@ -532,7 +636,7 @@ GitHub Actions:
 
 ```yaml
 - name: Check AI doc drift
-  uses: FlorianBruniaux/ctxharness@v0.4
+  uses: FlorianBruniaux/ctxharness@v0.4.6
   with:
     config: .ctxharness.yml
     format: gha
@@ -541,6 +645,9 @@ GitHub Actions:
 Or copy `templates/ci/github-actions.yml` for a full workflow. GitLab CI and CircleCI templates are at `templates/ci/gitlab-ci.yml` and `templates/ci/circleci.yml`.
 
 Husky (post-merge, post-checkout): copy from `templates/husky/`.
+
+<details>
+<summary>Keep shared Claude settings separate from machine-local overrides</summary>
 
 ### `.claude/settings.json` vs `settings.local.json`
 
@@ -553,27 +660,32 @@ Claude Code follows a two-file convention for project settings:
 
 The same layering applies to `CLAUDE.md` files: project-level goes in the repo root (committed), personal goes in `~/.claude/CLAUDE.md` (your machine only). [Claude Code memory docs](https://docs.anthropic.com/en/docs/claude-code/memory).
 
+</details>
+
+## Documentation
+
+| Guide                                                        | What to read it for                                                 |
+| ------------------------------------------------------------ | ------------------------------------------------------------------- |
+| [Documentation index](docs/README.md)                        | Current guides and historical design notes.                         |
+| [Configuration doctor](docs/doctor.md)                       | Modes, selection, formats, exit codes and extension options.        |
+| [Configuration audit](docs/configuration-audit.md)           | Read boundaries, supported checks, coverage and static-size limits. |
+| [Versioned contracts and fixtures](docs/contracts/README.md) | Core APIs, portable validation and snapshot interoperability.       |
+| [Delivery roadmap](docs/roadmap.md)                          | Integrated issues, dependency order and product scope.              |
+| [Changelog](CHANGELOG.md)                                    | Unreleased changes and release history.                             |
+| [Contributor instructions](CLAUDE.md)                        | Repository structure, checks and implementation rules.              |
+
 ## Product boundary
 
 CTX Harness compares documented claims with local sources and diagnoses supported configuration declarations. It can check inputs produced by configuration generators or distribution tools without applying their output.
 
 Session collectors, semantic optimization, task-quality judges, controlled cost/cache experiments and candidate application are outside this project. Importing a runtime result only records a caller declaration; it does not run or authenticate that result. The [delivery roadmap](docs/roadmap.md) keeps these responsibilities separate.
 
-## Taxonomy
-
-ctxharness covers three layers of context engineering testing:
-
-| Layer                            | What                                                                                                                 |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **L1 Doc Drift**                 | Facts in AI docs vs code reality, file existence, npm scripts, versions, counts, regex captures                      |
-| **L2 Static Instruction Checks** | Vague language, instruction ratios, estimated context size and multi-file coherence                                  |
-| **L3 Configuration Diagnosis**   | Supported instruction, skill, rule, agent, hook and MCP declarations; loading and execution remain separate evidence |
-
-Agent behavior evaluation is outside this scope. A static score, smaller source file or structurally valid configuration does not establish what a model received, task success, saved tokens or latency.
+Declaration, supported applicability, observation and estimation remain distinct. A static score, smaller source file or structurally valid configuration does not establish what a model received, task success, saved tokens or latency. Missing evidence stays unknown. Portable references and digests do not guarantee anonymization.
 
 ## Further Reading
 
-The problem ctxharness addresses is well-documented. These are the sources worth reading.
+<details>
+<summary>Background on context engineering, documentation drift and instruction files</summary>
 
 **Context engineering, why accuracy matters**
 
@@ -594,6 +706,8 @@ The problem ctxharness addresses is well-documented. These are the sources worth
 - [New Research Reassesses the Value of AGENTS.md Files](https://www.infoq.com/news/2026/03/agents-context-file-value-review/), InfoQ, March 2026. ETH Zurich study: LLM-generated context files reduce task success by 3% on average and increase inference costs by 20%+. Authors recommend limiting instructions to non-inferable details, exactly the facts ctxharness verifies.
 - [When AGENTS.md Backfires](https://notchrisgroves.com/when-agents-md-backfires/), Feb 2026. Only 14.5% of agent context files include security instructions. LLM-generated files reduced task success in 5 of 8 evaluation settings.
 
+</details>
+
 <!-- BEGIN GENERATED RELATED PROJECTS -->
 <!-- Source: https://github.com/FlorianBruniaux/FlorianBruniaux/blob/main/ecosystem/projects.json; project: ctxharness -->
 ## Explore the ecosystem
@@ -609,6 +723,4 @@ These projects extend the workflow without duplicating this tool:
 
 ## License
 
-MIT
-
-Configuration audit scope and import boundaries: [configuration audit](docs/configuration-audit.md).
+[MIT](LICENSE)
