@@ -25,6 +25,7 @@ import {
   loadConfigSnapshot,
   compareConfigSnapshots,
   buildAgentDoctorReport,
+  loadConfigExpectations,
   projectPortableReport,
 } from '@florianbruniaux/ctxharness-core'
 import type {
@@ -480,17 +481,20 @@ program
   .option('--budget', 'Include attributed static sizes and explicit estimation methods')
   .option('--coverage', 'Include declared static coverage and support inventory')
   .option('--export <profile>', 'Versioned disclosure profile: portable')
+  .option('--expect <path>', 'Explicit JSON presence/absence expectations (requires --host claude --scope project)')
   .option('--runtime-evidence <path>', 'Signed or timestamped runtime canary results')
   .option('--no-trend', 'Skip recording to trend history')
-  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string; export?: string; coverage?: boolean; budget?: boolean; tools?: string; toolPath?: string; toolEnvironment?: string; toolPlatform?: string; toolCwd?: string; toolSymlinks?: string; requiredTools?: string }, command: Command) => {
+  .action(async (opts: { config: string; root: string; trend: boolean; host?: string; scope?: string; format?: string; runtimeEvidence?: string; expect?: string; export?: string; coverage?: boolean; budget?: boolean; tools?: string; toolPath?: string; toolEnvironment?: string; toolPlatform?: string; toolCwd?: string; toolSymlinks?: string; requiredTools?: string }, command: Command) => {
     try {
       const cwd = process.cwd()
       const root = opts.root !== '' ? resolve(cwd, opts.root) : cwd
       const explicitToolOptions = ['tools', 'toolPath', 'toolEnvironment', 'toolPlatform', 'toolCwd', 'toolSymlinks', 'requiredTools'].some(name => command.getOptionValueSource(name) === 'cli')
-      const agentConfigMode = explicitToolOptions || opts.budget === true || opts.coverage === true || opts.export !== undefined || opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
+      const agentConfigMode = opts.expect !== undefined || explicitToolOptions || opts.budget === true || opts.coverage === true || opts.export !== undefined || opts.host !== undefined || opts.scope !== undefined || opts.format !== undefined || opts.runtimeEvidence !== undefined
 
       if (agentConfigMode) {
         if (opts.export !== undefined && opts.export !== 'portable') throw new Error('Unsupported export profile.')
+        if (opts.expect !== undefined && (opts.host !== 'claude' || opts.scope !== 'project')) throw new Error('Expectations require explicit --host claude --scope project.')
+        const expectations = opts.expect === undefined ? undefined : loadConfigExpectations(resolve(cwd, opts.expect))
         const hosts = parseHosts(opts.host)
         const scopes = parseScopes(opts.scope)
         const format = parseAgentDoctorFormat(opts.format)
@@ -506,7 +510,7 @@ program
           symlinks: opts.toolSymlinks,
           requirements: required.map(tool => ({ tool, kind: 'project-requirement' as const })),
         }
-        const result = buildAgentDoctorReport({ root, home: resolve(homedir()), hosts, scopes, runtimeEvidencePath: opts.runtimeEvidence, cwd, includeCoverage: opts.coverage === true || opts.export === 'portable', includeBudget: opts.budget === true || opts.export === 'portable', ...(toolRequest === undefined ? {} : { toolRequest }) })
+        const result = buildAgentDoctorReport({ ...(expectations === undefined ? {} : { expectations }), root, home: resolve(homedir()), hosts, scopes, runtimeEvidencePath: opts.runtimeEvidence, cwd, includeCoverage: opts.coverage === true || opts.export === 'portable', includeBudget: opts.budget === true || opts.export === 'portable', ...(toolRequest === undefined ? {} : { toolRequest }) })
         if (opts.export === 'portable') process.stdout.write(JSON.stringify(projectPortableReport(result), null, 2) + '\n')
         else reportAgentDoctor(result, format)
         process.exitCode = result.summary.mandatoryFailures > 0 ? 1 : 0

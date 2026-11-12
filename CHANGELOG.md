@@ -8,6 +8,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ## [Unreleased]
 
+### Added
+
+- Explicit passive project expectations through `doctor --expect`, requiring Claude/project selection. Bounded JSON contracts check named files and MCP declarations for presence or absence, with unknown requirements blocking only the requested contract. Existing doctor defaults, report v1, portable v1 and snapshot commands retain their behavior.
+- Backend/frontend fixture with socle A/B, profile round trips, idempotence, identical-content support renames, local override preservation and negative cases for stale resources and unverifiable inputs. Content oracles remain separate from presence checks. No native client activation or automatic adoption is claimed.
+
+### Fixed
+
+- Bound MCP scanner reads and reject special files without blocking. This also protects the existing doctor pass that runs before explicit expectations are evaluated.
+
 ## [0.5.0] - 2026-10-16
 
 Configuration diagnosis and reusable static evidence for Claude Code and Codex. This version adds portable exports, declared coverage, attributed source sizes and two opt-in extensions while preserving the documentation-drift commands and historical output formats.
