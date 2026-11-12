@@ -1,0 +1,29 @@
+CHANGELOG.md
+  s_9e5d8cddd96e88::t_655815a0448ba6 18
+docs/doctor.md
+  s_9e5d8cddd96e88::t_6e700551183a21 106
+packages/cli/src/__tests__/doctor-expectations.test.ts
+  s_9e5d8cddd96e88::t_4aa22936b499da 461-505
+packages/core/src/agent-config/scanners/hooks.ts
+  s_9e5d8cddd96e88::t_9305d0cf0671a4 1-2,56,58-60,426
+packages/core/src/agent-config/scanners/instructions.ts
+  s_9e5d8cddd96e88::t_7862e8e1e33b69 1-2,14,17-20,135,143
+packages/core/src/agent-config/scanners/skills.ts
+  s_9e5d8cddd96e88::t_2358d226691042 1-2,29-32,134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ca7601008888f97f8731d1901928e7b44e770100",
+  "prompts": {},
+  "sessions": {
+    "s_9e5d8cddd96e88": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d1b9-58a1-7b12-8529-3748d6e4e1d6",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
