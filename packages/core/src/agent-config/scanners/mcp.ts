@@ -67,15 +67,21 @@ function containsLiteralSecret(value: unknown, key = '', protectedEnvReference =
 function parseMcpServers(
   evidence: AgentConfigEvidence,
   boundary: string,
-): Record<string, unknown> | null {
+): Record<string, unknown> | null | undefined {
+  // undefined means unavailable evidence, null means readable but invalid syntax.
+  let content: string | undefined
   try {
     const read = readContext(
       [evidence.path],
       { allowedRoots: [boundary], maxFiles: 1, maxBytes: 1_000_000 },
       false,
     )
-    const content = read.complete ? read.files[0]?.content : undefined
-    if (content === undefined) return null
+    content = read.complete ? read.files[0]?.content : undefined
+  } catch {
+    return undefined
+  }
+  if (content === undefined) return undefined
+  try {
     const parsed = evidence.path.endsWith('.toml') ? parseToml(content) : JSON.parse(content)
     if (typeof parsed !== 'object' || parsed === null) return null
     const fields = parsed as Record<string, unknown>
@@ -98,6 +104,20 @@ export function scanMcp(inventory: AgentConfigInventory): AgentConfigFinding[] {
       evidence,
       capability.scope === 'project' ? inventory.root : inventory.home,
     )
+    if (servers === undefined) {
+      findings.push({
+        code: 'mcp-evidence-unavailable',
+        status: 'unknown',
+        reason: 'missing-evidence',
+        message: 'MCP configuration could not be read completely within the passive read limits.',
+        host: evidence.host,
+        scope: evidence.scope,
+        layer: 'mcp',
+        path: evidence.path,
+        evidence: [evidence],
+      })
+      continue
+    }
     if (servers === null) {
       findings.push({
         code: 'mcp-config-invalid',

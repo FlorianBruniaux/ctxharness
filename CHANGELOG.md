@@ -15,6 +15,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Fixed
 
+- Report unavailable or oversized MCP evidence as unknown instead of claiming invalid JSON/TOML. Explicit expectations still fail when required evidence cannot be verified.
 - Bound instruction, skill, hook and MCP scanner reads and reject special files without blocking. This also protects the existing doctor pass that runs before explicit expectations are evaluated.
 
 ## [0.5.0] - 2026-10-16

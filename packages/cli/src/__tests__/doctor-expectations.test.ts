@@ -7,6 +7,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -372,7 +373,19 @@ describe('backend/frontend baseline update recipe', () => {
     expect(update.status).toBe(0)
     const delta = JSON.parse(update.stdout)
     expect(delta).toMatchObject({ status: 'changed', evidence: 'complete' })
-    expect(delta.changes.length).toBeGreaterThan(0)
+    // Snapshot v1 covers these content changes. The script and ordinary Markdown
+    // support link are outside its content coverage and have independent oracles above.
+    const contentRef = (path: string) =>
+      createHash('sha256')
+        .update(JSON.stringify(['content', 'project', path]))
+        .digest('hex')
+    expect(delta.changes).toHaveLength(2)
+    expect(delta.changes).toEqual(
+      expect.arrayContaining([
+        { kind: 'changed', ref: contentRef('.claude/rules/common.md') },
+        { kind: 'changed', ref: contentRef('.claude/skills/demo/SKILL.md') },
+      ]),
+    )
     const restored = invoke(['config-diff', snapshots[0]!, snapshots[7]!])
     expect(restored.status).toBe(0)
     expect(JSON.parse(restored.stdout)).toMatchObject({ status: 'equal', evidence: 'complete' })
@@ -439,25 +452,55 @@ describe('backend/frontend baseline update recipe', () => {
   })
 })
 
-it('does not block on a FIFO MCP declaration before evaluating expectations', () => {
-  expect(spawnSync('mkfifo', [join(root, '.mcp.json')]).status).toBe(0)
-  const result = doctor(
-    contract([
-      {
-        id: 'design-mcp',
-        kind: 'mcp-server',
-        path: '.mcp.json',
-        name: 'design_fixture',
-        state: 'absent',
-      },
-    ]),
-  )
-  expect(result.error).toBeUndefined()
-  expect(result.status).toBe(1)
-  expect(JSON.parse(result.stdout).findings).toContainEqual(
-    expect.objectContaining({ capability: 'design-mcp', status: 'unknown' }),
-  )
-}, 20_000)
+it.each(['fifo', 'oversized'] as const)(
+  'reports %s MCP evidence as unavailable before evaluating expectations',
+  (kind) => {
+    if (kind === 'fifo') expect(spawnSync('mkfifo', [join(root, '.mcp.json')]).status).toBe(0)
+    else
+      write(
+        join(root, '.mcp.json'),
+        JSON.stringify({ mcpServers: {}, padding: ' '.repeat(1_000_000) }),
+      )
+    const ordinary = invoke([
+      'doctor',
+      '--host',
+      'claude',
+      '--scope',
+      'project',
+      '--format',
+      'json',
+    ])
+    expect(ordinary.error).toBeUndefined()
+    expect(ordinary.status).toBe(0)
+    expect(JSON.parse(ordinary.stdout).findings).toContainEqual(
+      expect.objectContaining({
+        code: 'mcp-evidence-unavailable',
+        status: 'unknown',
+        reason: 'missing-evidence',
+      }),
+    )
+    expect(JSON.parse(ordinary.stdout).findings).not.toContainEqual(
+      expect.objectContaining({ code: 'mcp-config-invalid' }),
+    )
+    const result = doctor(
+      contract([
+        {
+          id: 'design-mcp',
+          kind: 'mcp-server',
+          path: '.mcp.json',
+          name: 'design_fixture',
+          state: 'absent',
+        },
+      ]),
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status).toBe(1)
+    expect(JSON.parse(result.stdout).findings).toContainEqual(
+      expect.objectContaining({ capability: 'design-mcp', status: 'unknown' }),
+    )
+  },
+  20_000,
+)
 
 it.each(['CLAUDE.md', '.claude/settings.json', '.claude/skills/demo/SKILL.md'])(
   'does not block before evaluating a required special file at %s',

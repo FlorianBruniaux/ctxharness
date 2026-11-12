@@ -64,3 +64,28 @@ it('allows environment references without masking a later literal credential', (
   expect(scan(['--token', env], 'claude')[0]?.status).toBe('pass')
   expect(scan(['--max-tokens=1024', '--token=literal-secret'], 'claude')[0]?.status).toBe('fail')
 })
+
+it.each(['claude', 'codex'] as const)(
+  'distinguishes unavailable evidence from malformed syntax in %s',
+  (host) => {
+    const root = mkdtempSync(join(tmpdir(), 'ctx-mcp-read-'))
+    dirs.push(root)
+    const path = join(root, host === 'claude' ? '.mcp.json' : '.codex/config.toml')
+    if (host === 'codex') mkdirSync(join(root, '.codex'))
+    const valid = host === 'claude' ? '{"mcpServers":{}}' : '[mcp_servers]\n'
+    writeFileSync(path, valid + ' '.repeat(1_000_000))
+    const inventory = inventoryAgentConfig({ root, home: root, hosts: [host], scopes: ['project'] })
+    const unavailable = expect.objectContaining({
+      code: 'mcp-evidence-unavailable',
+      status: 'unknown',
+      reason: 'missing-evidence',
+    })
+    expect(scanMcp(inventory)).toEqual([unavailable])
+    rmSync(path)
+    expect(scanMcp(inventory)).toEqual([unavailable])
+    writeFileSync(path, '{invalid')
+    expect(scanMcp(inventory)).toEqual([
+      expect.objectContaining({ code: 'mcp-config-invalid', status: 'fail' }),
+    ])
+  },
+)
