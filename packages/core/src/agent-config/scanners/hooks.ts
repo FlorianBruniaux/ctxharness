@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { readContext } from '../../fs-boundary.js'
+import { existsSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { parse as parseToml } from 'smol-toml'
 import { isPathWithinBoundary } from '../inventory.js'
@@ -52,9 +53,11 @@ interface ParsedHooks {
   commands: HookCommand[]
 }
 
-function parseHookCommands(path: string): ParsedHooks | null {
+function parseHookCommands(path: string, boundary: string): ParsedHooks | null {
   try {
-    const content = readFileSync(path, 'utf-8')
+    const read = readContext([path], { allowedRoots: [boundary], maxFiles: 1, maxBytes: 1_000_000 }, false)
+    const content = read.complete ? read.files[0]?.content : undefined
+    if (content === undefined) return null
     const parsed = path.endsWith('.toml') ? parseToml(content) : JSON.parse(content)
     if (asRecord(parsed) === null) return null
     const hooks = (parsed as Record<string, unknown>)['hooks']
@@ -420,7 +423,7 @@ export function scanHooks(inventory: AgentConfigInventory): AgentConfigFinding[]
   const findings = sourceResult.findings
 
   for (const evidence of sourceResult.sources) {
-    const parsed = parseHookCommands(evidence.path)
+    const parsed = parseHookCommands(evidence.path, evidence.scope === 'project' ? inventory.root : inventory.home)
     if (parsed === null) {
       findings.push({
         code: 'hook-config-invalid',

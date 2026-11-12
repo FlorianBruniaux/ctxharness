@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "host": "claude",
+  "scope": "project",
+  "expectations": [
+    {
+      "id": "instructions",
+      "kind": "file",
+      "path": "CLAUDE.md",
+      "state": "present"
+    },
+    {
+      "id": "common-rule",
+      "kind": "file",
+      "path": ".claude/rules/common.md",
+      "state": "present"
+    },
+    {
+      "id": "local-rule",
+      "kind": "file",
+      "path": ".claude/rules/local.md",
+      "state": "present"
+    },
+    {
+      "id": "skill",
+      "kind": "file",
+      "path": ".claude/skills/demo/SKILL.md",
+      "state": "present"
+    },
+    {
+      "id": "check-script",
+      "kind": "file",
+      "path": "scripts/profile-check.mjs",
+      "state": "present"
+    },
+    {
+      "id": "design-rule",
+      "kind": "file",
+      "path": ".claude/rules/design.md",
+      "state": "absent"
+    },
+    {
+      "id": "design-mcp",
+      "kind": "mcp-server",
+      "path": ".mcp.json",
+      "name": "design_fixture",
+      "state": "absent"
+    },
+    {
+      "id": "old-support",
+      "kind": "file",
+      "path": ".claude/skills/demo/references/old.md",
+      "state": "absent"
+    },
+    {
+      "id": "new-support",
+      "kind": "file",
+      "path": ".claude/skills/demo/references/new.md",
+      "state": "present"
+    }
+  ]
+}

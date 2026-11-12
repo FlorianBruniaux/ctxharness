@@ -64,6 +64,55 @@ ctxharness doctor --host claude --scope project --coverage --budget --format jso
 
 Portable export includes coverage and static sizes by default. Local JSON adds those fields only when requested. Coverage retains declared applicability and unresolved/unsupported surfaces; native loading, execution and benefit remain unknown. The ledger measures discovered UTF-8 bytes and UTF-16 code units, with the historical `ceil(codeUnits / 4)` estimate. Completeness describes bounded traversal, not a complete model request. See [the schemas and sanitized consumer fixtures](contracts/README.md).
 
+## Explicit project expectations (unreleased)
+
+`--expect` adds caller-selected presence/absence requirements to the passive diagnostic. It currently requires explicit `--host claude --scope project`. It does not select a developer profile, regenerate configuration, execute a check or observe a native client.
+
+Create a JSON artifact such as `backend.expectations.json` outside the configuration being generated:
+
+```json
+{
+  "schemaVersion": 1,
+  "host": "claude",
+  "scope": "project",
+  "expectations": [
+    {
+      "id": "design-rule",
+      "kind": "file",
+      "path": ".claude/rules/design.md",
+      "state": "absent"
+    },
+    {
+      "id": "design-mcp",
+      "kind": "mcp-server",
+      "path": ".mcp.json",
+      "name": "design_fixture",
+      "state": "absent"
+    }
+  ]
+}
+```
+
+From the project root, with a CLI built from source containing this feature:
+
+```bash
+ctxharness doctor --host claude --scope project --expect backend.expectations.json --format json
+```
+
+The contract path resolves from the caller's working directory. Target paths resolve from `--root` (or the current directory). No contract is discovered implicitly. `.ctxharness.yml` remains the configuration format for documentation assertions; this explicit JSON artifact describes the expectations for one audit.
+
+`kind: file` checks a named regular readable file or the absence of any entry at that path. `kind: mcp-server` checks an own property of the `mcpServers` object in the project's `.mcp.json`. It does not infer tool exposure, authentication or permissions. A certainly missing MCP file satisfies a server-absence expectation. Invalid JSON, a missing or non-object `mcpServers`, and a non-object entry for the named server remain unknown.
+
+Contracts accept 1–100 expectations with unique IDs and targets. IDs and MCP names use 1–64 ASCII letters, digits, dots, underscores or hyphens. File paths are relative, up to 512 characters, without empty, dot or parent segments, backslashes, colons or NUL characters. MCP expectations use only `.mcp.json`. Unknown fields and versions are rejected. The contract and each required file read are limited to 1 MB. The instruction, skill, hook and MCP scanners that run before the expectation evaluator also use bounded 1 MB reads. Imports are not followed. Symlinks on target paths are not followed, including links inside the project. A forbidden final symlink is an existing entry and fails an absence requirement. Unreadable parents and ambiguous missing paths remain unknown. Audit a stable tree; these checks are not a filesystem sandbox against concurrent writers.
+
+Individual results use `capability` for the expectation ID and retain `pass`, `fail` or `unknown`. The aggregate `config-expectations-unsatisfied` finding fails when any explicit expectation fails or remains unknown, producing exit 1. All expectations passing removes only this contract's failure; other mandatory static failures still produce exit 1. Unknowns unrelated to the contract and imported runtime declarations keep their existing behavior. Invalid contracts or incompatible selections also exit 1 without a success report.
+
+Expectation results do not add discovered resources to coverage or budget. The local report keeps schema v1. Portable v1 maps the new codes to `unrecognized-finding`, preserving statuses and counts while omitting IDs, paths and values. Use local JSON to correlate individual requirements. Configuration snapshots remain separate: the snapshot CLI does not accept `--expect` and does not include this evaluation.
+
+The [profile fixture](../packages/core/src/agent-config/__fixtures__/profile-expectations/) exercises A/backend, A/frontend, B/backend and B/frontend, profile round trips, idempotence, a support-file rename with identical bytes and a preserved local override. Independent test assertions check changed contents and intentionally demonstrate that presence alone can pass with stale content. The fixture does not run ai-rulez, Claude, a check script or an MCP server. Its prepared B-to-A transition is an observer test, not a transactional rollback implementation.
+
+Core consumers can use `ConfigExpectationsSchema`, `parseConfigExpectations`, `loadConfigExpectations` and `checkConfigExpectations`, or pass parsed `expectations` to `buildAgentDoctorReport` with exactly the Claude project selection.
+
 ## Imported runtime declarations
 
 The existing importer accepts an explicit artifact; it does not collect sessions or run a canary. This is a format example with synthetic values:

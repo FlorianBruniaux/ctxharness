@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { readContext } from '../../fs-boundary.js'
+import { existsSync, realpathSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
 import { load } from 'js-yaml'
 import { isPathWithinBoundary } from '../inventory.js'
@@ -25,8 +26,10 @@ function isReferenceOutsideSkillPackage(reference: string, skillPackage: string)
   }
 }
 
-function parseSkill(evidence: AgentConfigEvidence): ParsedSkill {
-  const content = readFileSync(evidence.path, 'utf-8')
+function parseSkill(evidence: AgentConfigEvidence, boundary: string): ParsedSkill {
+  const read = readContext([evidence.path], { allowedRoots: [boundary], maxFiles: 1, maxBytes: 1_000_000 }, false)
+  const content = read.complete ? read.files[0]?.content : undefined
+  if (content === undefined) throw new Error('Skill evidence unavailable.')
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content)
   let name: string | undefined
   let description: string | undefined
@@ -128,7 +131,7 @@ export function scanSkills(inventory: AgentConfigInventory): AgentConfigFinding[
   for (const skill of inventory.skills) {
     for (const evidence of skill.evidence) {
       try {
-        parsed.push(parseSkill(evidence))
+        parsed.push(parseSkill(evidence, evidence.scope === 'project' ? inventory.root : inventory.home))
       } catch {
         findings.push({
           code: 'skill-evidence-unavailable',

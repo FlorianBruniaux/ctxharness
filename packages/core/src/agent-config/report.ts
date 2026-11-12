@@ -10,8 +10,14 @@ import { diagnoseToolAvailability, type ToolAvailabilityOptions } from './tool-a
 import { buildStaticBudget, StaticBudgetSchema, type StaticBudget } from './budget.js'
 import { buildConfigCoverage, ConfigCoverageSchema, type ConfigCoverage } from './coverage.js'
 import { ToolAvailabilitySchema, type ToolAvailability } from './tool-contract.js'
+import {
+  checkConfigExpectations,
+  parseConfigExpectations,
+  type ConfigExpectations,
+} from './expectations.js'
 
 export interface AgentDoctorOptions {
+  expectations?: ConfigExpectations
   toolRequest?: ToolAvailabilityOptions
   includeCoverage?: boolean
   includeBudget?: boolean
@@ -220,6 +226,14 @@ function staticFinding(finding: AgentConfigFinding): AgentDoctorFinding {
 
 export function buildAgentDoctorReport(options: AgentDoctorOptions): AgentDoctorReport {
   const { root, home, hosts, scopes, runtimeEvidencePath, cwd = root } = options
+  const expectations =
+    options.expectations === undefined ? undefined : parseConfigExpectations(options.expectations)
+  if (
+    expectations !== undefined &&
+    (hosts.length !== 1 || hosts[0] !== 'claude' || scopes.length !== 1 || scopes[0] !== 'project')
+  ) {
+    throw new Error('Configuration expectations require exactly the Claude project selection.')
+  }
   const inventory = inventoryAgentConfig({ root, home, hosts, scopes })
   const findings = scanAgentConfig(inventory)
     .filter((finding) => includeSelectedFinding(finding, hosts, scopes))
@@ -261,8 +275,10 @@ export function buildAgentDoctorReport(options: AgentDoctorOptions): AgentDoctor
           findings.filter((f) => f.source === 'static'),
         )
       : undefined
-  const count = (status: AgentDoctorStatus): number =>
-    findings.filter((finding) => finding.status === status).length
+  const budget = options.includeBudget ? buildStaticBudget(inventory, {}, coverage) : undefined
+  // Expectations are user requirements, not discoveries or native applicability evidence.
+  if (expectations !== undefined)
+    findings.push(...checkConfigExpectations({ root, expectations }).map(staticFinding))
   return {
     ...(options.toolRequest === undefined
       ? {}
@@ -274,19 +290,10 @@ export function buildAgentDoctorReport(options: AgentDoctorOptions): AgentDoctor
     root,
     selection: { hosts, scopes },
     runtimeEvidence,
-    summary: {
-      pass: count('pass'),
-      warn: count('warn'),
-      fail: count('fail'),
-      unknown: count('unknown'),
-      notApplicable: count('not-applicable'),
-      mandatoryFailures: findings.filter(
-        (finding) => finding.status === 'fail' && finding.mandatory,
-      ).length,
-    },
+    summary: summarizeFindings(findings),
     findings,
     ...(options.includeCoverage && coverage !== undefined ? { coverage } : {}),
-    ...(options.includeBudget ? { budget: buildStaticBudget(inventory, {}, coverage) } : {}),
+    ...(budget === undefined ? {} : { budget }),
   }
 }
 

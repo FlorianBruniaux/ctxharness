@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { readContext } from '../../fs-boundary.js'
+import { existsSync, readdirSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import type {
   AgentConfigEvidence,
@@ -10,10 +11,13 @@ import type {
 const CODEX_INSTRUCTION_NAMES = new Set(['AGENTS.md', 'AGENTS.override.md'])
 const IGNORED_DIRECTORIES = new Set(['.git', 'node_modules'])
 
-function instructionFinding(evidence: AgentConfigEvidence): AgentConfigFinding {
+function instructionFinding(evidence: AgentConfigEvidence, boundary: string): AgentConfigFinding {
   let content: string
   try {
-    content = readFileSync(evidence.path, 'utf-8')
+    const read = readContext([evidence.path], { allowedRoots: [boundary], maxFiles: 1, maxBytes: 1_000_000 }, false)
+    const file = read.files[0]
+    if (!read.complete || file === undefined) throw new Error('Instruction evidence unavailable.')
+    content = file.content
   } catch {
     return {
       code: 'instruction-evidence-unavailable',
@@ -128,7 +132,7 @@ export function scanInstructions(inventory: AgentConfigInventory): AgentConfigFi
     ...findings,
     ...evidence.map((item): AgentConfigFinding => {
       if (item.host !== 'codex' || basename(item.path) !== 'AGENTS.md')
-        return instructionFinding(item)
+        return instructionFinding(item, item.scope === 'project' ? inventory.root : inventory.home)
       const override = evidence.find(
         (candidate) =>
           candidate.host === 'codex' &&
@@ -136,7 +140,7 @@ export function scanInstructions(inventory: AgentConfigInventory): AgentConfigFi
           dirname(candidate.path) === dirname(item.path) &&
           basename(candidate.path) === 'AGENTS.override.md',
       )
-      if (override === undefined) return instructionFinding(item)
+      if (override === undefined) return instructionFinding(item, item.scope === 'project' ? inventory.root : inventory.home)
       return {
         code: 'instruction-shadowed',
         status: 'warn',

@@ -99,3 +99,11 @@ export type { ToolAvailabilityOptions } from './agent-config/tool-availability.j
 
 export { buildConfigSnapshot, compareConfigSnapshots, saveConfigSnapshot, loadConfigSnapshot, parseConfigSnapshot, ConfigSnapshotSchema } from './agent-config/snapshot.js'
 export type { ConfigSnapshot, ConfigSnapshotDiff } from './agent-config/snapshot.js'
+
+export {
+  ConfigExpectationsSchema,
+  parseConfigExpectations,
+  loadConfigExpectations,
+  checkConfigExpectations,
+} from './agent-config/expectations.js'
+export type { ConfigExpectations } from './agent-config/expectations.js'

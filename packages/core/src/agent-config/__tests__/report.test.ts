@@ -134,3 +134,49 @@ it('consumes the optional tool extension through the foundation v1 contract', as
     }),
   ).toThrow()
 })
+
+it('integrates explicit expectations without changing report schema or coverage', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ctx-report-expectations-'))
+  dirs.push(root)
+  writeFileSync(join(root, 'CLAUDE.md'), 'fixture')
+  const options = {
+    root,
+    home: root,
+    hosts: ['claude'],
+    scopes: ['project'],
+    includeCoverage: true,
+    includeBudget: true,
+  }
+  const plain = api('buildAgentDoctorReport')(options) as core.AgentDoctorReport
+  const expectations = api('parseConfigExpectations')({
+    schemaVersion: 1,
+    host: 'claude',
+    scope: 'project',
+    expectations: [
+      { id: 'missing-rule', kind: 'file', path: '.claude/rules/missing.md', state: 'present' },
+    ],
+  })
+  const checked = api('buildAgentDoctorReport')({
+    ...options,
+    expectations,
+  }) as core.AgentDoctorReport
+  expect(api('parseAgentDoctorReport')(checked)).toEqual(checked)
+  expect(checked.coverage).toEqual(plain.coverage)
+  expect(checked.budget).toEqual(plain.budget)
+  expect(checked.summary.mandatoryFailures).toBe(2)
+  expect(checked.findings).toContainEqual(
+    expect.objectContaining({
+      capability: 'missing-rule',
+      status: 'fail',
+      source: 'static',
+      mandatory: true,
+    }),
+  )
+  expect(Object.keys(checked).sort()).toEqual(Object.keys(plain).sort())
+  expect(() =>
+    api('buildAgentDoctorReport')({ ...options, hosts: ['codex'], expectations }),
+  ).toThrow()
+  expect(() =>
+    api('buildAgentDoctorReport')({ ...options, scopes: ['global'], expectations }),
+  ).toThrow()
+})
