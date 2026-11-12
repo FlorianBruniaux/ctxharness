@@ -15,7 +15,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Fixed
 
-- Bound MCP scanner reads and reject special files without blocking. This also protects the existing doctor pass that runs before explicit expectations are evaluated.
+- Bound instruction, skill, hook and MCP scanner reads and reject special files without blocking. This also protects the existing doctor pass that runs before explicit expectations are evaluated.
 
 ## [0.5.0] - 2026-10-16
 

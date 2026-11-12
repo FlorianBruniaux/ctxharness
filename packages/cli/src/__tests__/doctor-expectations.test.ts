@@ -458,3 +458,48 @@ it('does not block on a FIFO MCP declaration before evaluating expectations', ()
     expect.objectContaining({ capability: 'design-mcp', status: 'unknown' }),
   )
 }, 20_000)
+
+it.each(['CLAUDE.md', '.claude/settings.json', '.claude/skills/demo/SKILL.md'])(
+  'does not block before evaluating a required special file at %s',
+  (path) => {
+    mkdirSync(dirname(join(root, path)), { recursive: true })
+    expect(spawnSync('mkfifo', [join(root, path)]).status).toBe(0)
+    const input = contract([{ id: 'special-file', kind: 'file', path, state: 'present' }])
+    const result = spawnSync(
+      process.execPath,
+      [
+        cli,
+        'doctor',
+        '--host',
+        'claude',
+        '--scope',
+        'project',
+        '--expect',
+        input,
+        '--format',
+        'json',
+        '--coverage',
+        '--budget',
+      ],
+      {
+        cwd: root,
+        env: { ...process.env, HOME: home, NO_COLOR: '1' },
+        encoding: 'utf8',
+        timeout: 2_000,
+      },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status).toBe(1)
+    const report = JSON.parse(result.stdout)
+    expect(report.findings).toContainEqual(
+      expect.objectContaining({ capability: 'special-file', status: 'unknown' }),
+    )
+    expect(report.findings).toContainEqual(
+      expect.objectContaining({
+        code: 'config-expectations-unsatisfied',
+        status: 'fail',
+        mandatory: true,
+      }),
+    )
+  },
+)
