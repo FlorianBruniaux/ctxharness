@@ -14,6 +14,8 @@
 
 **Check the context your coding agents rely on.**
 
+If a backend profile forbids the design MCP server, CTX Harness fails the check when `.mcp.json` still declares it.
+
 Catch stale paths, scripts and versions in your AI docs. Inspect Claude Code and Codex configuration, measure static source sizes and export validated evidence for other tools.
 
 CTX Harness is a local CLI and TypeScript library. It reads your existing `CLAUDE.md`, `AGENTS.md` and `.cursorrules`, compares documented claims with your codebase and makes missing evidence explicit.
@@ -370,7 +372,7 @@ Use the `v0.6.0` build or later. Check that `ctxharness doctor --help` lists `--
 ctxharness doctor --host claude --scope project --expect backend.expectations.json --format json
 ```
 
-Use the contract to require or forbid files and named MCP declarations. A backend contract can forbid the design rule and MCP declaration. If any explicit expectation fails or remains unknown, the command exits with status 1. The verdict describes the files and declarations on disk. See the [changelog](CHANGELOG.md#060---2026-11-17) for release status.
+Use the contract to require or forbid files and named MCP declarations. If any explicit expectation fails or remains unknown, the command exits with status 1. The verdict describes the files and declarations on disk. See the [changelog](CHANGELOG.md#060---2026-11-17) for release status.
 
 <details>
 <summary>Export portable JSON, declared coverage and static sizes</summary>
