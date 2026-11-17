@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-17
+
+This release adds explicit profile checks for Claude Code project configuration. [Changes since v0.5.0](https://github.com/FlorianBruniaux/ctxharness/compare/v0.5.0...v0.6.0).
+
 ### Added
 
 - Explicit passive project expectations through `doctor --expect`, requiring Claude/project selection. Bounded JSON contracts check named files and MCP declarations for presence or absence, with unknown requirements blocking only the requested contract. Existing doctor defaults, report v1, portable v1 and snapshot commands retain their behavior.
@@ -17,6 +21,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 - Report unavailable or oversized MCP evidence as unknown instead of claiming invalid JSON/TOML. Explicit expectations still fail when required evidence cannot be verified.
 - Bound instruction, skill, hook and MCP scanner reads and reject special files without blocking. This also protects the existing doctor pass that runs before explicit expectations are evaluated.
+
+### Changed
+
+- The composite GitHub Action builds the CLI from its own source ref and uses that build for the existing documentation drift check.
 
 ## [0.5.0] - 2026-10-16
 

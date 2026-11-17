@@ -28,16 +28,19 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Install ctxharness
+    - name: Build ctxharness from the action source
       shell: bash
-      run: npm install -g ctxharness@0.4.6
+      working-directory: ${{ github.action_path }}
+      run: |
+        npm exec --yes --package=pnpm@10.11.0 -- pnpm install --frozen-lockfile --ignore-scripts
+        npm exec --yes --package=pnpm@10.11.0 -- pnpm run build
 
     - name: Run ctxharness
       id: run
       shell: bash
       run: |
         set +e
-        ctxharness run \
+        node "$GITHUB_ACTION_PATH/packages/cli/dist/index.js" run \
           --config "${{ inputs.config }}" \
           --root "${{ inputs.root }}" \
           --format "${{ inputs.format }}"
