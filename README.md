@@ -350,7 +350,7 @@ Options:
 -w, --watch            Re-run on file changes (run command only)
 ```
 
-These common options are command-specific. The configuration doctor uses `--format human|json|gha`, while `run` uses `--format text|json|gha`. Selecting `--host`, `--scope`, `--format`, `--runtime-evidence`, `--coverage`, `--budget`, `--export` or any tool option switches `doctor` to configuration mode; bare `doctor` retains its YAML assertion workflow. Use `ctxharness <command> --help` for the exact options.
+These common options are command-specific. The configuration doctor uses `--format human|json|gha`, while `run` uses `--format text|json|gha`. Selecting `--host`, `--scope`, `--format`, `--runtime-evidence`, `--coverage`, `--budget`, `--export`, `--expect` or any tool option switches `doctor` to configuration mode; bare `doctor` retains its YAML assertion workflow. Use `ctxharness <command> --help` for the exact options.
 
 ### Configuration doctor
 
@@ -361,6 +361,16 @@ ctxharness doctor --host codex --scope project --format gha
 ```
 
 This mode does not require `.ctxharness.yml` and does not run hooks, skills, MCP servers or host clients. It reports `PASS`, `WARN`, `FAIL`, `UNKNOWN` and `N/A`; missing evidence stays unknown. Exit status is 1 for mandatory static failures or command errors and 0 otherwise. Exit 0 can therefore include warnings and unknowns.
+
+#### Check an explicit profile contract (unreleased)
+
+With a CLI built from `main`, create a [JSON expectations file](docs/doctor.md#explicit-project-expectations-unreleased) and run from the project root.
+
+```bash
+ctxharness doctor --host claude --scope project --expect backend.expectations.json --format json
+```
+
+Use the contract to require or forbid files and named MCP declarations. A backend contract can forbid the design rule and MCP declaration. If any explicit expectation fails or remains unknown, the command exits with status 1. The verdict describes the files and declarations on disk. See the [changelog](CHANGELOG.md#unreleased) for release status.
 
 <details>
 <summary>Export portable JSON, declared coverage and static sizes</summary>
