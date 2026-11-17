@@ -1,6 +1,6 @@
 # Configuration doctor
 
-Updated: 2026-10-16. Status: behavior included in source version `0.5.0`. A Git tag does not establish npm package publication; verify the version of an installed CLI. [Documentation index](README.md).
+Updated: 2026-11-17. Status: behavior included in source version `0.6.0`. A Git tag does not establish npm package publication; verify the version of an installed CLI. [Documentation index](README.md).
 
 ## Choose the doctor mode
 
@@ -64,7 +64,7 @@ ctxharness doctor --host claude --scope project --coverage --budget --format jso
 
 Portable export includes coverage and static sizes by default. Local JSON adds those fields only when requested. Coverage retains declared applicability and unresolved/unsupported surfaces; native loading, execution and benefit remain unknown. The ledger measures discovered UTF-8 bytes and UTF-16 code units, with the historical `ceil(codeUnits / 4)` estimate. Completeness describes bounded traversal, not a complete model request. See [the schemas and sanitized consumer fixtures](contracts/README.md).
 
-## Explicit project expectations (unreleased)
+## Explicit project expectations
 
 `--expect` adds caller-selected presence/absence requirements to the passive diagnostic. It currently requires explicit `--host claude --scope project`. It does not select a developer profile, regenerate configuration, execute a check or observe a native client.
 

@@ -1,12 +1,12 @@
 # Documentation
 
-Updated: 2026-10-16. Status: documentation for source version `0.5.0`, including audit/export foundations and optional extensions. A source tag does not establish npm package publication.
+Updated: 2026-11-17. Status: documentation for source version `0.6.0`, including explicit project expectations. A source tag does not establish npm package publication.
 
 - [Project README](../README.md): installation, documentation-drift workflow and CLI entry points.
-- [Configuration doctor](doctor.md): current modes, selected roots, output formats, exit codes and evidence limits. Updated 2026-10-16; does not establish native-client loading.
+- [Configuration doctor](doctor.md): current modes, selected roots, output formats, exit codes and evidence limits. Includes explicit project expectations and the scope of static evidence.
 - [Configuration audit](configuration-audit.md): read boundaries, hook/MCP checks, coverage, static sizes and optional extensions.
 - [Versioned contracts](contracts/README.md): local and portable schemas, importable fixtures, snapshot format and disclosure limits.
-- [Delivery roadmap](roadmap.md): integrated issues, dependency order and optional extensions included in `v0.5.0`. Checked 2026-10-16; npm publication is separate from source tagging.
+- [Delivery roadmap](roadmap.md): integrated issues, dependency order and features included in the `v0.5.0` and `v0.6.0` source tags.
 - [Changelog](../CHANGELOG.md): unreleased changes and package history.
 - [Contributor instructions](../CLAUDE.md): repository layout, checks and implementation boundaries.
 

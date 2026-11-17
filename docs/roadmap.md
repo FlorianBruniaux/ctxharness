@@ -1,6 +1,6 @@
 # Configuration audit and export roadmap
 
-Updated: 2026-11-17. Delivery status covers [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10), the `v0.5.0` source tag and A2 on `main`. [Documentation index](README.md).
+Updated: 2026-11-17. Delivery status covers [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10), the `v0.5.0` and `v0.6.0` source tags. [Documentation index](README.md).
 
 ## Current delivery status
 
@@ -21,11 +21,11 @@ Integration preserved the dependency order: #11, #12, then #13 and #14. The two 
 
 Source on `main` now exposes `--export portable`, `--coverage`, `--budget`, the explicit tool options, `config-snapshot` and `config-diff`. The historical documentation commands and output formats remain compatibility requirements. See [the doctor guide](doctor.md), [audit details](configuration-audit.md) and [versioned contracts](contracts/README.md) for examples and limits.
 
-## Unreleased on `main`
+## Profile checks in `v0.6.0`
 
-[A2 (#19)](https://github.com/FlorianBruniaux/ctxharness/pull/19) adds [`doctor --expect`](doctor.md#explicit-project-expectations-unreleased) for Claude project audits. A JSON contract specifies required or forbidden files and named MCP declarations. An explicit expectation that fails or remains unknown makes the command exit with status 1.
+[A2 (#19)](https://github.com/FlorianBruniaux/ctxharness/pull/19) adds [`doctor --expect`](doctor.md#explicit-project-expectations) for Claude project audits. A JSON contract specifies required or forbidden files and named MCP declarations. An explicit expectation that fails or remains unknown makes the command exit with status 1.
 
-A2 landed after the `v0.5.0` source tag. The CLI fixtures cover backend and frontend profiles against two versions of a shared baseline. They check the generated configuration on disk. Generation, adoption and recovery are handled outside ctxharness.
+A2 first ships in the `v0.6.0` source tag. The CLI fixtures cover backend and frontend profiles against two versions of a shared baseline. They check the generated configuration on disk. Generation, adoption and recovery are handled outside ctxharness.
 
 ## Product and evidence boundaries
 

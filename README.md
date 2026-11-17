@@ -44,7 +44,7 @@ The diagram shows static diagnosis and export. Loading, trust, execution and run
 | **Reusable evidence**              | Validated, versioned portable JSON that omits raw paths, messages and credentials.                | `doctor --export portable`                           |
 | **Optional extensions**            | Separate structural snapshots/diffs and caller-selected filesystem tool availability.             | `config-snapshot`, `config-diff`, `doctor --tools …` |
 
-**Release source:** `v0.5.0` includes the audit/export foundations and both optional extensions. A Git tag does not publish the npm packages; an existing npm installation may still contain `0.4.6`. Check `ctxharness --version` and use the source workflow below for this implementation. [Delivery status](docs/roadmap.md).
+The `v0.6.0` source tag includes explicit profile checks, configuration diagnosis, portable exports and both optional extensions. Use the source build below to access these features. [Delivery status](docs/roadmap.md).
 
 ## Quick start
 
@@ -98,7 +98,7 @@ typecheck-script        CLAUDE.md:34   true        false
 Build the versioned source checkout to use the audit/export features. This installs dependencies in the checkout and compiles the CLI:
 
 ```bash
-git clone --branch v0.5.0 https://github.com/FlorianBruniaux/ctxharness.git
+git clone --branch v0.6.0 https://github.com/FlorianBruniaux/ctxharness.git
 cd ctxharness
 pnpm install --frozen-lockfile --ignore-scripts
 pnpm build
@@ -109,7 +109,7 @@ node packages/cli/dist/index.js doctor --root /path/to/project --host both --sco
 
 Replace `/path/to/project` with the directory to inspect. These examples select project configuration only. `--scope global` explicitly selects personal configuration; `--scope both` includes both scopes. No selected hook, skill, agent, MCP server or tool is executed by configuration diagnosis.
 
-In the reference below, `ctxharness` denotes your installed CLI. If its version predates `0.5.0`, substitute `node /path/to/ctxharness/packages/cli/dist/index.js` from the source build. See [doctor modes, formats and exit codes](docs/doctor.md).
+In the reference below, `ctxharness` denotes your installed CLI. If its version predates `0.6.0`, substitute `node /path/to/ctxharness/packages/cli/dist/index.js` from the source build. See [doctor modes, formats and exit codes](docs/doctor.md).
 
 ## Install
 
@@ -123,7 +123,7 @@ pnpm add -D ctxharness
 pnpm exec ctxharness --help
 ```
 
-The CLI uses Node.js even when checking a Python, Go or Rust project. The [source workflow](#inspect-current-configuration-and-export-evidence) gives access to the tagged `v0.5.0` implementation independently of npm publication.
+The CLI uses Node.js even when checking a Python, Go or Rust project. The [source workflow](#inspect-current-configuration-and-export-evidence) gives access to the tagged `v0.6.0` implementation independently of npm publication.
 
 </details>
 
@@ -362,15 +362,15 @@ ctxharness doctor --host codex --scope project --format gha
 
 This mode does not require `.ctxharness.yml` and does not run hooks, skills, MCP servers or host clients. It reports `PASS`, `WARN`, `FAIL`, `UNKNOWN` and `N/A`; missing evidence stays unknown. Exit status is 1 for mandatory static failures or command errors and 0 otherwise. Exit 0 can therefore include warnings and unknowns.
 
-#### Check an explicit profile contract (unreleased)
+#### Check an explicit profile contract
 
-With a CLI built from `main`, create a [JSON expectations file](docs/doctor.md#explicit-project-expectations-unreleased) and run from the project root.
+Use the `v0.6.0` build or later. Check that `ctxharness doctor --help` lists `--expect`, then create a [JSON expectations file](docs/doctor.md#explicit-project-expectations) and run from the project root.
 
 ```bash
 ctxharness doctor --host claude --scope project --expect backend.expectations.json --format json
 ```
 
-Use the contract to require or forbid files and named MCP declarations. A backend contract can forbid the design rule and MCP declaration. If any explicit expectation fails or remains unknown, the command exits with status 1. The verdict describes the files and declarations on disk. See the [changelog](CHANGELOG.md#unreleased) for release status.
+Use the contract to require or forbid files and named MCP declarations. A backend contract can forbid the design rule and MCP declaration. If any explicit expectation fails or remains unknown, the command exits with status 1. The verdict describes the files and declarations on disk. See the [changelog](CHANGELOG.md#060---2026-11-17) for release status.
 
 <details>
 <summary>Export portable JSON, declared coverage and static sizes</summary>
@@ -646,7 +646,7 @@ GitHub Actions:
 
 ```yaml
 - name: Check AI doc drift
-  uses: FlorianBruniaux/ctxharness@v0.5.0
+  uses: FlorianBruniaux/ctxharness@v0.6.0
   with:
     config: .ctxharness.yml
     format: gha
