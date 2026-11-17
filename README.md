@@ -12,7 +12,7 @@
   </tr>
 </table>
 
-**Check the context your coding agents rely on.**
+**Deterministic checks for coding agent instructions and configuration. No LLM required.**
 
 If a backend profile forbids the design MCP server, CTX Harness fails the check when `.mcp.json` still declares it.
 
