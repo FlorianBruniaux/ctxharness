@@ -12,9 +12,9 @@
   </tr>
 </table>
 
-**Deterministic tests for AI instructions and agent configuration, without an LLM.**
+**Deterministic checks for coding agent instructions and configuration. No LLM required.**
 
-**Example:** your backend profile forbids a design MCP server, but `.mcp.json` still declares it. An explicit expectation reports that mismatch before your next coding session. CTX Harness checks MCP configuration; it does not provide an MCP server you connect to Claude or Codex.
+If a backend profile forbids the design MCP server, CTX Harness fails the check when `.mcp.json` still declares it. CTX Harness checks MCP configuration; it does not provide an MCP server you connect to Claude or Codex.
 
 [Try the backend demo](https://ctxharness.bruniaux.com/#demo-title) · [CI integration guide](docs/ci-integration.md)
 
