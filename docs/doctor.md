@@ -47,7 +47,7 @@ Applicability is host-specific. An unsupported hook event or handler can produce
 | `unknown`        | Required evidence is missing, unresolved or outside the supported observation.  |
 | `not-applicable` | The implemented check does not apply to this declaration.                       |
 
-Configuration mode exits 1 when a mandatory static failure exists, and 0 otherwise. Invalid arguments and command errors also exit 1. Exit 0 can contain warnings, unknowns, N/A findings or imported runtime failures; it is not a native-client health certificate.
+Configuration mode exits 1 when a mandatory static failure exists, and 0 otherwise. The caller's workflow decides whether this exit code fails a job. A portable report can be schema-valid while diagnosis exits 1. See [CI diagnostic outcomes, report validation and merge policy](ci-integration.md). Invalid arguments and command errors also exit 1. Exit 0 can contain warnings, unknowns, N/A findings or imported runtime failures; it is not a native-client health certificate.
 
 Human output renders `PASS`, `WARN`, `FAIL`, `UNKNOWN` and `N/A`. Local JSON includes `schemaVersion`, `command`, `mode`, `generatedAt`, `root`, `selection`, `runtimeEvidence`, `summary` and `findings`. Findings retain their `source` (`static` or `runtime`) and `mandatory` flag.
 
@@ -63,6 +63,19 @@ ctxharness doctor --host claude --scope project --coverage --budget --format jso
 ```
 
 Portable export includes coverage and static sizes by default. Local JSON adds those fields only when requested. Coverage retains declared applicability and unresolved/unsupported surfaces; native loading, execution and benefit remain unknown. The ledger measures discovered UTF-8 bytes and UTF-16 code units, with the historical `ceil(codeUnits / 4)` estimate. Completeness describes bounded traversal, not a complete model request. See [the schemas and sanitized consumer fixtures](contracts/README.md).
+
+## MCP configuration checks
+
+MCP connects a coding client to tools supplied by servers. CTX Harness inspects their configuration on disk. The project provides a CLI and a TypeScript library, with no MCP endpoint to register in a client.
+
+| Question | What CTX Harness can establish |
+| --- | --- |
+| Is a server declared? | Discover supported Claude Code and Codex configuration in the explicitly selected scope. |
+| Is its configuration malformed or does it contain a literal credential? | Run the supported static MCP diagnostics. Findings omit the matched credential. |
+| Does a backend profile forbid a named server? | With `--host claude --scope project --expect …`, check that entry in `.mcp.json`. |
+| Did the client load, authenticate or call it? | A static report does not establish this. Collect separate client or execution evidence. |
+
+The backend demo checks a `design` declaration against an explicit absence requirement. It uses fixed fixtures and the released core library; it does not connect to a design server. The [expectation contract below](#explicit-project-expectations) documents the JSON shape, unknown results and exit behavior. [Credential rules](configuration-audit.md#mcp-credentials) describe the supported checks.
 
 ## Explicit project expectations
 

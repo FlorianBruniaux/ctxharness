@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+  <defs>
+    <pattern id="forward" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V10" stroke="#b98756" stroke-width="1.5"/></pattern>
+    <pattern id="backward" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><path d="M0 0V10" stroke="#b98756" stroke-width="1.5"/></pattern>
+  </defs>
+  <path d="M0 0H80V80H0ZM80 80H160V160H80Z" fill="url(#forward)"/>
+  <path d="M80 0H160V80H80ZM0 80H80V160H0Z" fill="url(#backward)"/>
+</svg>

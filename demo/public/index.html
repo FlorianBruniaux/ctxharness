@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- ctxharness:seo -->
+    <script src="/shell.js"></script>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-shell">
+        <a class="brand" href="/" aria-label="CTX Harness home"
+          ><span class="mark" aria-hidden="true">[c]</span> CTX Harness</a
+        >
+        <button id="menu-toggle" class="menu-toggle btn btn-secondary" type="button" aria-controls="site-navigation" aria-expanded="false">Menu</button>
+        <div class="header-navigation" id="site-navigation">
+          <nav class="section-nav" aria-label="Sections">
+            <a href="#problem-title">Problem</a>
+            <a href="#how-title">How it works</a>
+            <a href="#scope-title">Checks</a>
+            <a href="#demo-title">Live demo</a>
+            <a href="#workflow-title">In CI</a>
+            <a href="#local-title">Get started</a>
+          </nav>
+          <nav class="project-nav" aria-label="Project">
+            <span class="version">v0.6.0</span>
+            <a href="https://github.com/FlorianBruniaux/ctxharness">GitHub ↗</a>
+            <a href="https://www.npmjs.com/package/ctxharness">npm ↗</a>
+          </nav>
+        </div>
+        <details class="theme-picker">
+          <summary>Theme <span class="theme-current" aria-hidden="true">Light</span></summary>
+          <fieldset>
+            <legend>Color theme</legend>
+            <button type="button" class="theme-choice btn btn-secondary" data-theme-choice="light" aria-pressed="true">Light</button>
+            <button type="button" class="theme-choice btn btn-secondary" data-theme-choice="dark" aria-pressed="false">Dark</button>
+            <button type="button" class="theme-choice btn btn-secondary" data-theme-choice="system" aria-pressed="false">System</button>
+          </fieldset>
+        </details>
+      </div>
+    </header>
+    <main>
+      <section class="intro band band-ink band-hero section-wallpaper" aria-labelledby="title">
+        <div class="container intro-shell">
+          <p class="eyebrow">AI INSTRUCTION TESTING · NO LLM</p>
+          <h1 id="title">Test your AI instructions<br /> <span>against your code.</span></h1>
+          <p class="lede">
+            CTX Harness checks documented facts against your repository and audits Claude Code and
+            Codex configuration. It runs locally as a CLI or TypeScript library.
+          </p>
+          <p class="hero-detail">
+            Catch outdated facts in CLAUDE.md and AGENTS.md before you reuse them in a coding
+            session. Keep the same checks in CI.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-secondary" href="#demo-title">Try the backend check ↓</a
+            ><a class="btn btn-quiet" href="https://github.com/FlorianBruniaux/ctxharness"
+              >Read the README ↗</a
+            >
+          </div>
+          <ul class="keywords" aria-label="Topics">
+            <li>Context engineering</li>
+            <li>Documentation drift</li>
+            <li>Agent configuration</li>
+          </ul>
+        </div>
+      </section>
+      <section class="problem band band-base" aria-labelledby="problem-title">
+        <div class="container story-shell">
+          <div class="chapter-label">
+            <svg
+              class="chapter-brick"
+              viewBox="0 0 76 68"
+              width="66"
+              height="60"
+              aria-hidden="true"
+            >
+              <path class="brick-top" d="m4 25 34-17 34 17-34 17Z" stroke-width="1.5" />
+              <path class="brick-side" d="M4 25v24l34 17V42Z" stroke-width="1.5" />
+              <path class="brick-front" d="m38 42 34-17v24L38 66Z" stroke-width="1.5" />
+              <g class="brick-studs" stroke-width="1.2">
+                <path d="M24 13v5c0 5 13 5 13 0v-5M41 21v5c0 5 13 5 13 0v-5" />
+                <ellipse cx="30.5" cy="13" rx="6.5" ry="3.5" />
+                <ellipse cx="47.5" cy="21" rx="6.5" ry="3.5" />
+              </g>
+              <text x="40" y="52" transform="skewY(-25) translate(0 23)">01</text>
+            </svg>
+            <p>THE PROBLEM</p>
+          </div>
+          <h2 id="problem-title">Your code changes. Your agent instructions drift.</h2>
+          <p class="section-intro">
+            Your tests can pass while <code>CLAUDE.md</code> still points to yesterday’s
+            architecture. Shared agent configuration can also drift away from the profile a project
+            is meant to use.
+          </p>
+          <div class="problem-grid">
+            <article class="brand-card example-card">
+              <p class="card-kicker">DOCUMENTED PATH</p>
+              <h3>A file moved.</h3>
+              <p>
+                The instructions mention <code>src/auth/config.ts</code>, but that file is gone.
+              </p>
+              <div class="example-finding"><span>fileExists</span><strong>Mismatch</strong></div>
+            </article>
+            <article class="brand-card example-card">
+              <p class="card-kicker">PACKAGE SCRIPT</p>
+              <h3>A command disappeared.</h3>
+              <p>
+                The docs say <code>npm run typecheck</code>, but <code>package.json</code> has no
+                <code>typecheck</code> script.
+              </p>
+              <div class="example-finding"><span>packageScript</span><strong>Mismatch</strong></div>
+            </article>
+            <article class="brand-card example-card">
+              <p class="card-kicker">PROFILE CONTRACT</p>
+              <h3>An unwanted tool remains.</h3>
+              <p>
+                The backend contract forbids the design MCP, but <code>.mcp.json</code> still
+                declares it.
+              </p>
+              <div class="example-finding">
+                <span>doctor --expect</span><strong>Mismatch</strong>
+              </div>
+            </article>
+          </div>
+          <p class="section-note">
+            Illustrative cases. CTX Harness reports the supported claim or declaration that fails
+            its check so you can correct the source.
+          </p>
+        </div>
+      </section>
+      <section class="how-it-works band band-paper section-wallpaper" aria-labelledby="how-title">
+        <div class="container story-shell">
+          <div class="chapter-label">
+            <svg
+              class="chapter-brick"
+              viewBox="0 0 76 68"
+              width="66"
+              height="60"
+              aria-hidden="true"
+            >
+              <path class="brick-top" d="m4 25 34-17 34 17-34 17Z" stroke-width="1.5" />
+              <path class="brick-side" d="M4 25v24l34 17V42Z" stroke-width="1.5" />
+              <path class="brick-front" d="m38 42 34-17v24L38 66Z" stroke-width="1.5" />
+              <g class="brick-studs" stroke-width="1.2">
+                <path d="M24 13v5c0 5 13 5 13 0v-5M41 21v5c0 5 13 5 13 0v-5" />
+                <ellipse cx="30.5" cy="13" rx="6.5" ry="3.5" />
+                <ellipse cx="47.5" cy="21" rx="6.5" ry="3.5" />
+              </g>
+              <text x="40" y="52" transform="skewY(-25) translate(0 23)">02</text>
+            </svg>
+            <p>FILES TO EVIDENCE</p>
+          </div>
+          <h2 id="how-title">Choose what to inspect. Get findings you can verify.</h2>
+          <p class="section-intro">
+            The checks run against local files with no LLM, prompt or model API key. You select the
+            host, project or global scope, and any explicit expectations.
+          </p>
+          <figure class="process-figure" aria-labelledby="process-caption">
+            <img class="diagram-image workflow-image" src="/images/infographics/static-workflow.jpg" width="1376" height="768" loading="lazy" alt="Agent instructions, project configuration and explicit expectations feed CTX Harness deterministic checks. The CLI or TypeScript library produces findings and versioned portable JSON. A CI consumer validates the schema and applies project policy." />
+            <ol class="process-diagram">
+              <li class="brand-card process-node">
+                <span class="step-number">01 / INPUTS</span>
+                <h3>Your repository</h3>
+                <p>
+                  Instructions in <code>CLAUDE.md</code>, <code>AGENTS.md</code> or
+                  <code>.cursorrules</code>.
+                </p>
+                <p>Supported Claude Code, Codex and MCP configuration files.</p>
+              </li>
+              <li class="brand-card process-node">
+                <span class="step-number">02 / CHECKS</span>
+                <h3>CTX Harness</h3>
+                <p>
+                  Compare documented claims with code. Inspect supported declarations. Evaluate
+                  required or forbidden files and MCP entries.
+                </p>
+                <code class="process-command">scan · run · doctor</code>
+              </li>
+              <li class="brand-card process-node">
+                <span class="step-number">03 / OUTPUT</span>
+                <h3>Repeatable evidence</h3>
+                <p>Findings, expected and observed values, and explicit missing evidence.</p>
+                <p>Human reports, JSON, GitHub annotations or a portable export.</p>
+              </li>
+            </ol>
+            <figcaption id="process-caption">
+              Selected files → deterministic checks → findings. The report describes evidence on
+              disk; it does not establish what a coding client loaded or executed.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+      <section
+        class="scope capabilities band band-ink section-wallpaper"
+        aria-labelledby="scope-title"
+      >
+        <div class="container story-shell">
+          <div class="chapter-label">
+            <svg
+              class="chapter-brick"
+              viewBox="0 0 76 68"
+              width="66"
+              height="60"
+              aria-hidden="true"
+            >
+              <path class="brick-top" d="m4 25 34-17 34 17-34 17Z" stroke-width="1.5" />
+              <path class="brick-side" d="M4 25v24l34 17V42Z" stroke-width="1.5" />
+              <path class="brick-front" d="m38 42 34-17v24L38 66Z" stroke-width="1.5" />
+              <g class="brick-studs" stroke-width="1.2">
+                <path d="M24 13v5c0 5 13 5 13 0v-5M41 21v5c0 5 13 5 13 0v-5" />
+                <ellipse cx="30.5" cy="13" rx="6.5" ry="3.5" />
+                <ellipse cx="47.5" cy="21" rx="6.5" ry="3.5" />
+              </g>
+              <text x="40" y="52" transform="skewY(-25) translate(0 23)">03</text>
+            </svg>
+            <p>WHAT YOU CAN CHECK</p>
+          </div>
+          <h2 id="scope-title">Check the instructions, the configuration and the contract.</h2>
+          <div class="capability-grid">
+            <article class="brand-card capability-card">
+              <p class="card-kicker">DOCUMENTATION DRIFT</p>
+              <h3>Verify facts in AI instructions.</h3>
+              <p>
+                Check supported paths, npm scripts, versions, counts and regex captures against
+                local sources. Start with a scan, then keep assertions in
+                <code>.ctxharness.yml</code>.
+              </p>
+              <code>scan · init · run</code>
+            </article>
+            <article class="brand-card capability-card">
+              <p class="card-kicker">CONFIGURATION AUDIT</p>
+              <h3>Inspect Claude Code and Codex.</h3>
+              <p>
+                Diagnose supported instructions, rules, skills, agents, hooks and MCP declarations.
+                Select project configuration, personal configuration or both.
+              </p>
+              <code>doctor --host both --scope project</code>
+            </article>
+            <article class="brand-card capability-card">
+              <p class="card-kicker">EXPLICIT EXPECTATIONS</p>
+              <h3>Check a project profile.</h3>
+              <p>
+                Require or forbid named files and MCP declarations in Claude project configuration.
+                A failed or unresolved explicit requirement blocks the requested contract.
+              </p>
+              <code>doctor --host claude --scope project --expect backend.expectations.json</code>
+            </article>
+          </div>
+          <div class="evidence-strip">
+            <div>
+              <h3>Source sizes and coverage</h3>
+              <p>
+                Measure source bytes and expose supported, unsupported or unresolved surfaces.
+                Estimates remain separate from observations.
+              </p>
+            </div>
+            <div>
+              <h3>Portable JSON</h3>
+              <p>
+                Export versioned, validated evidence for other tools, omitting raw paths, arbitrary
+                messages and credentials.
+              </p>
+            </div>
+            <div>
+              <h3>Optional comparisons</h3>
+              <p>
+                Compare configuration snapshots or inspect caller-selected tool availability without
+                running the tools.
+              </p>
+            </div>
+          </div>
+          <a
+            class="btn btn-quiet"
+            href="https://github.com/FlorianBruniaux/ctxharness#what-it-checks"
+            >Explore the full CLI ↗</a
+          >
+        </div>
+      </section>
+      <section class="playground band band-base" aria-labelledby="demo-title">
+        <div class="container">
+          <div class="chapter-label">
+            <svg
+              class="chapter-brick"
+              viewBox="0 0 76 68"
+              width="66"
+              height="60"
+              aria-hidden="true"
+            >
+              <path class="brick-top" d="m4 25 34-17 34 17-34 17Z" stroke-width="1.5" />
+              <path class="brick-side" d="M4 25v24l34 17V42Z" stroke-width="1.5" />
+              <path class="brick-front" d="m38 42 34-17v24L38 66Z" stroke-width="1.5" />
+              <g class="brick-studs" stroke-width="1.2">
+                <path d="M24 13v5c0 5 13 5 13 0v-5M41 21v5c0 5 13 5 13 0v-5" />
+                <ellipse cx="30.5" cy="13" rx="6.5" ry="3.5" />
+                <ellipse cx="47.5" cy="21" rx="6.5" ry="3.5" />
+              </g>
+              <text x="40" y="52" transform="skewY(-25) translate(0 23)">04</text>
+            </svg>
+            <p>A LIVE EXAMPLE</p>
+          </div>
+          <div class="section-heading">
+            <h2 id="demo-title">A backend profile forbids design tools. Check the file.</h2>
+          <p class="mcp-definition">MCP connects a coding client to tools provided by servers. CTX Harness inspects those server declarations in configuration files. You run CTX Harness through its CLI or TypeScript library; this project does not expose an MCP server.</p>
+            <span class="live-label">● Real v0.6.0 engine</span>
+          </div>
+          <p class="section-intro">
+            This Claude Code project contract requires the named <code>design</code> server to be
+            absent from <code>.mcp.json</code>. Switch between examples to see a pass, a mismatch
+            and unverifiable evidence. The rule is explicit; CTX Harness does not guess your
+            profile.
+          </p>
+          <div class="scenarios" role="group" aria-label="Configuration example">
+            <button type="button" data-scenario="clean" aria-pressed="false">
+              01 <span>Clean backend</span>
+            </button>
+            <button type="button" data-scenario="design" aria-pressed="true">
+              02 <span>Design MCP added</span>
+            </button>
+            <button type="button" data-scenario="invalid" aria-pressed="false">
+              03 <span>Invalid JSON</span>
+            </button>
+          </div>
+          <div class="editors">
+            <article class="editor brand-card">
+              <div class="filebar">
+                <h3>Backend expectation</h3>
+                <span>.ctxharness-expectations.json</span>
+              </div>
+              <pre id="contract" tabindex="0" aria-label="Backend expectation JSON"></pre>
+              <div class="editor-note">
+                The named <code>design</code> server must be <strong>absent</strong>.
+              </div>
+            </article>
+            <article class="editor brand-card">
+              <div class="filebar">
+                <h3>Project configuration</h3>
+                <span>.mcp.json</span>
+              </div>
+              <pre id="configuration" tabindex="0" aria-label="MCP configuration JSON"></pre>
+              <div class="editor-note" id="scenario-note"></div>
+            </article>
+          </div>
+          <div
+            class="result brand-card"
+            id="result"
+            data-status="loading"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <span class="result-icon" id="result-icon" aria-hidden="true">…</span>
+            <div>
+              <h3 id="result-title">Running the check…</h3>
+              <p id="result-description">Reading the selected fixture with CTX Harness.</p>
+            </div>
+            <button class="btn btn-secondary" type="button" id="rerun">Run again ↻</button>
+          </div>
+          <details class="evidence">
+            <summary>Inspect the evidence</summary>
+            <pre id="evidence" tabindex="0"></pre>
+          </details>
+          <p class="boundary">
+            This demo checks fixed example files on the server. No repository upload, account or API
+            key. It inspects declarations and never connects to or runs an MCP server.
+          </p>
+          <noscript
+            ><p>
+              Enable JavaScript to run the interactive check. You can also run CTX Harness locally
+              with the command below.
+            </p></noscript
+          >
+        </div>
+      </section>
+      <section class="workflow band band-paper section-wallpaper" aria-labelledby="workflow-title">
+        <div class="container story-shell">
+          <div class="chapter-label">
+            <svg
+              class="chapter-brick"
+              viewBox="0 0 76 68"
+              width="66"
+              height="60"
+              aria-hidden="true"
+            >
+              <path class="brick-top" d="m4 25 34-17 34 17-34 17Z" stroke-width="1.5" />
+              <path class="brick-side" d="M4 25v24l34 17V42Z" stroke-width="1.5" />
+              <path class="brick-front" d="m38 42 34-17v24L38 66Z" stroke-width="1.5" />
+              <g class="brick-studs" stroke-width="1.2">
+                <path d="M24 13v5c0 5 13 5 13 0v-5M41 21v5c0 5 13 5 13 0v-5" />
+                <ellipse cx="30.5" cy="13" rx="6.5" ry="3.5" />
+                <ellipse cx="47.5" cy="21" rx="6.5" ry="3.5" />
+              </g>
+              <text x="40" y="52" transform="skewY(-25) translate(0 23)">05</text>
+            </svg>
+            <p>LOCAL CHECKS AND CI</p>
+          </div>
+          <h2 id="workflow-title">Keep the check next to the change.</h2>
+          <p class="section-intro">
+            Use CTX Harness when code, documentation or a shared agent configuration changes. Run
+            the same selected checks locally and in your CI job.
+          </p>
+          <figure class="workflow-figure" aria-labelledby="workflow-caption">
+            <ol class="workflow-diagram">
+              <li>
+                <span class="step-number">CHANGE</span><strong>Edit code or agent config</strong>
+              </li>
+              <li>
+                <span class="step-number">VERIFY</span><strong>Run the selected checks</strong>
+              </li>
+              <li>
+                <span class="step-number">REVIEW</span><strong>Fix the reported mismatch</strong>
+              </li>
+              <li><span class="step-number">REPEAT</span><strong>Keep the check in CI</strong></li>
+            </ol>
+            <figcaption id="workflow-caption">
+              Documentation assertions use <code>run</code>. Explicit profile expectations use
+              <code>doctor --expect</code>. Findings and exit codes feed your CI job.
+            </figcaption>
+          </figure>
+          <article class="team-usage brand-card" aria-labelledby="team-usage-title">
+            <p class="card-kicker">ONE TEAM’S OBSERVED WORKFLOW · ANONYMIZED</p>
+            <h3 id="team-usage-title">See what ran, and what passed.</h3>
+            <p class="team-usage-intro">
+              A review recorded on 18 November 2026 examined three CI runs in one application repository:
+              documentation checks,
+              configuration diagnostics and portable-report validation. The latest used source
+              version 0.6.0. Its green job still contained failed diagnostics.
+            </p>
+            <ul class="team-usage-list">
+              <li>
+                <h4>Flag an assertion mismatch.</h4>
+                <p>
+                  The latest run flagged one guide with an instruction-balance ratio of 0.0
+                  against the team’s 0.2 threshold. That is an editorial-rule finding, which
+                  needs interpretation before treating it as a documentation defect.
+                </p>
+              </li>
+              <li>
+                <h4>Inspect configuration on disk.</h4>
+                <p>
+                  The portable report recorded 64 mandatory failures and 15 unknowns. Their
+                  individual causes were not established by those totals. This job did not
+                  generate ignored client outputs before inspecting the available files.
+                </p>
+              </li>
+              <li>
+                <h4>Validate the report separately.</h4>
+                <p>
+                  Nine consumer contract fixtures passed, and the portable parser accepted the
+                  report. Both diagnostic commands exited 1, while <code>continue-on-error</code>
+                  kept them advisory. Fixtures and report validation could fail the job.
+                </p>
+              </li>
+            </ul>
+            <p class="team-usage-note">
+              The reviewed CI job did not pass a profile contract through <code>--expect</code>.
+              A separate local check confirmed two presence requirements, but other mandatory
+              diagnostics still made that command exit 1. The interactive backend example above
+              illustrates another contract: a named design MCP must be absent.
+            </p>
+            <p class="team-usage-note">
+              The repository owns instruction generation, test selection and review-bot policy.
+              These observations establish repeatable static checks and a validated report.
+              Active merge protections, native client loading and gains in time, tokens or task
+              quality were not established by the reviewed evidence.
+            </p>
+          </article>
+          <div class="ci-grid">
+            <div>
+              <h3>Documentation checks in GitHub Actions</h3>
+              <p>
+                The composite Action builds its own versioned CLI and runs your YAML assertions.
+                The example below fails its step on drift by default. The advisory behavior in
+                the observed case above comes from that repository’s workflow policy. GitLab CI,
+                CircleCI and Husky templates are also available.
+              </p>
+              <a
+                class="btn btn-quiet"
+                href="https://github.com/FlorianBruniaux/ctxharness#ci-integration"
+                >Read the CI setup ↗</a
+              >
+            </div>
+            <pre
+              class="ci-code brand-card"
+              tabindex="0"
+              aria-label="GitHub Actions documentation check"
+            ><code>- name: Check AI doc drift
+  uses: FlorianBruniaux/ctxharness@v0.6.0
+  with:
+    config: .ctxharness.yml
+    format: gha</code></pre>
+          </div>
+          <figure class="evidence-figure" aria-labelledby="evidence-caption">
+            <img class="diagram-image" src="/images/infographics/evidence-boundaries.jpg" width="1376" height="768" loading="lazy" alt="Four independent claims need different evidence: declaration from a static report, loading from a client trace, execution from a log and result, and observed effect from a scenario replay. CI enforcement depends on workflow policy." />
+            <dl class="evidence-text">
+              <div><dt>Declared</dt><dd>A static report establishes that a file or MCP entry exists.</dd></div>
+              <div><dt>Loaded</dt><dd>A client trace establishes that the client loaded it.</dd></div>
+              <div><dt>Executed</dt><dd>An execution log and result establish that a selected check ran.</dd></div>
+              <div><dt>Observed effect</dt><dd>A scenario replay establishes that the expected behavior was observed.</dd></div>
+            </dl>
+            <figcaption id="evidence-caption">Each claim needs its own evidence. These observations do not imply one another. CI enforcement depends on the workflow policy.</figcaption>
+          </figure>
+          <div class="boundaries">
+            <h3>Know what a pass means.</h3>
+            <details>
+              <summary>Does it use an LLM?</summary>
+              <p>
+                No. CTX Harness runs deterministic checks against supported local facts and
+                declarations, without a model API call.
+              </p>
+            </details>
+            <details>
+              <summary>Does doctor run my hooks, tools or MCP servers?</summary>
+              <p>
+                No. Configuration diagnosis reads declarations and supported local paths. It does
+                not execute hooks, start MCP servers or authenticate connections.
+              </p>
+            </details>
+            <details>
+              <summary>Can a green CI job contain failed diagnostics?</summary>
+              <p>
+                Yes. A workflow can keep a failed diagnostic step advisory with
+                <code>continue-on-error</code>. Validating the portable report confirms its format,
+                even when its findings include failures. Check the raw step outcome and the active
+                merge policy separately from the job’s final color.
+              </p>
+            </details>
+            <details>
+              <summary>Does every UNKNOWN fail CI?</summary>
+              <p>
+                No. A general configuration audit can exit 0 with warnings or unknowns. An explicit
+                expectation selected with <code>--expect</code> fails its contract when it cannot be
+                verified.
+              </p>
+            </details>
+            <details>
+              <summary>Does a clean report prove the agent performs better?</summary>
+              <p>
+                No. Static checks do not prove effective client loading, task quality, token savings
+                or latency. Those require separate runtime evidence.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+      <section class="takeaway band band-accent section-wallpaper" aria-labelledby="local-title">
+        <div class="container takeaway-shell">
+          <div class="chapter-label">
+            <svg
+              class="chapter-brick"
+              viewBox="0 0 76 68"
+              width="66"
+              height="60"
+              aria-hidden="true"
+            >
+              <path class="brick-top" d="m4 25 34-17 34 17-34 17Z" stroke-width="1.5" />
+              <path class="brick-side" d="M4 25v24l34 17V42Z" stroke-width="1.5" />
+              <path class="brick-front" d="m38 42 34-17v24L38 66Z" stroke-width="1.5" />
+              <g class="brick-studs" stroke-width="1.2">
+                <path d="M24 13v5c0 5 13 5 13 0v-5M41 21v5c0 5 13 5 13 0v-5" />
+                <ellipse cx="30.5" cy="13" rx="6.5" ry="3.5" />
+                <ellipse cx="47.5" cy="21" rx="6.5" ry="3.5" />
+              </g>
+              <text x="40" y="52" transform="skewY(-25) translate(0 23)">06</text>
+            </svg>
+            <p>TRY IT ON YOUR REPOSITORY</p>
+          </div>
+          <div class="local-lead">
+            <p class="eyebrow">LOCAL CLI · TYPESCRIPT LIBRARY</p>
+            <h2 id="local-title">Run a check against your own files.</h2>
+            <p>
+              Use the v0.6.0 source build to access the workflows above. Node.js runs the CLI even
+              when your project uses Python, Go or Rust.
+            </p>
+            <a
+              class="btn btn-quiet"
+              href="https://github.com/FlorianBruniaux/ctxharness#inspect-current-configuration-and-export-evidence"
+              >Source install instructions ↗</a
+            >
+          </div>
+          <div class="source-install brand-card">
+            <h3>Build the tagged source</h3>
+            <pre
+              tabindex="0"
+              aria-label="Build CTX Harness v0.6.0 from source"
+            ><code>git clone --branch v0.6.0 \
+  https://github.com/FlorianBruniaux/ctxharness.git
+cd ctxharness
+npm exec --yes --package=pnpm@10.11.0 -- \
+  pnpm install --frozen-lockfile --ignore-scripts
+npm exec --yes --package=pnpm@10.11.0 -- pnpm build</code></pre>
+          </div>
+          <div class="local-contract">
+            <h3>Try the backend contract.</h3>
+            <p>
+              Download the expectation file into the repository you want to check. Replace
+              <code>/path/to/ctxharness</code> in the command with your source checkout’s absolute
+              path, then run it from the repository being inspected.
+            </p>
+            <button class="download btn btn-primary" id="download" type="button">
+              ↓ Download expectation file
+            </button>
+            <p class="section-note">
+              For documentation drift instead, start with <code>scan CLAUDE.md</code>. For a
+              configuration inventory, use <code>doctor --host both --scope project</code>.
+            </p>
+          </div>
+          <div class="terminal band-ink brand-card brand-interactive-card">
+            <div class="terminal-bar">
+              <span>Terminal · from your repository</span
+              ><button class="btn btn-secondary" type="button" id="copy">Copy</button>
+            </div>
+            <pre><code id="command">node /path/to/ctxharness/packages/cli/dist/index.js \
+  doctor --host claude --scope project \
+  --expect .ctxharness-expectations.json \
+  --format json</code></pre>
+            <p>
+              The explicit expectation must pass. A failed or unknown requirement makes this
+              contract fail with exit 1.
+            </p>
+            <span id="copy-status" role="status"></span>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="band band-ink section-wallpaper">
+      <div class="container footer-shell">
+        <div class="footer-intro">
+          <a class="footer-title" href="#title">CTX Harness</a>
+          <p>Check the files your coding agents rely on. Run the same deterministic checks locally and in CI.</p>
+          <span class="version">Source v0.6.0</span>
+        </div>
+        <div class="footer-columns">
+          <nav class="footer-nav" aria-label="Use CTX Harness">
+            <h2>Use CTX Harness</h2>
+            <a href="#demo-title">Try the backend check</a>
+            <a href="#local-title">Build from source</a>
+            <a href="#workflow-title">Use it in CI</a>
+            <a href="https://github.com/FlorianBruniaux/ctxharness/blob/main/docs/doctor.md">Configuration doctor ↗</a>
+          </nav>
+          <nav class="footer-nav" aria-label="Project resources">
+            <h2>Project</h2>
+            <a href="https://github.com/FlorianBruniaux/ctxharness#readme">README ↗</a>
+            <a href="https://github.com/FlorianBruniaux/ctxharness/issues">Issues &amp; feedback ↗</a>
+            <a href="https://github.com/FlorianBruniaux/ctxharness/blob/main/docs/roadmap.md">Roadmap ↗</a>
+            <a href="https://github.com/FlorianBruniaux/ctxharness/releases/tag/v0.6.0">Source release v0.6.0 ↗</a>
+          </nav>
+          <nav class="footer-nav" aria-label="Learn about agent configuration">
+            <h2>Learn</h2>
+            <a href="https://cc.bruniaux.com/">Claude Code Ultimate Guide ↗</a>
+            <a href="https://www.florian.bruniaux.com/guides/">Practical guides ↗</a>
+            <a href="https://www.florian.bruniaux.com/blog/">Articles ↗</a>
+            <a href="https://www.florian.bruniaux.com/projects/">Other projects ↗</a>
+          </nav>
+          <nav class="footer-nav" aria-label="About the author">
+            <h2>Florian Bruniaux</h2>
+            <a href="https://www.florian.bruniaux.com/about/">About ↗</a>
+            <a href="https://www.florian.bruniaux.com/services/">Work with me ↗</a>
+            <a href="https://www.florian.bruniaux.com/contact/">Contact ↗</a>
+            <a href="https://github.com/FlorianBruniaux">GitHub profile ↗</a>
+          </nav>
+        </div>
+        <details class="footer-ecosystem">
+          <summary>More tools from Florian <span aria-hidden="true">+</span></summary>
+          <nav aria-label="Related tools">
+            <a href="https://ccboard.bruniaux.com/">ccboard · Session dashboard ↗</a>
+            <a href="https://ccbridge.bruniaux.com/">cc-bridge · Model routing ↗</a>
+            <a href="https://www.rtk-ai.app/">RTK · Command output compression ↗</a>
+            <a href="https://wt-sweep.bruniaux.com/">wt-sweep · Worktree cleanup ↗</a>
+          </nav>
+        </details>
+        <div class="footer-bottom">
+          <span>Built by <a href="https://www.florian.bruniaux.com/">Florian Bruniaux</a></span>
+          <span>Explicit rules. Repeatable evidence.</span>
+          <a href="#title">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

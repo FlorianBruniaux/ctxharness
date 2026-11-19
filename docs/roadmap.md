@@ -1,10 +1,10 @@
 # Configuration audit and export roadmap
 
-Updated: 2026-11-17. Delivery status covers [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10), the `v0.5.0` and `v0.6.0` source tags. [Documentation index](README.md).
+Updated: 2026-11-18. Delivery status covers [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10), the `v0.5.0` and `v0.6.0` source tags. [Documentation index](README.md).
 
 ## Current delivery status
 
-Version `0.5.0` contains documentation-drift commands, passive Claude Code/Codex configuration diagnosis, the portable export and both optional extensions. Both package manifests and the CLI declare `0.5.0`. A source tag does not establish npm package publication; check an installed CLI's version before using new options. Consult [the doctor guide](doctor.md) for behavior and [the changelog](../CHANGELOG.md) for release history.
+Current source version `0.6.0` includes the `0.5.0` documentation-drift commands, passive Claude Code/Codex configuration diagnosis, portable export and both optional extensions, plus explicit Claude project expectations. Both package manifests and the CLI declare `0.6.0`. A source tag does not establish npm package publication; check an installed CLI's version before using new options. Consult [the doctor guide](doctor.md) for behavior and [the changelog](../CHANGELOG.md) for release history.
 
 The following PRs were merged into `main` on 2026-10-15 and are included in the `v0.5.0` source tag. Published package availability remains a separate fact:
 
@@ -38,3 +38,9 @@ Session collection/analysis, semantic optimization, controlled before/after expe
 Completion requires failing-first regression fixtures for defects, targeted and repository checks, real affected CLI verification, contract fixtures, documentation and changelog updates. A local test fixture qualifies that behavior only. This roadmap does not authorize merges, releases, paid experiments or global configuration changes.
 
 The [older design notes](README.md#historical-design-and-implementation-notes) remain historical context. Their version targets, estimates and extended feature ideas are not the active delivery checklist.
+
+## Consumer integration evidence and follow-up
+
+The [CI integration guide](ci-integration.md#observed-integration-case) records three reviewed consumer runs and a separate local profile check. The latest reviewed CI built `0.6.0`, ran documentation/configuration diagnostics as advisory steps and validated its portable report. That job did not supply a profile contract through `--expect`. A green job does not establish clean diagnostics, native client loading or active merge protection.
+
+Proposals from this case are to expose diagnostic outcomes in the Actions summary, exercise an isolated representative profile and verify compiled CLI/core provenance. These are consumer integration recommendations, not implemented consumer changes or a new CTX Harness release scope. The repository remains responsible for generation, test selection and review-bot policy.

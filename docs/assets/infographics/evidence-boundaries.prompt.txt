@@ -1,0 +1,33 @@
+Create ONE precise technical evidence diagram, landscape 16:9, for the public README and documentation of CTX Harness. This is an aligned comparison matrix, not an illustration. It must be readable at a displayed width of 900 pixels.
+
+Visual identity of Florian Bruniaux's current portfolio and Claude Code Ultimate Guide. Warm ivory #F3F0E9 background, paper #FBF9F4 cells, charcoal #0A0A0A typography, muted text #45413F, orange #F97316 for a single top rule and accessible dark orange #A63F05 for small labels. Barlow Condensed Bold headings, IBM Plex Sans body, IBM Plex Mono metadata. Fine crisp lines, tiny 6px corners, no soft shadows, no blue/cyan/purple, no gradients, no handwriting, no fake code or tiny annotations. Very subtle parquet hatching in the footer margin only. Balanced exact alignment and ample whitespace.
+
+Small mono header at top left: "CTX HARNESS · EVIDENCE BOUNDARIES".
+Large main title below, left aligned: "Each claim needs its own evidence".
+
+Layout: a four-row, three-column matrix occupying most of the canvas. One header row above the matrix, charcoal background with ivory text, containing exactly these labels left to right: "Claim", "What it establishes", "Evidence". Each body row is visually independent, with no step numbers. Row heights must be large enough for 2 lines of body text. Use a single orange left rule to mark the first row, because that is CTX Harness's static scope. Do not mark any row as passed, failed, green or proven.
+
+First row, three cells left to right:
+"Declared"
+"A file or MCP entry exists"
+"Static report"
+Second row:
+"Loaded"
+"The client loaded it"
+"Client trace"
+Third row:
+"Executed"
+"A selected check ran"
+"Execution log and result"
+Fourth row:
+"Observed effect"
+"Expected behavior was observed"
+"Scenario replay"
+
+There are ZERO arrows anywhere in this diagram. The rows are independent claims, not sequential proof or automatic implication.
+
+Below the matrix, a short prominent statement: "These observations do not imply one another."
+Below that statement, a fine-bordered note: "CI enforcement depends on the workflow policy."
+Footer at bottom left: "Florian Bruniaux · CTX Harness v0.6.0 · docs/doctor.md".
+
+Closed text inventory: only the exact strings above, each once. No added numbers, confidence scores, percentages, logos, decorative characters or invented policy. Do not label the static scope as a guarantee of loading, execution, agent performance or merge permission.

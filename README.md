@@ -12,19 +12,25 @@
   </tr>
 </table>
 
-**Check the context your coding agents rely on.**
+**Deterministic tests for AI instructions and agent configuration, without an LLM.**
+
+**Example:** your backend profile forbids a design MCP server, but `.mcp.json` still declares it. An explicit expectation reports that mismatch before your next coding session. CTX Harness checks MCP configuration; it does not provide an MCP server you connect to Claude or Codex.
+
+[Try the backend demo](https://ctxharness.bruniaux.com/#demo-title) · [CI integration guide](docs/ci-integration.md)
 
 Catch stale paths, scripts and versions in your AI docs. Inspect Claude Code and Codex configuration, measure static source sizes and export validated evidence for other tools.
 
-CTX Harness is a local CLI and TypeScript library. It reads your existing `CLAUDE.md`, `AGENTS.md` and `.cursorrules`, compares documented claims with your codebase and makes missing evidence explicit.
+CTX Harness is a local CLI and TypeScript library. It reads your existing `CLAUDE.md`, `AGENTS.md` and `.cursorrules`, compares supported claims with your codebase and makes missing evidence explicit. No model API key is needed.
 
 <p align="center">
-  <img src="docs/assets/ctxharness-workflow.png" width="1100" alt="CTX Harness static workflow: select project or global scope, inspect documentation and configuration declarations, measure source bytes and named estimates, then export validated portable JSON. Missing evidence stays unknown." />
+  <img src="docs/assets/infographics/static-workflow.jpg" width="1100" alt="Agent instructions, project configuration and explicit expectations feed deterministic CTX Harness checks. Findings and versioned portable JSON are outputs. A CI consumer validates the schema and applies its policy. Static evidence does not prove client loading or execution." />
 </p>
 
 <p align="center">
   <a href="#quick-start">Quick start</a> &middot;
   <a href="#what-it-checks">Capabilities</a> &middot;
+  <a href="#mcp-configuration-checks">MCP checks</a> &middot;
+  <a href="#how-a-team-uses-ctx-harness">Team example</a> &middot;
   <a href="#configuration-doctor">Configuration doctor</a> &middot;
   <a href="#cli">CLI reference</a> &middot;
   <a href="#ci-integration">CI integration</a> &middot;
@@ -32,6 +38,14 @@ CTX Harness is a local CLI and TypeScript library. It reads your existing `CLAUD
 </p>
 
 The diagram shows static diagnosis and export. Loading, trust, execution and runtime benefit need separate evidence. [Image description and generation notes](docs/assets/README.md).
+
+## Why check agent instructions?
+
+A test suite can pass while `CLAUDE.md` points to a deleted file, `AGENTS.md` lists a removed package script, or a shared profile leaves an unwanted tool declaration behind. The next coding session starts from those outdated instructions.
+
+CTX Harness lets you compare supported facts with their local sources and require or forbid specific configuration entries. Start with a scan, keep repeatable assertions in `.ctxharness.yml`, and run the checks in CI. You choose which findings should block your workflow.
+
+Use CTX Harness for context engineering checks on AI documentation and agent configuration, including Claude Code, Codex, MCP declarations and CI assertions.
 
 ## What it checks
 
@@ -45,6 +59,52 @@ The diagram shows static diagnosis and export. Loading, trust, execution and run
 | **Optional extensions**            | Separate structural snapshots/diffs and caller-selected filesystem tool availability.             | `config-snapshot`, `config-diff`, `doctor --tools …` |
 
 The `v0.6.0` source tag includes explicit profile checks, configuration diagnosis, portable exports and both optional extensions. Use the source build below to access these features. [Delivery status](docs/roadmap.md).
+
+## MCP configuration checks
+
+MCP (Model Context Protocol) lets a coding client use tools supplied by servers. CTX Harness reads supported server declarations, including project `.mcp.json` for Claude Code and supported Codex TOML configuration. It diagnoses malformed declarations and credential patterns without starting those servers.
+
+For an explicit backend contract, `doctor --host claude --scope project --expect backend.expectations.json` can require the `design` entry to be absent from `.mcp.json`. This expectation mode currently supports the Claude project scope. A declared forbidden server fails; malformed configuration stays unknown and fails the aggregate expectation check. A passing contract does not cancel other mandatory diagnostics.
+
+CTX Harness is available through its CLI and TypeScript library. It currently exposes **no MCP endpoint**. A declaration check also does not establish that a client loaded a server, authenticated or called a tool. See [MCP support and the backend contract](docs/doctor.md#mcp-configuration-checks).
+
+## How a team uses CTX Harness
+
+One application repository generates instructions for Claude Code, Cursor and Codex from shared sources and developer profiles. **The repository owns generation.** CTX Harness inspects the files already on disk and exports a report that CI can validate before reading its summary.
+
+A review recorded on 18 November 2026 examined three CI runs and a separate local profile check. These observations describe those runs, rather than a current baseline for every installation:
+
+- **Documentation assertions in CI.** The latest reviewed `0.6.0` run flagged one guide with an instruction-balance ratio of `0.0` against the team's configured `0.2` threshold. This is an editorial-rule finding, not proof of a stale code fact or a defect in the guide.
+- **Configuration diagnosis in CI.** The portable report recorded 64 mandatory failures and 15 unknowns. Their individual causes remain to be qualified. Both diagnostic commands exited `1`, but the job stayed green because those steps used `continue-on-error`.
+- **Report consumption in CI.** Nine consumer contract fixtures passed and the portable parser accepted the report. Those checks could fail the job. A valid report can still contain failed diagnostics, and the active merge protections were not verified.
+
+The reviewed CI job did **not** pass a profile contract through `--expect`. A separate local check required an instructions file and an MCP declaration to be present. Both expectations passed, while other mandatory diagnostics made the command exit `1`:
+
+```bash
+ctxharness doctor --host claude --scope project \
+  --expect profile.expectations.json --format json
+```
+
+The contract filename is anonymized. The backend example above illustrates a different requirement: a design MCP must be absent. None of these checks proves that a client loaded or called the server.
+
+The repository also runs its own **`ai:ctxtest`** check for facts derived from code. In a separate local replay, that check caught an older ignored snapshot listing **13 permission resources** when the code defined **35**. CTX Harness did not produce that finding.
+
+The demonstrated contribution is repeatable checks and a validated report. The reviewed runs do not establish an avoided incident, saved time or tokens, or improved task quality. [CI case study, workflow policy and integration follow-up](docs/ci-integration.md).
+
+A static report can show that a file or declaration exists. A client trace can show that a session loaded it. Replay the diff through the selector to establish which test would run. Inspect its execution result to establish what it caught.
+
+<p align="center">
+  <img src="docs/assets/infographics/evidence-boundaries.jpg" width="1100" alt="Declaration, loading, execution and observed effect are separate claims. Evidence comes respectively from a static report, a client trace, an execution log and result, and a scenario replay." />
+</p>
+
+| Claim | Evidence needed |
+| --- | --- |
+| A file or MCP entry is declared | Static report |
+| A client loaded it | Client trace |
+| A selected check ran | Execution log and result |
+| Expected behavior was observed | Scenario replay |
+
+These observations do not imply one another. CI enforcement depends on the workflow policy. [Diagram sources, text equivalents and generation record](docs/assets/infographics/README.md).
 
 ## Quick start
 
@@ -95,13 +155,13 @@ typecheck-script        CLAUDE.md:34   true        false
 
 ### Inspect current configuration and export evidence
 
-Build the versioned source checkout to use the audit/export features. This installs dependencies in the checkout and compiles the CLI:
+Build the versioned source checkout to use the audit/export features. The commands pin pnpm to the same version as the composite Action, install dependencies in the checkout and compile the CLI:
 
 ```bash
 git clone --branch v0.6.0 https://github.com/FlorianBruniaux/ctxharness.git
 cd ctxharness
-pnpm install --frozen-lockfile --ignore-scripts
-pnpm build
+npm exec --yes --package=pnpm@10.11.0 -- pnpm install --frozen-lockfile --ignore-scripts
+npm exec --yes --package=pnpm@10.11.0 -- pnpm build
 
 node packages/cli/dist/index.js doctor --root /path/to/project --host both --scope project --coverage --budget --format json
 node packages/cli/dist/index.js doctor --root /path/to/project --host both --scope project --export portable
@@ -370,7 +430,7 @@ Use the `v0.6.0` build or later. Check that `ctxharness doctor --help` lists `--
 ctxharness doctor --host claude --scope project --expect backend.expectations.json --format json
 ```
 
-Use the contract to require or forbid files and named MCP declarations. A backend contract can forbid the design rule and MCP declaration. If any explicit expectation fails or remains unknown, the command exits with status 1. The verdict describes the files and declarations on disk. See the [changelog](CHANGELOG.md#060---2026-11-17) for release status.
+Use the contract to require or forbid files and named MCP declarations. If any explicit expectation fails or remains unknown, the command exits with status 1. The verdict describes the files and declarations on disk. See the [changelog](CHANGELOG.md#060---2026-11-17) for release status.
 
 <details>
 <summary>Export portable JSON, declared coverage and static sizes</summary>
@@ -642,6 +702,10 @@ cp templates/presets/t3.yml /path/to/project/.ctxharness.yml
 
 ## CI integration
 
+Choose separately whether a diagnostic is advisory, whether a report is valid and whether a check must pass before merging. A green job alone does not establish that all diagnostics passed. The [CI integration guide](docs/ci-integration.md) includes an anonymized observed case, an Actions summary example and portable-validation guidance.
+
+The composite Action below runs documentation assertions. It builds its CLI from the selected source ref and fails the step on drift by default. Configuration diagnosis and explicit profile contracts require separate calls.
+
 GitHub Actions:
 
 ```yaml
@@ -678,6 +742,8 @@ The same layering applies to `CLAUDE.md` files: project-level goes in the repo r
 | ------------------------------------------------------------ | ------------------------------------------------------------------- |
 | [Documentation index](docs/README.md)                        | Current guides and historical design notes.                         |
 | [Configuration doctor](docs/doctor.md)                       | Modes, selection, formats, exit codes and extension options.        |
+| [Landing SEO and publication](docs/seo.md) | Canonical identity, generated metadata and publication checks. |
+| [CI integration and observed case](docs/ci-integration.md) | Diagnostic outcomes, portable validation and merge policy.          |
 | [Configuration audit](docs/configuration-audit.md)           | Read boundaries, supported checks, coverage and static-size limits. |
 | [Versioned contracts and fixtures](docs/contracts/README.md) | Core APIs, portable validation and snapshot interoperability.       |
 | [Delivery roadmap](docs/roadmap.md)                          | Integrated issues, dependency order and product scope.              |

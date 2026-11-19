@@ -14,6 +14,8 @@ templates/       Husky hooks + CI workflow templates
 
 ## Commands
 
+Use pnpm `10.11.0`, matching the composite Action. The [source-build instructions](README.md#inspect-current-configuration-and-export-evidence) show how to invoke that version without relying on the machine's global package manager.
+
 ```bash
 pnpm build           # compile all packages
 pnpm test            # all Vitest suites; obtain counts from the current run
@@ -101,7 +103,7 @@ Semver. `CHANGELOG.md` updated before every release.
 
 ## Roadmap
 
-### Current source version: v0.5.0
+### Current source version: v0.6.0
 
 - `scan` command, zero-config heuristic claim detection (semver, paths, npm scripts)
 - `trend` command, cross-run drift score history with sparkline and direction detection
@@ -114,6 +116,8 @@ Semver. `CHANGELOG.md` updated before every release.
 - `--no-trend` flag on run/check/score/doctor to skip history recording
 
 ### Active delivery
+
+Version `0.6.0` adds explicit Claude project expectations through `doctor --expect` while preserving the report and portable v1 contracts. Distinguish this capability from a consumer actually supplying a profile contract in CI. The [CI integration guide](docs/ci-integration.md) documents diagnostic outcomes, report validation and merge-policy boundaries.
 
 Version `0.5.0` includes PRs #11 to #14: correctness fixes (#2 to #4), reusable contract/portable export (#5), declared coverage (#6) and static budget (#7). Configuration `config-snapshot`/`config-diff` (#8) and explicit tool availability (#9) remain separate opt-in extensions. Tagging source and publishing npm packages are separate operations; an installed `0.4.6` does not establish the presence of these additions.
 

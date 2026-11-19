@@ -1,4 +1,10 @@
-# README visual assets
+# Documentation visual assets
+
+The current README uses two ivory, charcoal and orange diagrams generated with Gemini. Their [source inventory, text equivalents, prompts and review record](infographics/README.md) are kept together. The landing uses the same accepted images and readable HTML equivalents on mobile.
+
+## Historical workflow image
+
+The older asset below is retained for provenance. Its cyan palette is superseded by the personal portfolio design system and it is no longer used in the README.
 
 [`ctxharness-workflow.png`](ctxharness-workflow.png) is the English README infographic, generated with the built-in `image_gen` tool on 2026-10-15. It is 1672 × 941 pixels. The visual direction follows the dark background, cyan workflow cards and command strip used in the Search Console MCP README; the content describes CTX Harness's own static audit/export workflow.
 

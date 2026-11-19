@@ -1,0 +1,12 @@
+{
+  "name": "ctxharness-backend-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "@florianbruniaux/ctxharness-core": "https://github.com/FlorianBruniaux/ctxharness/releases/download/v0.6.0/florianbruniaux-ctxharness-core-0.6.0.tgz"
+  }
+}

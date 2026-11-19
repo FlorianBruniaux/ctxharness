@@ -1,0 +1,18 @@
+{
+  "workflow": {
+    "words": 74,
+    "blocks": 7,
+    "edges": 6
+  },
+  "evidence": {
+    "words": 68,
+    "claims": 4,
+    "edges": 0
+  },
+  "verdict": "PASSE",
+  "message": "CTX Harness checks declared local sources; loading, execution and effect require independent evidence.",
+  "cuts": [],
+  "strictEditorialSignals": 0,
+  "mechanicalPageWordCount": 1441,
+  "notes": "Word counts are for the literal diagram specification, not OCR. HTML analyzer also counts navigation/footer and both responsive text alternatives."
+}

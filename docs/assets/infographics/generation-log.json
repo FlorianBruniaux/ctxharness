@@ -1,0 +1,112 @@
+{
+  "model": "gemini-3-pro-image",
+  "requestedAspect": "16:9",
+  "plannedVisuals": 2,
+  "maxAttemptsPerVisual": 2,
+  "totalCallCeiling": 4,
+  "pricingSource": "https://aistudio.google.com/docs/pricing#gemini-3-pro-image",
+  "imageOutputEstimateUSD": {
+    "per1KOr2KImage": 0.134,
+    "per4KImage": 0.24,
+    "fourCallCeilingConservative": 0.96
+  },
+  "costExclusions": [
+    "input",
+    "text/thinking",
+    "grounding",
+    "taxes"
+  ],
+  "providerBilledUsage": "UNKNOWN",
+  "privacy": "Only generic public product behavior, no client names, profile names, private paths or credentials",
+  "references": [
+    {
+      "article": "portable-agent-config-fr",
+      "asset": "harness-evidence-en-gemini.webp",
+      "use": "independent evidence claims"
+    },
+    {
+      "article": "shared-config-one-source-two-agents",
+      "asset": "draft-shared-config-one-source-two-agents-release-model.webp",
+      "use": "source/engine/output separation"
+    },
+    {
+      "article": "pull-requests-generees-genai-days-nantes",
+      "asset": "draft-nantes-v11-17-25.webp",
+      "use": "current personal palette and typography"
+    }
+  ],
+  "calls": [
+    {
+      "visual": "static-workflow",
+      "attempt": 1,
+      "output": "static-workflow-attempt-1.png",
+      "result": "rejected",
+      "qa": "All six intended edges are present. Rejected: extra visible text IBM Plex Mono inside the output card; rounded corners exceed intended crisp styling.",
+      "nativeMime": "image/jpeg",
+      "width": 1376,
+      "height": 768,
+      "sha256": "82db105d2de0b9e44d107f447411eb49952d171715d8dee3297a94f4bbe28d54",
+      "bytes": 584074,
+      "prompt": "static-workflow.prompt.txt"
+    },
+    {
+      "visual": "static-workflow",
+      "attempt": 2,
+      "output": "static-workflow-attempt-2.png",
+      "result": "accepted",
+      "qa": "All intended labels and six directed edges present; no extra font label; crisp orange/ivory/charcoal rendering. Raster typography approximates brand fonts; exact font files are used in surrounding HTML.",
+      "nativeMime": "image/jpeg",
+      "width": 1376,
+      "height": 768,
+      "sha256": "c5ef0ed9d566d0267ec27e1c99dee41378e8e3fb2cf3824cfe5f977337917dbe",
+      "bytes": 568395,
+      "prompt": "static-workflow-attempt-2.prompt.txt"
+    },
+    {
+      "visual": "evidence-boundaries",
+      "attempt": 1,
+      "output": "evidence-boundaries-attempt-1.png",
+      "result": "accepted",
+      "qa": "All four rows, headers, independent-evidence warning and CI policy note are present. Zero arrows. No numerical performance claims. Raster typography approximates brand fonts.",
+      "nativeMime": "image/jpeg",
+      "width": 1376,
+      "height": 768,
+      "sha256": "89075aa5827100e9a75fb6e592f15947c50e105ad18b3b92e834a21155e97302",
+      "bytes": 586238,
+      "prompt": "evidence-boundaries.prompt.txt"
+    }
+  ],
+  "prompts": {
+    "static-workflow.prompt.txt": "4f18ea49dc8f0b569720a6c61fba8dac6214c2835e32dcf3d1a067a822be4dcc",
+    "evidence-boundaries.prompt.txt": "c2804d95204eba0e1bf0424e56d7ff34cd0fd94fbbc02f4ac10579deadb93ada",
+    "static-workflow-attempt-2.prompt.txt": "70a1f2edd4601c7a686e36a40aa87a83432e3b3090e0d2967cf2347e1d215aaa"
+  },
+  "acceptedAssets": [
+    {
+      "file": "static-workflow.jpg",
+      "nativeMime": "image/jpeg",
+      "width": 1376,
+      "height": 768,
+      "sha256": "c5ef0ed9d566d0267ec27e1c99dee41378e8e3fb2cf3824cfe5f977337917dbe",
+      "bytes": 568395,
+      "normalization": "Native JPEG bytes copied to matching .jpg extension; raw provider output retained under original CLI filename."
+    },
+    {
+      "file": "evidence-boundaries.jpg",
+      "nativeMime": "image/jpeg",
+      "width": 1376,
+      "height": 768,
+      "sha256": "89075aa5827100e9a75fb6e592f15947c50e105ad18b3b92e834a21155e97302",
+      "bytes": 586238,
+      "normalization": "Native JPEG bytes copied to matching .jpg extension; raw provider output retained under original CLI filename."
+    }
+  ],
+  "actualCalls": 3,
+  "estimatedImageOutputUSD": 0.402,
+  "estimatedImageOutputExcludes": [
+    "input",
+    "text/thinking",
+    "grounding",
+    "taxes"
+  ]
+}

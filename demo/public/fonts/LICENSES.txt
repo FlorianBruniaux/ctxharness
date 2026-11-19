@@ -1,0 +1,24 @@
+ibm-plex-mono-400.ttf
+Copyright 2017 IBM Corp. All rights reserved.
+http://scripts.sil.org/OFL
+
+ibm-plex-sans-600.ttf
+Copyright 2019 IBM Corp. All rights reserved.
+http://scripts.sil.org/OFL
+
+barlow-condensed-700.ttf
+Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
+http://scripts.sil.org/OFL
+
+ibm-plex-sans-400.ttf
+Copyright 2019 IBM Corp. All rights reserved.
+http://scripts.sil.org/OFL
+The matching .woff2 files are lossless web-font conversions of these TTF
+sources, with the same licenses and complete character coverage. Regenerate
+with scripts/optimize-brand-fonts.py (FontTools with WOFF support).
+
+The content-hashed files in subsets/ use the same licenses. Latin and extended
+unicode-range subsets together preserve every supported Unicode character and
+advance width from their TTF source. Layout features and glyph dependencies are
+retained. Only the Latin subset is needed for ordinary English/French text.
+Regenerate with scripts/optimize-brand-fonts.py; check its coverage assertions.

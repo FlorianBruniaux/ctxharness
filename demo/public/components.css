@@ -1,0 +1,142 @@
+/* Shared action, card and ChapterLabel adapters from the Guide contract. */
+.btn {
+  --control-border: color-mix(in srgb, var(--text-primary) 56%, var(--bg-primary));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+  min-width: 44px;
+  max-width: 100%;
+  padding: 0.55rem 0.875rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font: 600 0.9375rem/1.35 var(--font-sans);
+  text-align: center;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+.btn-primary {
+  min-height: 48px;
+  padding-inline: 1.125rem;
+  background: var(--action);
+  border-color: color-mix(in srgb, var(--action-ink) 40%, var(--action));
+  color: var(--action-ink);
+}
+.btn-secondary {
+  background: var(--surface-elevated);
+  border-color: var(--control-border);
+  color: var(--text-primary);
+}
+.btn-quiet {
+  padding-inline: 0;
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
+  justify-content: flex-start;
+  text-align: start;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.24em;
+}
+.btn:is(:disabled, [aria-disabled='true']) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (hover: hover) {
+  .btn-primary:not(:disabled):hover {
+    background: var(--action-hover);
+    color: var(--action-ink);
+  }
+  .btn-secondary:not(:disabled):hover {
+    background: color-mix(in srgb, var(--surface-elevated) 88%, var(--accent));
+    border-color: var(--accent);
+  }
+  .btn-quiet:hover {
+    color: var(--accent-hover);
+    text-decoration-thickness: 2px;
+  }
+}
+.brand-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-lg);
+  box-shadow: none;
+}
+.brand-interactive-card {
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+.brand-interactive-card:is(:hover, :focus-within) {
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 0 0 1px var(--accent),
+    4px 4px 0 var(--border);
+}
+.chapter-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 54px;
+  margin-bottom: 1rem;
+  color: var(--accent);
+}
+.chapter-label.chapter-label p {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font: 400 0.75rem/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.chapter-label.chapter-label p::before {
+  content: '';
+  width: 28px;
+  height: 2px;
+  flex: none;
+  background: currentColor;
+}
+.chapter-brick {
+  width: 58px;
+  height: 54px;
+  flex: none;
+  overflow: visible;
+}
+.chapter-brick .brick-top,
+.chapter-brick .brick-front {
+  fill: var(--brand-orange);
+  stroke: var(--brick-outline);
+}
+.chapter-brick .brick-side {
+  fill: var(--brick-side);
+  stroke: var(--brick-outline);
+}
+.chapter-brick .brick-studs {
+  fill: var(--brick-highlight);
+  stroke: var(--brick-outline);
+}
+.chapter-brick text {
+  fill: var(--brick-outline);
+  font: 400 16px var(--font-mono);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
