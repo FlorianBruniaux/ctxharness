@@ -1,6 +1,6 @@
 # Documentation
 
-Updated: 2026-11-19. Status: documentation for source version `0.6.0`, including explicit project expectations. A source tag does not establish npm package publication.
+Updated: 2026-11-19. Status: documentation for version `0.6.0`, including explicit project expectations. The [CLI](https://www.npmjs.com/package/ctxharness/v/0.6.0) and [TypeScript library](https://www.npmjs.com/package/@florianbruniaux/ctxharness-core/v/0.6.0) are published on npm; the source tag remains available.
 
 - [Project README](../README.md): installation, documentation-drift workflow and CLI entry points.
 - [Configuration doctor](doctor.md): current modes, selected roots, output formats, exit codes and evidence limits. Includes an introduction to MCP configuration checks, explicit project expectations and the scope of static evidence.

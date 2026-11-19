@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 
 ### Changed
 
+- Installation documentation (2026-11-19): announce npm v0.6.0, use the published CLI for README and landing examples, and retain source builds as an alternative.
 - Landing publication (2026-11-19): use the verified custom domain `https://ctxharness.bruniaux.com/` for canonical, social metadata, structured entities and sitemap URLs.
 - Landing SEO (2026-11-18): generate consistent product metadata, canonical and social links, structured entities, production robots/sitemap and non-indexable preview output. Preserve the demo API and add built-output regression checks. Publication and Google observations remain separate.
 - Documentation (2026-11-18): clarify observed consumer CI usage, advisory diagnostic failures, portable-report validation and the separate local profile check. Add CI integration guidance and update the landing's anonymized example. Consumer workflow improvements remain proposals.
@@ -17,6 +18,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versioning fol
 ## [0.6.0] - 2026-11-17
 
 This release adds explicit profile checks for Claude Code project configuration. [Changes since v0.5.0](https://github.com/FlorianBruniaux/ctxharness/compare/v0.5.0...v0.6.0).
+
+Published to npm on 2026-11-19: [`ctxharness@0.6.0`](https://www.npmjs.com/package/ctxharness/v/0.6.0) and [`@florianbruniaux/ctxharness-core@0.6.0`](https://www.npmjs.com/package/@florianbruniaux/ctxharness-core/v/0.6.0), both tagged `latest`. A fresh-repository check verified anonymous `npx` installation and the published CLI's version, scan behavior and explicit backend expectations.
 
 ### Added
 

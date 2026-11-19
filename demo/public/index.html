@@ -51,8 +51,8 @@
             Codex configuration. It runs locally as a CLI or TypeScript library.
           </p>
           <p class="hero-detail">
-            Catch outdated facts in CLAUDE.md and AGENTS.md before you reuse them in a coding
-            session. Keep the same checks in CI.
+            v0.6.0 is now available on <a href="https://www.npmjs.com/package/ctxharness/v/0.6.0">npm</a>.
+            Run <code>npx ctxharness@0.6.0 scan CLAUDE.md</code> from your repository.
           </p>
           <div class="hero-actions">
             <a class="btn btn-secondary" href="#demo-title">Try the backend check ↓</a
@@ -571,33 +571,28 @@
             <p class="eyebrow">LOCAL CLI · TYPESCRIPT LIBRARY</p>
             <h2 id="local-title">Run a check against your own files.</h2>
             <p>
-              Use the v0.6.0 source build to access the workflows above. Node.js runs the CLI even
-              when your project uses Python, Go or Rust.
+              v0.6.0 is available on npm. Run the CLI with npx from your repository. Node.js runs
+              the CLI even when your project uses Python, Go or Rust.
             </p>
             <a
               class="btn btn-quiet"
               href="https://github.com/FlorianBruniaux/ctxharness#inspect-current-configuration-and-export-evidence"
-              >Source install instructions ↗</a
+              >npm and source instructions ↗</a
             >
           </div>
           <div class="source-install brand-card">
-            <h3>Build the tagged source</h3>
+            <h3>Run the published CLI</h3>
             <pre
               tabindex="0"
-              aria-label="Build CTX Harness v0.6.0 from source"
-            ><code>git clone --branch v0.6.0 \
-  https://github.com/FlorianBruniaux/ctxharness.git
-cd ctxharness
-npm exec --yes --package=pnpm@10.11.0 -- \
-  pnpm install --frozen-lockfile --ignore-scripts
-npm exec --yes --package=pnpm@10.11.0 -- pnpm build</code></pre>
+              aria-label="Run CTX Harness v0.6.0 from npm"
+            ><code>npx ctxharness@0.6.0 --version
+npx ctxharness@0.6.0 scan CLAUDE.md</code></pre>
           </div>
           <div class="local-contract">
             <h3>Try the backend contract.</h3>
             <p>
-              Download the expectation file into the repository you want to check. Replace
-              <code>/path/to/ctxharness</code> in the command with your source checkout’s absolute
-              path, then run it from the repository being inspected.
+              Download the expectation file into the repository you want to check, then run the
+              command below from that repository.
             </p>
             <button class="download btn btn-primary" id="download" type="button">
               ↓ Download expectation file
@@ -612,7 +607,7 @@ npm exec --yes --package=pnpm@10.11.0 -- pnpm build</code></pre>
               <span>Terminal · from your repository</span
               ><button class="btn btn-secondary" type="button" id="copy">Copy</button>
             </div>
-            <pre><code id="command">node /path/to/ctxharness/packages/cli/dist/index.js \
+            <pre><code id="command">npx ctxharness@0.6.0 \
   doctor --host claude --scope project \
   --expect .ctxharness-expectations.json \
   --format json</code></pre>
@@ -630,13 +625,13 @@ npm exec --yes --package=pnpm@10.11.0 -- pnpm build</code></pre>
         <div class="footer-intro">
           <a class="footer-title" href="#title">CTX Harness</a>
           <p>Check the files your coding agents rely on. Run the same deterministic checks locally and in CI.</p>
-          <span class="version">Source v0.6.0</span>
+          <span class="version">v0.6.0 · npm + source</span>
         </div>
         <div class="footer-columns">
           <nav class="footer-nav" aria-label="Use CTX Harness">
             <h2>Use CTX Harness</h2>
             <a href="#demo-title">Try the backend check</a>
-            <a href="#local-title">Build from source</a>
+            <a href="#local-title">Install from npm</a>
             <a href="#workflow-title">Use it in CI</a>
             <a href="https://github.com/FlorianBruniaux/ctxharness/blob/main/docs/doctor.md">Configuration doctor ↗</a>
           </nav>

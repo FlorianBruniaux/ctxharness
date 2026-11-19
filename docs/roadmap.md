@@ -1,10 +1,10 @@
 # Configuration audit and export roadmap
 
-Updated: 2026-11-18. Delivery status covers [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10), the `v0.5.0` and `v0.6.0` source tags. [Documentation index](README.md).
+Updated: 2026-11-19. Delivery status covers [roadmap #10](https://github.com/FlorianBruniaux/ctxharness/issues/10), the `v0.5.0` and `v0.6.0` source tags and npm publication of `0.6.0`. [Documentation index](README.md).
 
 ## Current delivery status
 
-Current source version `0.6.0` includes the `0.5.0` documentation-drift commands, passive Claude Code/Codex configuration diagnosis, portable export and both optional extensions, plus explicit Claude project expectations. Both package manifests and the CLI declare `0.6.0`. A source tag does not establish npm package publication; check an installed CLI's version before using new options. Consult [the doctor guide](doctor.md) for behavior and [the changelog](../CHANGELOG.md) for release history.
+Version `0.6.0` includes the `0.5.0` documentation-drift commands, passive Claude Code/Codex configuration diagnosis, portable export and both optional extensions, plus explicit Claude project expectations. The [CLI](https://www.npmjs.com/package/ctxharness/v/0.6.0) and [core library](https://www.npmjs.com/package/@florianbruniaux/ctxharness-core/v/0.6.0) were published to npm on 2026-11-19, both with the `latest` tag. Anonymous `npx ctxharness` was verified in a fresh repository with an empty cache and an isolated npm prefix. Consult [the doctor guide](doctor.md) for behavior and [the changelog](../CHANGELOG.md) for release history.
 
 The following PRs were merged into `main` on 2026-10-15 and are included in the `v0.5.0` source tag. Published package availability remains a separate fact:
 

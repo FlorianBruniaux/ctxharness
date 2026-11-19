@@ -16,7 +16,9 @@
 
 If a backend profile forbids the design MCP server, CTX Harness fails the check when `.mcp.json` still declares it. CTX Harness checks MCP configuration; it does not provide an MCP server you connect to Claude or Codex.
 
-[Try the backend demo](https://ctxharness.bruniaux.com/#demo-title) · [CI integration guide](docs/ci-integration.md)
+**v0.6.0 is now available on [npm](https://www.npmjs.com/package/ctxharness/v/0.6.0).** Run `npx ctxharness@0.6.0 scan CLAUDE.md` from your repository.
+
+[Try the backend demo](https://ctxharness.bruniaux.com/#demo-title) · [npm package](https://www.npmjs.com/package/ctxharness) · [CI integration guide](docs/ci-integration.md)
 
 Catch stale paths, scripts and versions in your AI docs. Inspect Claude Code and Codex configuration, measure static source sizes and export validated evidence for other tools.
 
@@ -58,7 +60,7 @@ Use CTX Harness for context engineering checks on AI documentation and agent con
 | **Reusable evidence**              | Validated, versioned portable JSON that omits raw paths, messages and credentials.                | `doctor --export portable`                           |
 | **Optional extensions**            | Separate structural snapshots/diffs and caller-selected filesystem tool availability.             | `config-snapshot`, `config-diff`, `doctor --tools …` |
 
-The `v0.6.0` source tag includes explicit profile checks, configuration diagnosis, portable exports and both optional extensions. Use the source build below to access these features. [Delivery status](docs/roadmap.md).
+The published `ctxharness@0.6.0` CLI includes explicit profile checks, configuration diagnosis, portable exports and both optional extensions. The TypeScript library is published as [`@florianbruniaux/ctxharness-core@0.6.0`](https://www.npmjs.com/package/@florianbruniaux/ctxharness-core/v/0.6.0). [Delivery status](docs/roadmap.md).
 
 ## MCP configuration checks
 
@@ -113,7 +115,7 @@ These observations do not imply one another. CI enforcement depends on the workf
 Run from the project you want to check, with Node.js available:
 
 ```bash
-npx ctxharness scan CLAUDE.md
+npx ctxharness@0.6.0 scan CLAUDE.md
 ```
 
 `scan` discovers supported path, script and version claims. It exits 1 when it finds drift; `--exit-zero` makes drift warning-only.
@@ -121,9 +123,9 @@ npx ctxharness scan CLAUDE.md
 ### Keep documentation checks repeatable
 
 ```bash
-npx ctxharness init              # generate .ctxharness.yml from existing docs
-npx ctxharness run               # check configured assertions
-npx ctxharness doctor            # documentation report with L1/L2/L3 breakdown
+npx ctxharness@0.6.0 init         # generate .ctxharness.yml from existing docs
+npx ctxharness@0.6.0 run          # check configured assertions
+npx ctxharness@0.6.0 doctor       # documentation report with L1/L2/L3 breakdown
 ```
 
 <details>
@@ -155,7 +157,20 @@ typecheck-script        CLAUDE.md:34   true        false
 
 ### Inspect current configuration and export evidence
 
-Build the versioned source checkout to use the audit/export features. The commands pin pnpm to the same version as the composite Action, install dependencies in the checkout and compile the CLI:
+Use the published CLI from the repository you want to inspect:
+
+```bash
+npx ctxharness@0.6.0 --version
+npx ctxharness@0.6.0 doctor --host both --scope project --coverage --budget --format json
+npx ctxharness@0.6.0 doctor --host both --scope project --export portable
+```
+
+These examples select project configuration only. `--scope global` explicitly selects personal configuration; `--scope both` includes both scopes. No selected hook, skill, agent, MCP server or tool is executed by configuration diagnosis.
+
+<details>
+<summary>Build the tagged source instead</summary>
+
+The source checkout remains available for development or inspecting the implementation. These commands pin pnpm to the same version as the composite Action and compile the CLI:
 
 ```bash
 git clone --branch v0.6.0 https://github.com/FlorianBruniaux/ctxharness.git
@@ -167,9 +182,11 @@ node packages/cli/dist/index.js doctor --root /path/to/project --host both --sco
 node packages/cli/dist/index.js doctor --root /path/to/project --host both --scope project --export portable
 ```
 
-Replace `/path/to/project` with the directory to inspect. These examples select project configuration only. `--scope global` explicitly selects personal configuration; `--scope both` includes both scopes. No selected hook, skill, agent, MCP server or tool is executed by configuration diagnosis.
+Replace `/path/to/project` with the directory to inspect.
 
-In the reference below, `ctxharness` denotes your installed CLI. If its version predates `0.6.0`, substitute `node /path/to/ctxharness/packages/cli/dist/index.js` from the source build. See [doctor modes, formats and exit codes](docs/doctor.md).
+</details>
+
+In the reference below, `ctxharness` denotes your installed CLI. If its version predates `0.6.0`, use `npx ctxharness@0.6.0` for the new options. See [doctor modes, formats and exit codes](docs/doctor.md).
 
 ## Install
 
@@ -177,13 +194,13 @@ In the reference below, `ctxharness` denotes your installed CLI. If its version 
 <summary>Install the package globally or as a project dependency</summary>
 
 ```bash
-npm install -g ctxharness
+npm install -g ctxharness@0.6.0
 # or, inside your project:
-pnpm add -D ctxharness
+pnpm add -D ctxharness@0.6.0
 pnpm exec ctxharness --help
 ```
 
-The CLI uses Node.js even when checking a Python, Go or Rust project. The [source workflow](#inspect-current-configuration-and-export-evidence) gives access to the tagged `v0.6.0` implementation independently of npm publication.
+The CLI uses Node.js even when checking a Python, Go or Rust project. To use the TypeScript library directly, install `@florianbruniaux/ctxharness-core@0.6.0`. The [source workflow](#inspect-current-configuration-and-export-evidence) remains available as an alternative.
 
 </details>
 

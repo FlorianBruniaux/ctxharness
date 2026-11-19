@@ -1,6 +1,6 @@
 # Configuration doctor
 
-Updated: 2026-11-17. Status: behavior included in source version `0.6.0`. A Git tag does not establish npm package publication; verify the version of an installed CLI. [Documentation index](README.md).
+Updated: 2026-11-19. Status: behavior available in the published [`ctxharness@0.6.0`](https://www.npmjs.com/package/ctxharness/v/0.6.0) CLI and source tag. Run `npx ctxharness@0.6.0 --version` to check the version. [Documentation index](README.md).
 
 ## Choose the doctor mode
 
@@ -106,7 +106,7 @@ Create a JSON artifact such as `backend.expectations.json` outside the configura
 }
 ```
 
-From the project root, with a CLI built from source containing this feature:
+From the project root, with `ctxharness@0.6.0` installed or using `npx ctxharness@0.6.0` in place of `ctxharness`:
 
 ```bash
 ctxharness doctor --host claude --scope project --expect backend.expectations.json --format json
