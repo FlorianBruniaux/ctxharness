@@ -1,0 +1,177 @@
+demo/scripts/build.mjs
+  s_5b1a1fd2b03cfe::t_63c8b3a53a471f 1-15,32-40,44-49,62-63,65-67,106-107,110-118,133,139-142,148,151-154,158-159,162-163,169,171-176,181,186,192-196,201-202
+  s_5b1a1fd2b03cfe::t_f6319376d1fd90 16-31,41-43,50-61,64,68-105,108-109,119-132,134-138,143-147,149-150,155-157,160-161,164-168,170,177-180,182-185,187-191,197-200
+demo/vercel.json
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-3,6
+  s_5b1a1fd2b03cfe::t_59eee372c9a6c0 4-5
+demo/tools/render-panels.cjs
+  s_5b1a1fd2b03cfe::t_6775e912cc2a06 1-21
+demo/lib/site.js
+  s_5b1a1fd2b03cfe::t_63c8b3a53a471f 2,4-14
+  s_5b1a1fd2b03cfe::t_b001561aa8b72c 1,3
+demo/test/design-system-guard.test.js
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-88
+demo/docs/navigation-infographics-review.md
+  s_5b1a1fd2b03cfe::t_25280138d02059 49-53
+  s_5b1a1fd2b03cfe::t_3ea5f7133397cd 1-48
+docs/ci-integration.md
+  s_5b1a1fd2b03cfe::t_4d401cbbea87e6 1-8,16-24,30-107
+  s_5b1a1fd2b03cfe::t_05491c29aceb87 9-15,25-29
+docs/assets/infographics/static-workflow.prompt.txt
+  s_5b1a1fd2b03cfe::t_dac5f03cf9cbea 1-39
+demo/test/check.test.js
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-74
+demo/public/images/brand/section-hatching.svg
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-8
+demo/public/fonts/OFL-IBM-Plex-Mono.txt
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-93
+demo/public/index.html
+  s_5b1a1fd2b03cfe::t_8fbd59facce551 50-51
+  s_5b1a1fd2b03cfe::t_40cfe5864393d7 2,7,17-41,630-678
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1,3-5,8-16,42-44,283-299,301,303-304,307-308,315-376,380-394,396,398,551-565,567,582,628-629,679-682
+  s_5b1a1fd2b03cfe::t_59eee372c9a6c0 6,48,244,249,426-427
+  s_5b1a1fd2b03cfe::t_86539c652efdcf 45-47,49,52-53,56-72,91-126,128-136,156-161,163-201,220-243,245-248,250-273,275-282,309-314,377-379,399-421,470-474,478-489,493-494,505-509,512-518,528-550,569-581,583-588,594-615,618-627
+  s_5b1a1fd2b03cfe::t_bda842509f67c0 73-90,127,137-155,202-219,274,300,302,305,395,397,490-492,566,568,589-590,616-617
+  s_5b1a1fd2b03cfe::t_ed994be6df22c4 424,428-429,433,435-437,441,443-445,449,451-453,458-461,463-468,475-477,519-527
+  s_5b1a1fd2b03cfe::t_891bd09e1ca948 54-55,510-511
+  s_5b1a1fd2b03cfe::t_74bd51995a5b60 591-593
+  s_5b1a1fd2b03cfe::t_751df75458f818 422-423,425,430-432,434,438-440,442,446-448,450,454-457,462,469
+  s_5b1a1fd2b03cfe::t_25cb49bcb08e26 162,306,495-504
+demo/public/style.css
+  s_5b1a1fd2b03cfe::t_25cb49bcb08e26 1186-1207
+  s_5b1a1fd2b03cfe::t_8eb64ab39b23dc 1036,1040
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-567
+  s_5b1a1fd2b03cfe::t_751df75458f818 795-835,843
+  s_5b1a1fd2b03cfe::t_86539c652efdcf 568-794,844-999
+  s_5b1a1fd2b03cfe::t_374d32778be166 836-842
+  s_5b1a1fd2b03cfe::t_40cfe5864393d7 1000-1035,1037-1039,1041-1185
+demo/public/shell.js
+  s_5b1a1fd2b03cfe::t_40cfe5864393d7 1-72
+docs/doctor.md
+  s_5b1a1fd2b03cfe::t_4d401cbbea87e6 50
+  s_5b1a1fd2b03cfe::t_05b87d537fde98 67-79
+demo/lib/fixtures.js
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-35
+demo/tools/shell-check.cjs
+  s_5b1a1fd2b03cfe::t_25cb49bcb08e26 69
+  s_5b1a1fd2b03cfe::t_7fd20c8676648b 1-40,42-68,70-97
+  s_5b1a1fd2b03cfe::t_8eb64ab39b23dc 41
+demo/docs/ci-evidence-review.md
+  s_5b1a1fd2b03cfe::t_69a1e5c952f5e2 1-28
+docs/roadmap.md
+  s_5b1a1fd2b03cfe::t_4d401cbbea87e6 3,7,41-46
+demo/public/tokens.css
+  s_5b1a1fd2b03cfe::t_40cfe5864393d7 69
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-68,70-175
+demo/README.md
+  s_5b1a1fd2b03cfe::t_b001561aa8b72c 41
+  s_5b1a1fd2b03cfe::t_5c42d0eb452584 17,38-40,42-43
+  s_5b1a1fd2b03cfe::t_69a1e5c952f5e2 36-37
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-16,18-19,29,33
+  s_5b1a1fd2b03cfe::t_fb9513f5ca426d 20-28,30-32,34-35
+docs/assets/README.md
+  s_5b1a1fd2b03cfe::t_05b87d537fde98 1-7
+docs/assets/infographics/README.md
+  s_5b1a1fd2b03cfe::t_6775e912cc2a06 18
+  s_5b1a1fd2b03cfe::t_25280138d02059 60
+  s_5b1a1fd2b03cfe::t_f507ed8a740276 1-17,19-59,61-62
+demo/test/seo.test.js
+  s_5b1a1fd2b03cfe::t_db46c4f46af233 189-190
+  s_5b1a1fd2b03cfe::t_e9bed326ed4aec 1-188,191-210
+demo/api/check.js
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-41
+docs/README.md
+  s_5b1a1fd2b03cfe::t_b001561aa8b72c 3,7
+  s_5b1a1fd2b03cfe::t_05b87d537fde98 6,12
+  s_5b1a1fd2b03cfe::t_4d401cbbea87e6 8
+demo/public/fonts/OFL-IBM-Plex-Sans.txt
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-93
+docs/assets/infographics/static-workflow-attempt-2.prompt.txt
+  s_5b1a1fd2b03cfe::t_971ddb496ff3bd 1-41
+CHANGELOG.md
+  s_5b1a1fd2b03cfe::t_b001561aa8b72c 13
+  s_5b1a1fd2b03cfe::t_4d401cbbea87e6 11-12,15-16
+  s_5b1a1fd2b03cfe::t_5c42d0eb452584 14
+demo/public/favicon.svg
+  s_5b1a1fd2b03cfe::t_63c8b3a53a471f 1-4
+docs/assets/infographics/evidence-boundaries.prompt.txt
+  s_5b1a1fd2b03cfe::t_dac5f03cf9cbea 1-33
+demo/package.json
+  s_5b1a1fd2b03cfe::t_59eee372c9a6c0 6-7
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-5,8-12
+demo/public/fonts.css
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-4
+demo/tools/visual-check.cjs
+  s_5b1a1fd2b03cfe::t_8fbd59facce551 236-237,239-242,245-250
+  s_5b1a1fd2b03cfe::t_bf8f6426ce5afc 166-169
+  s_5b1a1fd2b03cfe::t_84c126ccbd38db 226-235
+  s_5b1a1fd2b03cfe::t_b77b0a2e16d74d 151-154,159-165,292-293,295-299,305-311
+  s_5b1a1fd2b03cfe::t_891bd09e1ca948 51,146,223-224,238,243-244,251-252,344
+  s_5b1a1fd2b03cfe::t_5b3ea703edada5 155-158,300-304,312-316
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-28,30-35,41-50,52-61,63-106,108-123,127,134,139,150,170-222,253-291,317,319-343,346-382
+  s_5b1a1fd2b03cfe::t_25cb49bcb08e26 29,225,294,318,345
+  s_5b1a1fd2b03cfe::t_a571308391160f 36-40,62,107,124-126,128-133,135-138,140-145,147-149
+README.md
+  s_5b1a1fd2b03cfe::t_59eee372c9a6c0 15,48,75
+  s_5b1a1fd2b03cfe::t_05b87d537fde98 23,26,32,42-47,49,63,65-70,95-107
+  s_5b1a1fd2b03cfe::t_751df75458f818 33,64,71-74,76,80,82-87,89,94
+  s_5b1a1fd2b03cfe::t_4d401cbbea87e6 77-79,81,88,90-93,705-707,746
+  s_5b1a1fd2b03cfe::t_b5f5ba78a6c083 158,163-164
+  s_5b1a1fd2b03cfe::t_b001561aa8b72c 17-19,433
+  s_5b1a1fd2b03cfe::t_5c42d0eb452584 745
+  s_5b1a1fd2b03cfe::t_1c2aa9a7561a86 16,108,708
+demo/public/fonts/LICENSES.txt
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-24
+docs/assets/infographics/concision-review.json
+  s_5b1a1fd2b03cfe::t_101d2396bf178a 1-18
+demo/docs/design-system-review.md
+  s_5b1a1fd2b03cfe::t_b001561aa8b72c 58,63
+  s_5b1a1fd2b03cfe::t_7f8d7272e045c8 3-4
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-2,5-57,59-62,64-67
+demo/public/fonts/OFL-Barlow.txt
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-93
+docs/assets/infographics/generation-log.json
+  s_5b1a1fd2b03cfe::t_25cb49bcb08e26 64-69,83-111
+  s_5b1a1fd2b03cfe::t_6775e912cc2a06 44-50,57-63,70-76
+  s_5b1a1fd2b03cfe::t_dac5f03cf9cbea 1-37,79-80,112
+  s_5b1a1fd2b03cfe::t_2103074cb9b620 51-56,81-82
+  s_5b1a1fd2b03cfe::t_971ddb496ff3bd 38-43,77-78
+demo/.gitignore
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-2
+docs/seo.md
+  s_5b1a1fd2b03cfe::t_b001561aa8b72c 3,30,32
+  s_5b1a1fd2b03cfe::t_5c42d0eb452584 1-2,4-29,31,33-71
+demo/docs/product-story.md
+  s_5b1a1fd2b03cfe::t_7f8d7272e045c8 29-48,50-51
+  s_5b1a1fd2b03cfe::t_b001561aa8b72c 49
+  s_5b1a1fd2b03cfe::t_5fcbb543c331be 1-28
+CLAUDE.md
+  s_5b1a1fd2b03cfe::t_b5f5ba78a6c083 17-18
+  s_5b1a1fd2b03cfe::t_4d401cbbea87e6 106,120
+  s_5b1a1fd2b03cfe::t_f1fa9794b671e8 121
+demo/public/components.css
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-94,96-103,105-142
+  s_5b1a1fd2b03cfe::t_86539c652efdcf 95,104
+demo/public/app.js
+  s_5b1a1fd2b03cfe::t_7e5a1e6280650f 1-80
+demo/package-lock.json
+  s_5b1a1fd2b03cfe::t_d46b94b9bf1bf9 1-299
+demo/tools/seo-check.cjs
+  s_5b1a1fd2b03cfe::t_82e7868fa5ffc1 1-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ccff57384e294bac9a2907bb56c9ec592767c9d2",
+  "prompts": {},
+  "sessions": {
+    "s_5b1a1fd2b03cfe": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1da3c-454f-7f42-9950-f0aef2a5768e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
