@@ -421,37 +421,25 @@
           </figure>
           <article class="team-usage brand-card" aria-labelledby="team-usage-title">
             <p class="card-kicker">ONE TEAM’S OBSERVED WORKFLOW · ANONYMIZED</p>
-            <h3 id="team-usage-title">See what ran, and what passed.</h3>
+            <h3 id="team-usage-title">Read the diagnostic results behind a green CI job.</h3>
             <p class="team-usage-intro">
-              A review recorded on 18 November 2026 examined three CI runs in one application repository:
-              documentation checks,
-              configuration diagnostics and portable-report validation. The latest used source
-              version 0.6.0. Its green job still contained failed diagnostics.
+              In one pull request:
             </p>
             <ul class="team-usage-list">
               <li>
-                <h4>Flag an assertion mismatch.</h4>
+                <h4>Two advisory diagnostics · exit 1</h4>
                 <p>
-                  The latest run flagged one guide with an instruction-balance ratio of 0.0
-                  against the team’s 0.2 threshold. That is an editorial-rule finding, which
-                  needs interpretation before treating it as a documentation defect.
+                  The documentation scan and configuration diagnostic both exited with code
+                  <code>1</code>. Both steps were advisory.
                 </p>
               </li>
               <li>
-                <h4>Inspect configuration on disk.</h4>
-                <p>
-                  The portable report recorded 64 mandatory failures and 15 unknowns. Their
-                  individual causes were not established by those totals. This job did not
-                  generate ignored client outputs before inspecting the available files.
-                </p>
+                <h4>Nine contract tests · passed</h4>
+                <p>All nine integration contract tests passed.</p>
               </li>
               <li>
-                <h4>Validate the report separately.</h4>
-                <p>
-                  Nine consumer contract fixtures passed, and the portable parser accepted the
-                  report. Both diagnostic commands exited 1, while <code>continue-on-error</code>
-                  kept them advisory. Fixtures and report validation could fail the job.
-                </p>
+                <h4>Portable JSON format · validated</h4>
+                <p>The portable JSON passed format validation.</p>
               </li>
             </ul>
             <p class="team-usage-note">
